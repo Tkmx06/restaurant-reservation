@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+// ─── 追加：メール送信関数のインポート ───
+import { sendCustomerConfirmation, sendStaffNotification } from '@/lib/mail';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,7 +24,6 @@ function extractCompanyDomain(email: string): { domain: string | null; companyNa
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    // ─── 修正：フロントエンド（予約画面）から計算された正しい table_id と notes（結合情報）を受け取る ───
     const { date, time, adults, children, childAges, name, email, phone, notes, totalGuests, table_id } = body;
 
     // 1. 必須項目チェック
@@ -60,18 +61,17 @@ export async function POST(req: NextRequest) {
     const visitCount = (count || 0) + 1;
 
     // 4. 予約の確定（挿入）
-    // ─── 修正：古い自動お席判定を完全に削除し、フロントから届いた情報をそのまま信頼して保存 ───
     const { data: newReservation, error: insertError } = await supabase
       .from('reservations')
       .insert({
-        table_id: table_id, // 正しい実在のテーブル数値ID
+        table_id: table_id,
         guest_name: name,
         email,
         phone,
         guests: totalGuests,
         date,
         time,
-        notes: notes,       // _combined:[ID] が含まれる正しいお席結合テキスト
+        notes: notes,
         company_domain: domain,
         company_name: companyName,
         visit_count: visitCount,
@@ -81,6 +81,31 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertError) throw insertError;
+
+    // ─── 追加：予約完了メールの送信（お客様向け & スタッフ向け） ───
+    // サービス名はここでは「お席のご予約」や店舗名などに合わせて調整可能です
+    const serviceName = 'レストランご予約';
+    const bookingDate = `${date} ${time}`;
+
+    try {
+      await Promise.all([
+        sendCustomerConfirmation({
+          customerName: name,
+          customerEmail: email,
+          serviceName,
+          bookingDate,
+        }),
+        sendStaffNotification({
+          customerName: name,
+          customerEmail: email,
+          serviceName,
+          bookingDate,
+        }),
+      ]);
+    } catch (mailError) {
+      // メールの送信に失敗しても、予約自体は完了しているのでログ出力だけに留めるか、エラーハンドリングを調整できます
+      console.error('メール送信失敗:', mailError);
+    }
 
     return NextResponse.json({ success: true, reservation: newReservation });
   } catch (err: any) {
