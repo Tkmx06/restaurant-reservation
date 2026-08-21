@@ -10,8 +10,8 @@ export function middleware(req: NextRequest) {
       const [user, pwd] = atob(authValue).split(':');
 
       // 🔑 ここでIDとパスワードを変更できます
-      const validUser = 'admin';
-      const validPass = 'tstyle2026';
+      const validUser = '1';
+      const validPass = '1';
 
       if (user === validUser && pwd === validPass) {
         return NextResponse.next();
