@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// 予約一覧データの取得（既存の機能）
+// 予約一覧データの取得
 export async function GET(req: NextRequest) {
   try {
     const filter = req.nextUrl.searchParams.get('filter') || 'upcoming';
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 // 予約内容の更新（テーブル移動・人数変更など）
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -75,7 +75,7 @@ export async function PATCH(
 // 予約の削除（キャンセル）
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
