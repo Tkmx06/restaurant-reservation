@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-// ─── 追加：メール送信関数のインポート ───
 import { sendCustomerConfirmation, sendStaffNotification } from '@/lib/mail';
 
 const supabase = createClient(
@@ -24,7 +23,7 @@ function extractCompanyDomain(email: string): { domain: string | null; companyNa
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { date, time, adults, children, childAges, name, email, phone, notes, totalGuests, table_id } = body;
+    const { date, time, adults, children, childAges, name, email, phone, notes, totalGuests, table_id, locale } = body;
 
     // 1. 必須項目チェック
     if (!date || !time || !name || !email || !phone || !totalGuests || !table_id) {
@@ -82,28 +81,28 @@ export async function POST(req: NextRequest) {
 
     if (insertError) throw insertError;
 
-    // ─── 追加：予約完了メールの送信（お客様向け & スタッフ向け） ───
-    // サービス名はここでは「お席のご予約」や店舗名などに合わせて調整可能です
-    const serviceName = 'レストランご予約';
+    // 5. 予約完了メールの送信（お客様向け & スタッフ向け）
     const bookingDate = `${date} ${time}`;
+    const guests = totalGuests;
+    const selectedLocale = locale || 'de'; // フォームから選ばれた言語（デフォルトはドイツ語 'de'）
 
     try {
       await Promise.all([
         sendCustomerConfirmation({
           customerName: name,
           customerEmail: email,
-          serviceName,
           bookingDate,
+          guests,
+          locale: selectedLocale,
         }),
         sendStaffNotification({
           customerName: name,
           customerEmail: email,
-          serviceName,
           bookingDate,
+          guests,
         }),
       ]);
     } catch (mailError) {
-      // メールの送信に失敗しても、予約自体は完了しているのでログ出力だけに留めるか、エラーハンドリングを調整できます
       console.error('メール送信失敗:', mailError);
     }
 
