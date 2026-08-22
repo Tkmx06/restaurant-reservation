@@ -1,114 +1,109 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
-import { sendCustomerConfirmation, sendStaffNotification } from '@/lib/mail';
+import { resend } from './resend';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const FROM_EMAIL = 'onboarding@resend.dev';
 
-const PERSONAL_DOMAINS = ['gmail.com', 'yahoo.com', 'yahoo.co.jp', 'hotmail.com', 'outlook.com', 'icloud.com', 'web.de', 'gmx.de', 't-online.de'];
-
-function extractCompanyDomain(email: string): { domain: string | null; companyName: string | null } {
-  const domain = email.split('@')[1]?.toLowerCase();
-  if (!domain || PERSONAL_DOMAINS.includes(domain)) {
-    return { domain: null, companyName: null };
-  }
-  const parts = domain.split('.');
-  const name = parts[0];
-  const companyName = name.charAt(0).toUpperCase() + name.slice(1);
-  return { domain, companyName };
+interface BookingEmailProps {
+  customerName: string;
+  customerEmail: string;
+  bookingDate: string;
+  guests: number | string;
+  locale?: 'de' | 'en' | 'ja';
 }
 
-export async function POST(req: NextRequest) {
+// 1. 予約確認メール（お客様向け）
+export async function sendCustomerConfirmation({
+  customerName,
+  customerEmail,
+  bookingDate,
+  guests,
+  locale = 'de',
+}: BookingEmailProps) {
+  const texts = {
+    de: {
+      subject: '【ご予約完了】 Japanisches Bistro T-style',
+      greeting: `Sehr geehrte(r) ${customerName},`,
+      intro: 'Wir haben Ihre Reservierung wie folgt erhalten:',
+      dateLabel: 'Datum & Uhrzeit',
+      guestsLabel: 'Personenanzahl',
+      thanks: 'Wir freuen uns auf Ihren Besuch im Japanisches Bistro T-style.',
+    },
+    en: {
+      subject: '【ご予約完了】 Japanisches Bistro T-style',
+      greeting: `Dear ${customerName},`,
+      intro: 'We have received your reservation with the following details:',
+      dateLabel: 'Date & Time',
+      guestsLabel: 'Number of guests',
+      thanks: 'We look forward to welcoming you to Japanisches Bistro T-style.',
+    },
+    ja: {
+      subject: '【ご予約完了】 Japanisches Bistro T-style',
+      greeting: `${customerName} 様`,
+      intro: '以下の内容でご予約を承りました。',
+      dateLabel: '日時',
+      guestsLabel: '人数',
+      thanks: 'Japanisches Bistro T-styleへのご来店を心よりお待ちしております。',
+    },
+    es: {
+      subject: '【ご予約完了】 Japanisches Bistro T-style',
+      greeting: `Estimado/a ${customerName},`,
+      intro: 'Hemos recibido su reserva con los siguientes detalles:',
+      dateLabel: 'Fecha y hora',
+      guestsLabel: 'Número de personas',
+      thanks: 'Esperamos darle la bienvenida en Japanisches Bistro T-style.',
+    }
+  };
+
+  const t = texts[locale as keyof typeof texts] || texts.de;
+
   try {
-    const body = await req.json();
-    const { date, time, adults, children, childAges, name, email, phone, notes, totalGuests, table_id } = body;
+    await resend.emails.send({
+      from: `Japanisches Bistro T-style <${FROM_EMAIL}>`,
+      to: [customerEmail],
+      subject: t.subject,
+      html: `
+        <div>
+          <h2>${t.greeting}</h2>
+          <p>${t.intro}</p>
+          <ul>
+            <li><strong>${t.dateLabel}:</strong> ${bookingDate}</li>
+            <li><strong>${t.guestsLabel}:</strong> ${guests}</li>
+          </ul>
+          <p>${t.thanks}</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('お客様向けメール送信エラー:', error);
+    throw error;
+  }
+}
 
-    // 1. 必須項目チェック
-    if (!date || !time || !name || !email || !phone || !totalGuests || !table_id) {
-      return NextResponse.json({ error: '必須項目が入力されていません。' }, { status: 400 });
-    }
-
-    // 2. 定休日チェック
-    const dayOfWeek = new Date(date).getDay();
-
-    const { data: businessHours, error: bhError } = await supabase
-      .from('business_hours')
-      .select('*')
-      .eq('day_of_week', dayOfWeek);
-
-    if (bhError) {
-      console.error('営業時間データの取得に失敗しました:', bhError);
-    }
-
-    if (businessHours && businessHours.length > 0) {
-      const isClosedToday = businessHours.some((bh) => bh.is_closed === true || bh.is_closed === 'true');
-      if (isClosedToday) {
-        return NextResponse.json({ error: '申し訳ございません、ご希望の日は定休日です。' }, { status: 400 });
-      }
-    }
-
-    // 3. 顧客情報・来店回数の処理
-    const { domain, companyName } = extractCompanyDomain(email);
-
-    const { count } = await supabase
-      .from('reservations')
-      .select('*', { count: 'exact', head: true })
-      .eq('email', email);
-
-    const visitCount = (count || 0) + 1;
-
-    // 4. 予約の確定（挿入）
-    const { data: newReservation, error: insertError } = await supabase
-      .from('reservations')
-      .insert({
-        table_id: table_id,
-        guest_name: name,
-        email,
-        phone,
-        guests: totalGuests,
-        date,
-        time,
-        notes: notes,
-        company_domain: domain,
-        company_name: companyName,
-        visit_count: visitCount,
-        status: 'confirmed',
-      })
-      .select()
-      .single();
-
-    if (insertError) throw insertError;
-
-    // 5. 予約完了メールの送信（お客様向け & スタッフ向け）
-    const bookingDate = `${date} ${time}`;
-    const guests = totalGuests;
-    const locale = body.locale || 'de'; // デフォルトはドイツ語('de')
-
-    try {
-      await Promise.all([
-        sendCustomerConfirmation({
-          customerName: name,
-          customerEmail: email,
-          bookingDate,
-          guests,
-          locale,
-        }),
-        sendStaffNotification({
-          customerName: name,
-          customerEmail: email,
-          bookingDate,
-          guests,
-        }),
-      ]);
-    } catch (mailError) {
-      console.error('メール送信失敗:', mailError);
-    }
-
-    return NextResponse.json({ success: true, reservation: newReservation });
-  } catch (err: any) {
-    console.error(err);
-    return NextResponse.json({ error: 'サーバーエラーが発生しました。' }, { status: 500 });
+// 2. 従業員への通知メール（スタッフ向け）
+export async function sendStaffNotification({
+  customerName,
+  customerEmail,
+  bookingDate,
+  guests,
+}: BookingEmailProps) {
+  const STAFF_EMAIL = 'taka01234567890@gmail.com';
+  try {
+    await resend.emails.send({
+      from: `予約通知システム <${FROM_EMAIL}>`,
+      to: [STAFF_EMAIL],
+      subject: `【新規予約】${customerName}様 (${guests}名)`,
+      html: `
+        <div>
+          <h3>新しい予約が入りました。</h3>
+          <ul>
+            <li><strong>お客様名:</strong> ${customerName} (${customerEmail})</li>
+            <li><strong>人数:</strong> ${guests}</li>
+            <li><strong>日時:</strong> ${bookingDate}</li>
+          </ul>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('スタッフ向け通知エラー:', error);
+    throw error;
   }
 }
