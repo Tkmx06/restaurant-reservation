@@ -620,6 +620,52 @@ export default function AdminPage() {
     return cleanNotes ? `${cleanNotes} ${combinedTags}` : combinedTags;
   };
 
+  // fromId → toId のドラッグと同じ相対位置の移動を targetId に適用した場合、対応するテーブルIDを返す
+  const findTableAtRelativeOffset = (fromId: string, toId: string, targetId: string): string | null => {
+    const fromT = initialTables.find(t => t.id === fromId);
+    const toT = initialTables.find(t => t.id === toId);
+    const targetT = initialTables.find(t => t.id === targetId);
+    if (!fromT || !toT || !targetT) return null;
+
+    const deltaTop = parseFloat(toT.top) - parseFloat(fromT.top);
+    const deltaLeft = parseFloat(toT.left) - parseFloat(fromT.left);
+    const expectedTop = parseFloat(targetT.top) + deltaTop;
+    const expectedLeft = parseFloat(targetT.left) + deltaLeft;
+
+    const EPS = 0.6;
+    const match = initialTables.find(t =>
+      Math.abs(parseFloat(t.top) - expectedTop) < EPS && Math.abs(parseFloat(t.left) - expectedLeft) < EPS
+    );
+    return match ? match.id : null;
+  };
+
+  // 連結グループのサブテーブルをドラッグしたとき、グループ全体を相対位置を保ったまま移動できるか計算する
+  // いずれかのメンバーの移動先が見つからない・埋まっている・重複する場合は null（移動不可）を返す
+  const computeGroupParallelMove = (
+    draggedId: string,
+    targetId: string,
+    mainId: string,
+    subIds: string[],
+    occupiedIds: string[]
+  ): { newMainId: string; newSubIds: string[] } | null => {
+    const allMembers = [mainId, ...subIds];
+    const usedTargets = new Set<string>([targetId]);
+    const destinationById: Record<string, string> = { [draggedId]: targetId };
+
+    for (const memberId of allMembers) {
+      if (memberId === draggedId) continue;
+      const dest = findTableAtRelativeOffset(draggedId, targetId, memberId);
+      if (!dest || occupiedIds.includes(dest) || usedTargets.has(dest)) return null;
+      usedTargets.add(dest);
+      destinationById[memberId] = dest;
+    }
+
+    return {
+      newMainId: destinationById[mainId],
+      newSubIds: subIds.map(id => destinationById[id]),
+    };
+  };
+
   const resetDragState = () => {
     setDraggingTableId(null);
     setHoveredTableId(null);
@@ -740,42 +786,57 @@ export default function AdminPage() {
       const foundResAsMain = currentShiftReservations.find(r => String(r.table_id).trim() === String(activeDraggingTableId).trim());
 
       if (foundResAsMain) {
+        // メインテーブルをドラッグした場合：連結中のサブがあれば、ドロップ先の1テーブルに統合する（連結タグは全て解除）
+        const hasSubs = /_combined:\[/.test(foundResAsMain.notes || '');
+        const updatedNotes = hasSubs ? getCleanNotes(foundResAsMain.notes) : (foundResAsMain.notes || '');
+
         try {
-          // ─── 追加：テーブル移動をデータベースに送る ───
+          // ─── 追加：テーブル移動（統合）をデータベースに送る ───
           const res = await fetch('/api/admin/reservations', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: foundResAsMain.id, table_id: LABEL_TO_DB_ID[newTableId] ?? newTableId }),
+            body: JSON.stringify({ id: foundResAsMain.id, table_id: LABEL_TO_DB_ID[newTableId] ?? newTableId, notes: updatedNotes }),
           });
           if (!res.ok) throw new Error('API Error');
 
-          setReservations(prev => prev.map(r => r.id === foundResAsMain.id ? { ...r, table_id: newTableId } : r));
+          setReservations(prev => prev.map(r => r.id === foundResAsMain.id ? { ...r, table_id: newTableId, notes: updatedNotes } : r));
         } catch (err) {
           console.error(err);
-          alert('テーブルの移動に失敗しました。');
+          alert(hasSubs ? 'テーブルの統合に失敗しました。' : 'テーブルの移動に失敗しました。');
         }
       } else {
-        // メインではなく連結中のサブテーブルをドラッグした場合、そのテーブルだけを新しいテーブルに差し替える
+        // メインではなく連結中のサブテーブルをドラッグした場合：グループ全体を相対位置を保ったまま平行移動する
         const foundResAsSub = currentShiftReservations.find(r => r.notes?.includes(`_combined:[${activeDraggingTableId}]`));
         if (foundResAsSub) {
-          const currentNotes = foundResAsSub.notes || '';
-          const oldTag = `_combined:[${activeDraggingTableId}]`;
-          const newTag = `_combined:[${newTableId}]`;
-          const updatedNotes = currentNotes.replace(oldTag, newTag).replace(/\s+/g, ' ').trim();
+          const mainId = String(foundResAsSub.table_id).trim();
+          const subIds = (foundResAsSub.notes?.match(/_combined:\[(.*?)\]/g) || [])
+            .map((m: string) => m.replace('_combined:[', '').replace(']', '').trim())
+            .filter(Boolean);
 
-          try {
-            // ─── 追加：連結テーブルの差し替えをデータベースに送る ───
-            const res = await fetch('/api/admin/reservations', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: foundResAsSub.id, notes: updatedNotes }),
-            });
-            if (!res.ok) throw new Error('API Error');
+          const occupiedIds = getOccupiedTableIds(foundResAsSub.date, foundResAsSub.time, foundResAsSub.id);
+          const plan = computeGroupParallelMove(activeDraggingTableId, newTableId, mainId, subIds, occupiedIds);
 
-            setReservations(prev => prev.map(r => r.id === foundResAsSub.id ? { ...r, notes: updatedNotes } : r));
-          } catch (err) {
-            console.error(err);
-            alert('テーブルの入れ替えに失敗しました。');
+          if (!plan) {
+            alert('グループ全体を移動できる配置が見つかりませんでした。');
+          } else {
+            const cleanNotes = getCleanNotes(foundResAsSub.notes);
+            const newTags = plan.newSubIds.map(id => `_combined:[${id}]`).join(' ');
+            const updatedNotes = cleanNotes ? `${cleanNotes} ${newTags}`.trim() : newTags;
+
+            try {
+              // ─── 追加：グループ全体の平行移動をデータベースに送る ───
+              const res = await fetch('/api/admin/reservations', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: foundResAsSub.id, table_id: LABEL_TO_DB_ID[plan.newMainId] ?? plan.newMainId, notes: updatedNotes }),
+              });
+              if (!res.ok) throw new Error('API Error');
+
+              setReservations(prev => prev.map(r => r.id === foundResAsSub.id ? { ...r, table_id: plan.newMainId, notes: updatedNotes } : r));
+            } catch (err) {
+              console.error(err);
+              alert('グループの移動に失敗しました。');
+            }
           }
         }
       }
