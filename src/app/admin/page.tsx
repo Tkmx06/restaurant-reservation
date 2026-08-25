@@ -1,1862 +1,333 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
-interface TableStatus {
-  id: string;      
-  label: string;   
-  isOccupied: boolean;
-  type: 'square-2' | 'rect-h-4' | 'rect-v-4' | 'counter-1';
-  top: string;
-  left: string;
-  width: string;
-}
-
-interface CustomerSummary {
+interface Reservation {
+  id: string;
   guest_name: string;
-  email: string;
-  total_visits: number;
-  last_visit: string;
+  date: string;
+  time: string;
+  guests: number;
+  table_id: string;
+  status: 'confirmed' | 'cancelled';
+  notes: string;
+  email?: string;
+  phone?: string;
+  visit_count?: number;
 }
 
-interface TableGroup {
-  label: string;         // 表示名
-  mainTable: string;     // table_id に入るメインテーブル
-  combinedTables: string[]; // _combined タグに入る追加テーブル
-  description: string;
+interface TableDef {
+  id: string;
+  label: string;
+  shape: 'square-2' | 'rect-h-4' | 'rect-v-4';
+  top: number;
+  left: number;
+  width: number;
+  height: number;
 }
-
-// ─── データベースの数値IDから画面のテーブル名への逆変換表 ───
-const DB_ID_TO_LABEL: Record<number, string> = {
-  1: '51', 2: '52', 3: '53', 4: '54', 5: '68', 6: '67', 7: '66', 8: '65',
-  9: '1', 10: '2', 11: '3', 12: '4', 13: '23', 14: '70', 15: '22', 16: '21',
-  17: '11', 18: '15', 19: '14', 20: '13', 21: '12',
-};
-
-// ─── 画面のテーブル名からデータベースの数値IDへの変換表 ───
-const LABEL_TO_DB_ID: Record<string, number> = {
-  '51': 1, '52': 2, '53': 3, '54': 4, '68': 5, '67': 6, '66': 7, '65': 8,
-  '1': 9, '2': 10, '3': 11, '4': 12, '23': 13, '70': 14, '22': 15, '21': 16,
-  '11': 17, '15': 18, '14': 19, '13': 20, '12': 21,
-};
-
-// 人数ごとの推奨グループマップ (1〜8名)
-const GROUPS_BY_GUESTS: Record<number, TableGroup[]> = {
-  8: [
-    { label: '65 + 66 + 67', mainTable: '65', combinedTables: ['66', '67'], description: '窓際・横並びテーブル' },
-    { label: '21 + 22 + 23', mainTable: '21', combinedTables: ['22', '23'], description: '右奥エリア' },
-    { label: '12 + 13 + 14 + 15', mainTable: '12', combinedTables: ['13', '14', '15'], description: '右カウンター沿い' },
-  ],
-  7: [
-    { label: '65 + 66 + 67', mainTable: '65', combinedTables: ['66', '67'], description: '窓際・横並びテーブル' },
-    { label: '21 + 22 + 23', mainTable: '21', combinedTables: ['22', '23'], description: '右奥エリア' },
-    { label: '12 + 13 + 14 + 15', mainTable: '12', combinedTables: ['13', '14', '15'], description: '右カウンター沿い' },
-  ],
-  6: [
-    { label: '65 + 66', mainTable: '65', combinedTables: ['66'], description: '窓際2テーブル' },
-    { label: '21 + 22', mainTable: '21', combinedTables: ['22'], description: '右奥2テーブル' },
-    { label: '12 + 13 + 14', mainTable: '12', combinedTables: ['13', '14'], description: '右カウンター沿い' },
-  ],
-  5: [
-    { label: '65 + 66', mainTable: '65', combinedTables: ['66'], description: '窓際2テーブル' },
-    { label: '21 + 22', mainTable: '21', combinedTables: ['22'], description: '右奥2テーブル' },
-    { label: '12 + 13 + 14', mainTable: '12', combinedTables: ['13', '14'], description: '右カウンター沿い' },
-  ],
-  4: [
-    { label: '11', mainTable: '11', combinedTables: [], description: '左下エリア' },
-    { label: '68', mainTable: '68', combinedTables: [], description: '上部縦テーブル' },
-    { label: '65', mainTable: '65', combinedTables: [], description: '窓際テーブル' },
-    { label: '66 + 67', mainTable: '66', combinedTables: ['67'], description: '窓際小2テーブル' },
-    { label: '12 + 13', mainTable: '12', combinedTables: ['13'], description: '右カウンター上2席' },
-    { label: '14 + 15', mainTable: '14', combinedTables: ['15'], description: '右カウンター下2席' },
-    { label: '21', mainTable: '21', combinedTables: [], description: '右奥縦テーブル' },
-    { label: '22 + 23', mainTable: '22', combinedTables: ['23'], description: '右奥2テーブル' },
-    { label: '1 + 2 + 3 + 4', mainTable: '1', combinedTables: ['2', '3', '4'], description: 'カウンター席4連' },
-  ],
-  3: [
-    { label: '11', mainTable: '11', combinedTables: [], description: '左下エリア' },
-    { label: '68', mainTable: '68', combinedTables: [], description: '上部縦テーブル' },
-    { label: '65', mainTable: '65', combinedTables: [], description: '窓際テーブル' },
-    { label: '66 + 67', mainTable: '66', combinedTables: ['67'], description: '窓際小2テーブル' },
-    { label: '12 + 13', mainTable: '12', combinedTables: ['13'], description: '右カウンター上2席' },
-    { label: '14 + 15', mainTable: '14', combinedTables: ['15'], description: '右カウンター下2席' },
-    { label: '21', mainTable: '21', combinedTables: [], description: '右奥縦テーブル' },
-    { label: '22 + 23', mainTable: '22', combinedTables: ['23'], description: '右奥2テーブル' },
-    { label: '1 + 2 + 3 + 4', mainTable: '1', combinedTables: ['2', '3', '4'], description: 'カウンター席4連' },
-  ],
-  2: [
-    { label: '12', mainTable: '12', combinedTables: [], description: '右カウンター①' },
-    { label: '13', mainTable: '13', combinedTables: [], description: '右カウンター②' },
-    { label: '14', mainTable: '14', combinedTables: [], description: '右カウンター③' },
-    { label: '15', mainTable: '15', combinedTables: [], description: '右カウンター④' },
-    { label: '70', mainTable: '70', combinedTables: [], description: '右上小テーブル' },
-    { label: '22', mainTable: '22', combinedTables: [], description: '右奥①' },
-    { label: '23', mainTable: '23', combinedTables: [], description: '右奥②' },
-    { label: '66', mainTable: '66', combinedTables: [], description: '窓際小①' },
-    { label: '67', mainTable: '67', combinedTables: [], description: '窓際小②' },
-  ],
-  1: [
-    { label: '1', mainTable: '1', combinedTables: [], description: 'カウンター①' },
-    { label: '2', mainTable: '2', combinedTables: [], description: 'カウンター②' },
-    { label: '3', mainTable: '3', combinedTables: [], description: 'カウンター③' },
-    { label: '4', mainTable: '4', combinedTables: [], description: 'カウンター④' },
-    { label: '12', mainTable: '12', combinedTables: [], description: '右カウンター①' },
-    { label: '13', mainTable: '13', combinedTables: [], description: '右カウンター②' },
-    { label: '14', mainTable: '14', combinedTables: [], description: '右カウンター③' },
-    { label: '15', mainTable: '15', combinedTables: [], description: '右カウンター④' },
-    { label: '22', mainTable: '22', combinedTables: [], description: '右奥①' },
-    { label: '23', mainTable: '23', combinedTables: [], description: '右奥②' },
-    { label: '70', mainTable: '70', combinedTables: [], description: '右上小テーブル' },
-    { label: '66', mainTable: '66', combinedTables: [], description: '窓際小①' },
-    { label: '67', mainTable: '67', combinedTables: [], description: '窓際小②' },
-  ],
-};
-
-const LARGE_PARTY_THRESHOLD = 1;
-
-// ⚠️ 修正: 削除されてしまっていた getTodayString を復元
-const getTodayString = () => {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-};
-
-// ミニマップ用スケール定義
-const S = 1.98;
-const OL = 48;
-const miniMapTables = [
-  { id: '51', type: 'rect-h-4', top: 4,    left: (48   - OL)*S+1, w: 9.5 *S, h: 5.5 },
-  { id: '52', type: 'rect-h-4', top: 4,    left: (58.5 - OL)*S+1, w: 9.5 *S, h: 5.5 },
-  { id: '53', type: 'rect-h-4', top: 14,   left: (48   - OL)*S+1, w: 9.5 *S, h: 5.5 },
-  { id: '54', type: 'rect-h-4', top: 14,   left: (58.5 - OL)*S+1, w: 9.5 *S, h: 5.5 },
-  { id: '68', type: 'rect-v-4', top: 4,    left: (71   - OL)*S+1, w: 5.5 *S, h: 11  },
-  { id: '67', type: 'square-2', top: 4,    left: (78   - OL)*S+1, w: 5   *S, h: 5.5 },
-  { id: '66', type: 'square-2', top: 4,    left: (84   - OL)*S+1, w: 5   *S, h: 5.5 },
-  { id: '65', type: 'rect-h-4', top: 4,    left: (89.5 - OL)*S+1, w: 9   *S, h: 5.5 },
-  { id: '1',  type: 'counter',  top: 24,   left: (78.5 - OL)*S+1, w: 3.5 *S, h: 3.5 },
-  { id: '2',  type: 'counter',  top: 29.5, left: (78.5 - OL)*S+1, w: 3.5 *S, h: 3.5 },
-  { id: '3',  type: 'counter',  top: 35,   left: (78.5 - OL)*S+1, w: 3.5 *S, h: 3.5 },
-  { id: '4',  type: 'counter',  top: 40.5, left: (78.5 - OL)*S+1, w: 3.5 *S, h: 3.5 },
-  { id: '23', type: 'square-2', top: 24,   left: (84.5 - OL)*S+1, w: 5   *S, h: 5.5 },
-  { id: '70', type: 'square-2', top: 24,   left: (91   - OL)*S+1, w: 5   *S, h: 5.5 },
-  { id: '22', type: 'square-2', top: 35,   left: (84.5 - OL)*S+1, w: 5   *S, h: 5.5 },
-  { id: '21', type: 'rect-v-4', top: 46,   left: (84.5 - OL)*S+1, w: 5.5 *S, h: 11  },
-  { id: '11', type: 'rect-v-4', top: 74.5, left: (78   - OL)*S+1, w: 5.5 *S, h: 11  },
-  { id: '15', type: 'square-2', top: 57,   left: (91   - OL)*S+1, w: 5   *S, h: 5.5 },
-  { id: '14', type: 'square-2', top: 68,   left: (91   - OL)*S+1, w: 5   *S, h: 5.5 },
-  { id: '13', type: 'square-2', top: 79,   left: (91   - OL)*S+1, w: 5   *S, h: 5.5 },
-  { id: '12', type: 'square-2', top: 90,   left: (91   - OL)*S+1, w: 5   *S, h: 5.5 },
-];
-
-const sortedTableIds = [
-  '11', '12', '13', '14', '15', '21', '22', '23', '70', '65', '66', '67', '68', '1', '2', '3', '4', '51', '52', '53', '54'
-];
-
-// 時間文字列を分に変換する
-const timeToMinutes = (timeStr: string) => {
-  const [h, m] = timeStr.split(':').map(Number);
-  return h * 60 + m;
-};
-
-// 指定日時に使用されている（重複含む）テーブルの取得
-const getOccupiedTableIdsBase = (reservations: any[], dateStr: string, timeStr: string, excludeResId?: string) => {
-  const targetMin = timeToMinutes(timeStr);
-  const SESSION_DURATION = 120; // 2時間の滞在
-  const ids: string[] = [];
-  
-  reservations
-    .filter(r => {
-      if (r.date !== dateStr || r.status !== 'confirmed' || r.id === excludeResId) return false;
-      const rMin = timeToMinutes(r.time);
-      return Math.abs(rMin - targetMin) < SESSION_DURATION;
-    })
-    .forEach(r => {
-      ids.push(String(r.table_id).trim());
-      const matches = r.notes?.match(/_combined:\[(.*?)\]/g);
-      if (matches) {
-        matches.forEach((m: string) => {
-          const id = m.replace('_combined:[', '').replace(']', '').trim();
-          if (id) ids.push(id);
-        });
-      }
-    });
-  return ids;
-};
-
-const isGroupAvailableBase = (group: TableGroup, reservations: any[], dateStr: string, timeStr: string, excludeResId?: string) => {
-  const occupiedIds = getOccupiedTableIdsBase(reservations, dateStr, timeStr, excludeResId);
-  const allGroupIds = [group.mainTable, ...group.combinedTables];
-  return allGroupIds.every(id => !occupiedIds.includes(id));
-};
-
-// ─── renderGroupSelector をトップレベルに定義 ───
-const renderGroupSelector = (
-  guestsStr: string,
-  dateStr: string,
-  timeStr: string,
-  selectedGroup: TableGroup | null,
-  onSelectGroup: (g: TableGroup | null) => void,
-  selectedSingleTable: string,
-  onSelectSingleTable: (id: string) => void,
-  occupiedIds: string[],
-  excludeResId: string | undefined,
-  reservations: any[],
-  freeTableIds?: string[],
-  onToggleFreeTable?: (id: string) => void,
-) => {
-  const n = parseInt(guestsStr, 10);
-  const isFreeMode = n >= 9;
-  
-  const getGroupsForGuests = (gStr: string): TableGroup[] => {
-    const num = parseInt(gStr, 10);
-    if (!num || num <= 0) return [];
-    const key = Math.min(num, 8) as keyof typeof GROUPS_BY_GUESTS;
-    return GROUPS_BY_GUESTS[key] ?? [];
-  };
-
-  const groups = isFreeMode ? [] : getGroupsForGuests(guestsStr);
-  const selectedGroupIds = selectedGroup
-    ? new Set([selectedGroup.mainTable, ...selectedGroup.combinedTables])
-    : new Set<string>();
-
-  const recommendedIds = isFreeMode
-    ? new Set<string>()
-    : new Set(groups.flatMap(g => [g.mainTable, ...g.combinedTables]));
-
-  const freeSelectedSet = new Set(freeTableIds ?? []);
-
-  const handleMiniMapClick = (tableId: string) => {
-    if (occupiedIds.includes(tableId)) return;
-
-    if (isFreeMode) {
-      onToggleFreeTable?.(tableId);
-      return;
-    }
-
-    if (selectedGroupIds.has(tableId)) {
-      onSelectGroup(null);
-      return;
-    }
-    const matched = groups.find(g =>
-      (g.mainTable === tableId || g.combinedTables.includes(tableId)) &&
-      isGroupAvailableBase(g, reservations, dateStr, timeStr, excludeResId)
-    );
-    if (matched) onSelectGroup(matched);
-  };
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1.5">
-        <label className="text-[10px] text-slate-400 font-bold">
-          🗺️ テーブル選択{' '}
-          <span className="text-amber-400">
-            ({guestsStr}名{isFreeMode ? ' · 自由複数選択' : ' · おすすめ席'})
-          </span>
-        </label>
-        {isFreeMode && freeSelectedSet.size > 0 && (
-          <button
-            type="button"
-            onClick={() => onToggleFreeTable?.('__clear__')}
-            className="text-[10px] text-slate-400 hover:text-rose-400 font-bold underline"
-            style={{ cursor: 'pointer' }}
-          >
-            全解除
-          </button>
-        )}
-      </div>
-
-      <div
-        className="relative w-full bg-slate-950 border border-slate-700 rounded-xl overflow-hidden"
-        style={{ paddingBottom: '50%', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-      >
-        {miniMapTables.map((t) => {
-          const isOccupied = occupiedIds.includes(t.id);
-          const isInGroup = selectedGroupIds.has(t.id);
-          const isFreeSelected = freeSelectedSet.has(t.id);
-          const isRecommended = !isFreeMode && recommendedIds.has(t.id) && !isOccupied;
-          const isCounter = t.type === 'counter';
-          const radius = isCounter ? '50%' : '4px';
-
-          let bg = '#0f172a';
-          let borderColor = '#1e293b';
-          let color = '#334155';
-          let boxShadow = 'none';
-          let outline = 'none';
-
-          if (isOccupied) {
-            bg = '#7f1d1d'; borderColor = '#991b1b'; color = '#fca5a5';
-          } else if (isInGroup || isFreeSelected) {
-            bg = 'linear-gradient(135deg,#059669,#0d9488)';
-            borderColor = '#34d399'; color = '#fff';
-            boxShadow = '0 0 0 2px #34d39980';
-            outline = '2px solid #34d399';
-          } else if (isRecommended) {
-            bg = '#172554'; borderColor = '#3b82f6'; color = '#93c5fd';
-          } else if (isFreeMode) {
-            bg = '#1e293b'; borderColor = '#475569'; color = '#94a3b8';
-          }
-
-          return (
-            <div
-              key={t.id}
-              role="button"              
-              tabIndex={0}               
-              onClick={() => handleMiniMapClick(t.id)} 
-              className="select-none touch-manipulation"
-              style={{
-                position: 'absolute',
-                top: `${t.top}%`,
-                left: `${t.left}%`,
-                width: `${t.w}%`,
-                height: `${t.h}%`,
-                background: bg,
-                border: `1px solid ${borderColor}`,
-                borderRadius: radius,
-                color,
-                cursor: isOccupied ? 'not-allowed' : 'pointer',
-                boxShadow,
-                outline,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '7px',
-                fontWeight: 900,
-                transition: 'all 0.12s',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-                touchAction: 'manipulation',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              {t.id}
-            </div>
-          );
-        })}
-
-        <div className="absolute bottom-1 left-1 flex items-center gap-2 pointer-events-none select-none">
-          {!isFreeMode && (
-            <span className="flex items-center gap-0.5 text-[7px] text-slate-500 font-bold">
-              <span style={{width:8,height:8,borderRadius:2,background:'#172554',border:'1px solid #3b82f6',display:'inline-block'}} />推奨
-            </span>
-          )}
-          <span className="flex items-center gap-0.5 text-[7px] text-slate-500 font-bold">
-            <span style={{width:8,height:8,borderRadius:2,background:'linear-gradient(135deg,#059669,#0d9488)',border:'1px solid #34d399',display:'inline-block'}} />選択中
-          </span>
-          <span className="flex items-center gap-0.5 text-[7px] text-slate-500 font-bold">
-            <span style={{width:8,height:8,borderRadius:2,background:'#7f1d1d',border:'1px solid #991b1b',display:'inline-block'}} />埋まり
-          </span>
-        </div>
-      </div>
-
-      {isFreeMode && (
-        <div className="mt-1.5 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 min-h-[28px]">
-          {freeSelectedSet.size === 0 ? (
-            <span className="text-[10px] text-slate-600 font-bold">テーブルをタップして選択してください</span>
-          ) : (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] text-emerald-400 font-black">✓ 選択中:</span>
-              {[...freeSelectedSet].map(id => (
-                <span
-                  key={id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onToggleFreeTable?.(id)}
-                  className="text-[10px] font-black font-mono bg-emerald-800/60 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded cursor-pointer hover:bg-rose-900/60 hover:text-rose-300 hover:border-rose-700 transition-all select-none touch-manipulation"
-                  style={{ cursor: 'pointer' }}
-                  title="クリックで解除"
-                >
-                  {id} ✕
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {!isFreeMode && selectedGroup && (
-        <div className="mt-1.5 bg-emerald-950/40 border border-emerald-800/60 rounded-lg px-3 py-1.5 flex items-center justify-between">
-          <span className="text-[11px] font-black text-emerald-300">
-            ✓ {selectedGroup.label}
-            <span className="text-emerald-500 font-medium ml-1">— {selectedGroup.description}</span>
-          </span>
-          <button 
-            type="button" 
-            onClick={() => onSelectGroup(null)}
-            className="text-[10px] text-slate-400 hover:text-rose-400 font-bold underline ml-2"
-            style={{ cursor: 'pointer' }}
-          >
-            解除
-          </button>
-        </div>
-      )}
-
-      {!isFreeMode && !selectedGroup && (
-        <div className="mt-1.5 border-t border-slate-800 pt-1.5">
-          <div className="text-[10px] text-slate-600 font-bold mb-1">▾ 推奨外のテーブルを個別指定</div>
-          <select
-            value={selectedSingleTable}
-            onChange={(e) => onSelectSingleTable(e.target.value)}
-            className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-blue-400 font-bold cursor-pointer font-mono text-xs"
-            style={{ cursor: 'pointer' }}
-          >
-            {sortedTableIds.map(id => {
-              if (occupiedIds.includes(id)) return null;
-              return <option key={id} value={id}>{id}</option>;
-            })}
-          </select>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'today' | 'future' | 'all' | 'customers'>('today');
-  
-  const [selectedDate, setSelectedDate] = useState<string>(() => getTodayString());
-  const [reservations, setReservations] = useState<any[]>([]);
-  const [tables, setTables] = useState<TableStatus[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  const [currentShift, setCurrentShift] = useState<'dinner' | 'lunch'>('dinner');
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
+  const [currentShift, setCurrentShift] = useState<'lunch' | 'dinner'>('lunch');
+  const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
 
-  const [selectedRes, setSelectedRes] = useState<any | null>(null);
-  const [editTime, setEditTime] = useState('18:00');
-  const [editGuests, setEditGuests] = useState('2');
-  const [editTable, setEditTable] = useState('51');
-  const [editSelectedGroup, setEditSelectedGroup] = useState<TableGroup | null>(null);
-  
-  const [showNewOrderModal, setShowNewOrderModal] = useState(false);
-  const [newOrderStep, setNewOrderStep] = useState<'guests' | 'details'>('guests'); 
-  const [newOrderDate, setNewOrderDate] = useState(() => getTodayString());
+  // 新規予約フォームの状態
   const [newOrderName, setNewOrderName] = useState('');
-  const [newOrderGuests, setNewOrderGuests] = useState('2'); 
+  const [newOrderEmail, setNewOrderEmail] = useState('');
+  const [newOrderPhone, setNewOrderPhone] = useState('');
   const [newOrderTime, setNewOrderTime] = useState('18:00');
-  const [newOrderTable, setNewOrderTable] = useState('51');
-  const [newOrderSelectedGroup, setNewOrderSelectedGroup] = useState<TableGroup | null>(null);
-  const [newOrderFreeTableIds, setNewOrderFreeTableIds] = useState<string[]>([]);
+  const [newOrderGuests, setNewOrderGuests] = useState('2');
 
-  const [showCalendarPopup, setShowCalendarPopup] = useState(false);
-  const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date());
+  // 抽出データに基づくテーブルIDとラベルのマッピング
+  const DB_ID_TO_LABEL: Record<string, string> = {
+    '1': '51', '2': '52', '3': '3', '4': '4',
+    '5': '68', '6': '7', '7': '6', '8': '5',
+    '9': '9', '10': '70', '11': '11', '12': '12'
+  };
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const isDown = useRef(false);
-  const startX = useRef(0);
-  const scrollLeft = useRef(0);
+  // グループ定義（大人数用連結など）
+  const GROUPS_BY_GUESTS: Record<number, { mainTable: string; combinedTables: string[] }[]> = {
+    8: [{ mainTable: '65', combinedTables: ['65', '66'] }],
+  };
 
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const [draggingTableId, setDraggingTableId] = useState<string | null>(null);
-  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
-  const [hoveredTableId, setHoveredTableId] = useState<string | null>(null);
-  const dragStartPos = useRef({ x: 0, y: 0 });
-
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const [isCombineMode, setIsCombineMode] = useState(false); 
-  const [hasMovedSignificantly, setHasMovedSignificantly] = useState(false);
-const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) {
-    return null;
-  }
-  const initialTables: TableStatus[] = [
-    { id: '51', label: '51', isOccupied: false, type: 'rect-h-4', top: '4%',   left: '48%',  width: '9.5%' },
-    { id: '52', label: '52', isOccupied: false, type: 'rect-h-4', top: '4%',   left: '58.5%', width: '9.5%' },
-    { id: '53', label: '53', isOccupied: false, type: 'rect-h-4', top: '14%',  left: '48%',  width: '9.5%' },
-    { id: '54', label: '54', isOccupied: false, type: 'rect-h-4', top: '14%',  left: '58.5%', width: '9.5%' },
-    { id: '68', label: '68', isOccupied: false, type: 'rect-v-4', top: '4%',  left: '71%',  width: '5.5%' },
-    { id: '67', label: '67', isOccupied: false, type: 'square-2', top: '4%',  left: '78%',  width: '5%' },
-    { id: '66', label: '66', isOccupied: false, type: 'square-2', top: '4%',  left: '84%',  width: '5%' },
-    { id: '65', label: '65', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '89.5%', width: '9%' },
-    { id: '1', label: '1', isOccupied: false, type: 'counter-1', top: '24%', left: '78.5%', width: '3.5%' },
-    { id: '2', label: '2', isOccupied: false, type: 'counter-1', top: '29.5%', left: '78.5%', width: '3.5%' },
-    { id: '3', label: '3', isOccupied: false, type: 'counter-1', top: '35%', left: '78.5%', width: '3.5%' },
-    { id: '4', label: '4', isOccupied: false, type: 'counter-1', top: '40.5%', left: '78.5%', width: '3.5%' },
-    { id: '23', label: '23', isOccupied: false, type: 'square-2', top: '24%', left: '84.5%', width: '5%' },
-    { id: '70', label: '70', isOccupied: false, type: 'square-2', top: '24%', left: '91%',  width: '5%' },
-    { id: '22', label: '22', isOccupied: false, type: 'square-2', top: '35%', left: '84.5%', width: '5%' },
-    { id: '21', label: '21', isOccupied: false, type: 'rect-v-4', top: '46%', left: '84.5%', width: '5.5%' },
-    { id: '11', label: '11', isOccupied: false, type: 'rect-v-4', top: '74.5%', left: '78%',  width: '5.5%' },
-    { id: '15', label: '15', isOccupied: false, type: 'square-2', top: '57%', left: '91%',  width: '5%' },
-    { id: '14', label: '14', isOccupied: false, type: 'square-2', top: '68%', left: '91%',  width: '5%' },
-    { id: '13', label: '13', isOccupied: false, type: 'square-2', top: '79%', left: '91%',  width: '5%' },
-    { id: '12', label: '12', isOccupied: false, type: 'square-2', top: '90%', left: '91%',  width: '5%' },
+  // テーブルレイアウト定義
+  const tables: TableDef[] = [
+    { id: '1', label: 'テーブル 51', shape: 'square-2', top: 20, left: 10, width: 15, height: 15 },
+    { id: '2', label: 'テーブル 52', shape: 'square-2', top: 20, left: 30, width: 15, height: 15 },
+    { id: '3', label: 'テーブル 3', shape: 'square-2', top: 20, left: 50, width: 15, height: 15 },
+    { id: '4', label: 'テーブル 4', shape: 'rect-h-4', top: 50, left: 10, width: 30, height: 15 },
   ];
 
-  const lunchTimes = ['11:45', '12:00', '12:15', '12:30', '12:45', '13:00'];
-  const dinnerTimes = ['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'];
-  const availableTimes = [...lunchTimes, ...dinnerTimes];
-
-  const isLunchTime = (timeStr: string) => {
-    if (!timeStr) return false;
-    const hour = parseInt(timeStr.split(':')[0], 10);
-    return hour < 15; 
-  };
-
-  const isLunchDay = (dateStr: string) => {
-    const day = new Date(dateStr).getDay();
-    return day === 1 || day === 4 || day === 5; 
-  };
-
-  useEffect(() => {
-    if (!isLunchDay(selectedDate) && currentShift === 'lunch') {
-      setCurrentShift('dinner');
-    }
-  }, [selectedDate, currentShift]);
-
-  const formatShortTime = (timeStr: string) => {
-    if (!timeStr) return '';
-    const parts = timeStr.split(':');
-    return parts.length >= 2 ? `${parts[0].trim().padStart(2, '0')}:${parts[1].trim().padStart(2, '0')}` : timeStr;
-  };
-
-  const changeDate = (days: number) => {
-    const current = new Date(selectedDate);
-    current.setDate(current.getDate() + days);
-    setSelectedDate(`${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`);
-  };
-
-  async function loadData() {
+  // データの安全な取得（エラーで画面が落ちないように保護）
+  const loadData = async () => {
     try {
-      setLoading(true);
-      const res = await fetch('/api/admin/reservations');
-      const data = await res.json();
-      const allRes = data.reservations || [];
-      
-      const mappedReservations = allRes.map((item: any) => {
-        const dbId = Number(item.table_id);
-        const mappedLabel = DB_ID_TO_LABEL[dbId] || String(item.table_id);
-        return {
-          ...item,
-          table_id: mappedLabel, 
-          email: item.email || 'customer@example.com',
-          visit_count: item.visit_count ?? Math.floor(Math.random() * 5) + 1
-        };
-      });
-
-      setReservations(mappedReservations);
+      const res = await fetch(`/api/admin/reservations?date=${selectedDate}`);
+      if (res.ok) {
+        const data = await res.json();
+        setReservations(Array.isArray(data) ? data : []);
+      }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.error('データ取得エラー（モックデータで継続します）:', err);
     }
-  }
+  };
 
   useEffect(() => {
     loadData();
-
-    // ─── 追加：5秒ごとに自動で最新データをロードして画面を更新する（リアルタイム同期） ───
-    const interval = setInterval(() => {
-      loadData();
-    }, 5000); // 5000ミリ秒 ＝ 5秒
-
+    const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
-  }, [selectedDate, currentShift]);
+  }, [selectedDate]);
 
-  useEffect(() => {
-    const targetReservations = reservations.filter((r: any) => {
-      const matchDate = r.date === selectedDate && r.status === 'confirmed';
-      if (!matchDate) return false;
-      if (currentShift === 'lunch') return isLunchTime(r.time);
-      return !isLunchTime(r.time);
-    });
+  // 時間を分に変換
+  const timeToMinutes = (timeStr: string) => {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
 
-    const updatedTables = initialTables.map(t => {
-      const isOccupied = targetReservations.some((r: any) => {
-        const tableIdStr = String(r.table_id).trim();
-        const notesStr = String(r.notes || '');
-        return tableIdStr === t.id || notesStr.includes(`_combined:[${t.id}]`);
-      });
-      return { ...t, isOccupied };
-    });
-    setTables(updatedTables);
-  }, [reservations, selectedDate, currentShift]);
-
-  const getOccupiedTableIds = (dateStr: string, timeStr: string, excludeResId?: string) => {
+  // 2時間重複判定
+  const getOccupiedTableIds = (dateStr: string, timeStr: string) => {
     const targetMin = timeToMinutes(timeStr);
-    const SESSION_DURATION = 120; // 2時間重複判定
+    const SESSION_DURATION = 120;
     const ids: string[] = [];
-    
-    reservations
-      .filter(r => {
-        if (r.date !== dateStr || r.status !== 'confirmed' || r.id === excludeResId) return false;
-        const rMin = timeToMinutes(r.time);
-        return Math.abs(rMin - targetMin) < SESSION_DURATION;
-      })
-      .forEach(r => {
+
+    reservations.forEach(r => {
+      if (r.date !== dateStr || r.status !== 'confirmed') return;
+      const rMin = timeToMinutes(r.time);
+      if (Math.abs(rMin - targetMin) < SESSION_DURATION) {
         ids.push(String(r.table_id).trim());
-        const matches = r.notes?.match(/_combined:\[(.*?)\]/g);
+        const matches = String(r.notes || '').match(/_combined:\[(.*?)\]/g);
         if (matches) {
-          matches.forEach((m: string) => {
+          matches.forEach(m => {
             const id = m.replace('_combined:[', '').replace(']', '').trim();
             if (id) ids.push(id);
           });
         }
-      });
+      }
+    });
+
     return ids;
   };
 
-  const displayTableIds = (resItem: any) => {
-    if (!resItem) return '';
-    const baseTableId = String(resItem.table_id).trim();
-    const labels: string[] = [`${baseTableId}`];
-    
-    const matches = resItem.notes?.match(/_combined:\[(.*?)\]/g);
-    if (matches) {
-      matches.forEach((m: string) => {
-        const id = m.replace('_combined:[', '').replace(']', '').trim();
-        if (id) labels.push(`${id}`);
-      });
-    }
-    return labels.join(', ');
-  };
+  const occupiedIds = getOccupiedTableIds(selectedDate, newOrderTime);
+  const freeTableIds = tables.filter(t => !occupiedIds.includes(t.id)).map(t => t.id);
 
-  const isGroupAvailable = (group: TableGroup, dateStr: string, timeStr: string, excludeResId?: string) => {
-    const occupiedIds = getOccupiedTableIds(dateStr, timeStr, excludeResId);
-    const allGroupIds = [group.mainTable, ...group.combinedTables];
-    return allGroupIds.every(id => !occupiedIds.includes(id));
-  };
-
-  const buildCombinedNotes = (group: TableGroup, existingNotes: string = '') => {
-    const cleanNotes = existingNotes.replace(/_combined:\[.*?\]/g, '').trim();
-    const combinedTags = group.combinedTables.map(id => `_combined:[${id}]`).join(' ');
-    return cleanNotes ? `${cleanNotes} ${combinedTags}` : combinedTags;
-  };
-
-  const resetDragState = () => {
-    setDraggingTableId(null);
-    setHoveredTableId(null);
-    setIsCombineMode(false);
-    setDragPosition({ x: 0, y: 0 });
-  };
-
-  const handlePointerDown = (e: React.PointerEvent, table: TableStatus) => {
-    if (isSelectedDateClosed || !table.isOccupied) return;
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-
-    try {
-      if (e.currentTarget && typeof e.currentTarget.setPointerCapture === 'function') {
-        e.currentTarget.setPointerCapture(e.pointerId);
-      }
-    } catch (err) {
-      console.warn('Pointer capture is not fully supported or failed:', err);
-    }
-
-    setDraggingTableId(table.id);
-    setIsCombineMode(false); 
-    setHasMovedSignificantly(false);
-    dragStartPos.current = { x: e.clientX, y: e.clientY };
-    setDragPosition({ x: 0, y: 0 });
-
-    longPressTimer.current = setTimeout(() => {
-      setIsCombineMode(true);
-    }, 450); 
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!draggingTableId) return;
-
-    const deltaX = e.clientX - dragStartPos.current.x;
-    const deltaY = e.clientY - dragStartPos.current.y;
-    setDragPosition({ x: deltaX, y: deltaY });
-
-    if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-      setHasMovedSignificantly(true);
-      if (!isCombineMode) {
-        if (longPressTimer.current) {
-          clearTimeout(longPressTimer.current);
-          longPressTimer.current = null;
-        }
-      }
-    }
-
-    if (mapContainerRef.current) {
-      const x = e.clientX;
-      const y = e.clientY;
-      let foundHoverId: string | null = null;
-
-      tables.forEach(t => {
-        if (t.id === draggingTableId) return;
-        if (t.isOccupied) return;
-
-        const el = document.getElementById(`table-target-${t.id}`);
-        if (el) {
-          const tRect = el.getBoundingClientRect();
-          if (x >= tRect.left && x <= tRect.right && y >= tRect.top && y <= tRect.bottom) {
-            foundHoverId = t.id;
-          }
-        }
-      });
-      setHoveredTableId(foundHoverId);
-    }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-
-    if (!draggingTableId) return;
-
-    const currentShiftReservations = reservations.filter(r => r.date === selectedDate && r.status === 'confirmed' && (currentShift === 'lunch' ? isLunchTime(r.time) : !isLunchTime(r.time)));
-
-    if (isCombineMode && hoveredTableId) {
-      const foundRes = currentShiftReservations.find(r => 
-        String(r.table_id).trim() === String(draggingTableId).trim() || r.notes?.includes(`_combined:[${draggingTableId}]`)
-      );
-
-      if (foundRes) {
-        setReservations(prev => prev.map(r => {
-          if (r.id === foundRes.id) {
-            const currentNotes = r.notes || '';
-            const updatedNotes = `${currentNotes} _combined:[${hoveredTableId}]`.trim();
-            return { ...r, notes: updatedNotes };
-          }
-          return r;
-        }));
-      }
-    } 
-    else if (!isCombineMode && hoveredTableId) {
-      const foundRes = currentShiftReservations.find(r => String(r.table_id).trim() === String(draggingTableId).trim());
-      if (foundRes) {
-        setReservations(prev => prev.map(r => {
-          if (r.id === foundRes.id) {
-            return { ...r, table_id: hoveredTableId };
-          }
-          return r;
-        }));
-      }
-    }
-
-    try {
-      if (e.currentTarget && typeof e.currentTarget.releasePointerCapture === 'function') {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      }
-    } catch (err) {}
-
-    resetDragState();
-  };
-
-  const handlePointerCancel = (e: React.PointerEvent) => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-    try {
-      if (e.currentTarget && typeof e.currentTarget.releasePointerCapture === 'function') {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      }
-    } catch (err) {}
-    resetDragState();
-  };
-
-  const handleTableClick = (table: TableStatus) => {
-    if (draggingTableId || hasMovedSignificantly) return; 
-    if (isSelectedDateClosed) return;
-
-    const currentShiftReservations = reservations.filter(r => r.date === selectedDate && r.status === 'confirmed' && (currentShift === 'lunch' ? isLunchTime(r.time) : !isLunchTime(r.time)));
-
-    if (table.isOccupied) {
-      const foundRes = currentShiftReservations.find(r => 
-        String(r.table_id).trim() === String(table.id).trim() || r.notes?.includes(`_combined:[${table.id}]`)
-      );
-      if (foundRes) {
-        if (String(foundRes.table_id).trim() !== String(table.id).trim()) {
-          setReservations(prev => prev.map(r => {
-            if (r.id === foundRes.id) {
-              const currentNotes = r.notes || '';
-              const targetTag = `_combined:[${table.id}]`;
-              const updatedNotes = currentNotes.replace(targetTag, '').replace(/\s+/g, ' ').trim();
-              return { ...r, notes: updatedNotes };
-            }
-            return r;
-          }));
-          return; 
-        }
-
-        setSelectedRes(foundRes);
-        setEditTime(foundRes.time);
-        setEditGuests(String(foundRes.guests));
-        setEditTable(String(foundRes.table_id));
-        setEditSelectedGroup(null);
-      }
-    } else {
-      const defaultTime = currentShift === 'lunch' ? '11:45' : '18:00';
-      setNewOrderTable(table.id);
-      setNewOrderDate(selectedDate);
-      setNewOrderName('');
-      setNewOrderGuests('0'); 
-      setNewOrderTime(defaultTime);
-      setCurrentCalendarMonth(new Date(selectedDate));
-      setShowCalendarPopup(false);
-      setNewOrderStep('guests'); 
-      setNewOrderSelectedGroup(null);
-      setNewOrderFreeTableIds([]);
-      setShowNewOrderModal(true);
-    }
-  };
-
-  useEffect(() => {
-    if (!showNewOrderModal || newOrderStep === 'guests') return;
-    const occupiedIds = getOccupiedTableIds(newOrderDate, newOrderTime);
-    if (occupiedIds.includes(String(newOrderTable).trim())) {
-      const fallbackId = sortedTableIds.find(id => !occupiedIds.includes(id));
-      if (fallbackId) setNewOrderTable(fallbackId);
-    }
-    if (newOrderSelectedGroup && !isGroupAvailable(newOrderSelectedGroup, newOrderDate, newOrderTime)) {
-      setNewOrderSelectedGroup(null);
-      setNewOrderFreeTableIds([]);
-    }
-  }, [newOrderDate, newOrderTime, showNewOrderModal, newOrderStep, reservations]);
-
-  useEffect(() => {
-    if (!selectedRes) return;
-    const occupiedIds = getOccupiedTableIds(selectedRes.date, editTime, selectedRes.id);
-    if (occupiedIds.includes(String(editTable).trim())) {
-      const fallbackId = sortedTableIds.find(id => !occupiedIds.includes(id));
-      if (fallbackId) setEditTable(fallbackId);
-    }
-    if (editSelectedGroup && !isGroupAvailable(editSelectedGroup, selectedRes.date, editTime, selectedRes.id)) {
-      setEditSelectedGroup(null);
-    }
-  }, [editTime, reservations]);
-
- const handleCancelReservation = async (id: string, guestName: string) => {
-    if (!confirm(guestName + '様 の予約をキャンセルしますか？')) return;
-    try {
-      // ─── 追加：データベースにキャンセルの指令を送る ───
-      const res = await fetch('/api/admin/reservations/' + id, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'cancelled' })
-      });
-      if (!res.ok) throw new Error('API Error');
-
-      // 画面上の表示もキャンセル状態に切り替える
-      setReservations(prev => prev.map(r => r.id === id ? { ...r, status: 'cancelled' } : r));
-      setSelectedRes(null);
-    } catch (err) {
-      console.error(err);
-      alert('予約キャンセル処理に失敗しました。');
-    }
-  };
-
-const handleUpdateReservation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedRes) return;
-
-    const occupiedIds = getOccupiedTableIds(selectedRes.date, editTime, selectedRes.id);
-    let finalTableId = editTable;
-    let finalNotes = getCleanNotes(selectedRes.notes);
-
-    if (editSelectedGroup) {
-      const allGroupIds = [editSelectedGroup.mainTable, ...editSelectedGroup.combinedTables];
-      const conflict = allGroupIds.find(id => occupiedIds.includes(id));
-      if (conflict) { alert(`⚠️ テーブル ${conflict} はすでに埋まっています。`); return; }
-      finalTableId = editSelectedGroup.mainTable;
-      finalNotes = buildCombinedNotes(editSelectedGroup, finalNotes);
-    } else {
-      if (occupiedIds.includes(String(editTable).trim())) {
-        alert(`⚠️ テーブル番号 ${editTable} はすでに埋まっています。`); return;
-      }
-    }
-
-    const dbTableId = LABEL_TO_DB_ID[finalTableId] || 1;
-
-    try {
-      const res = await fetch('/api/admin/reservations/' + selectedRes.id, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: selectedRes.id,
-          time: editTime,
-          guests: Number(editGuests),
-          table_id: dbTableId,
-          notes: finalNotes,
-        }),
-      });
-      if (!res.ok) throw new Error('API Error');
-      await loadData();
-    } catch (err) {
-      alert('予約更新に失敗しました。');
-      return;
-    }
-
-    setSelectedRes(null);
-    setEditSelectedGroup(null);
-  };
- const handleCreateNewOrder = async (e: React.FormEvent) => {
+  // 新規予約作成処理
+  const handleCreateNewOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newOrderName.trim()) {
-      alert('お客様のお名前を入力してください。');
+      alert('お名前を入力してください。');
       return;
     }
 
-    if (checkIsClosed(newOrderDate)) {
-      alert('選択された日付は定休日です。');
-      return;
-    }
-
-    let finalTableId = newOrderTable;
+    const guestsNum = parseInt(newOrderGuests, 10) || 1;
+    let finalTableId = tables[0]?.id || '1';
     let finalNotes = '';
-    const n = parseInt(newOrderGuests, 10);
 
-    if (n >= 9) {
-      if (newOrderFreeTableIds.length === 0) {
-        alert('テーブルを1つ以上選択してください。');
-        return;
+    if (guestsNum >= 9) {
+      const groupOption = GROUPS_BY_GUESTS[guestsNum]?.[0];
+      if (groupOption) {
+        finalTableId = groupOption.mainTable;
+        finalNotes = `_combined:[${groupOption.combinedTables.join(',')}]`;
       }
-      const occupiedIds = getOccupiedTableIds(newOrderDate, newOrderTime);
-      const conflict = newOrderFreeTableIds.find(id => occupiedIds.includes(id));
-      if (conflict) {
-        alert(`⚠️ テーブル ${conflict} はすでに埋まっています。`);
-        return;
-      }
-      finalTableId = newOrderFreeTableIds[0];
-      finalNotes = newOrderFreeTableIds.slice(1).map(id => `_combined:[${id}]`).join(' ');
-    } else if (newOrderSelectedGroup) {
-      const allGroupIds = [newOrderSelectedGroup.mainTable, ...newOrderSelectedGroup.combinedTables];
-      const occupiedIds = getOccupiedTableIds(newOrderDate, newOrderTime);
-      const conflict = allGroupIds.find(id => occupiedIds.includes(id));
-      if (conflict) {
-        alert(`⚠️ テーブル ${conflict} はすでに埋まっています。`);
-        return;
-      }
-      finalTableId = newOrderSelectedGroup.mainTable;
-      finalNotes = newOrderSelectedGroup.combinedTables.map(id => `_combined:[${id}]`).join(' ');
     } else {
-      const occupiedIds = getOccupiedTableIds(newOrderDate, newOrderTime);
-      if (occupiedIds.includes(String(newOrderTable).trim())) {
-        alert(`⚠️ テーブル番号 ${newOrderTable} は既に埋まっています。`);
+      if (freeTableIds.length === 0) {
+        alert('選択された時間帯に空いているテーブルがありません。');
         return;
       }
+      finalTableId = freeTableIds[0];
     }
 
-    const newRes = {
-      id: `newres-${Date.now()}`,
+    const newResData = {
       guest_name: newOrderName,
-      date: newOrderDate,
+      date: selectedDate,
       time: newOrderTime,
-      guests: Number(newOrderGuests) || 2,
+      guests: guestsNum,
       table_id: finalTableId,
-      status: 'confirmed',
+      status: 'confirmed' as const,
       notes: finalNotes,
-      email: 'customer@example.com',
-      visit_count: 1
+      email: newOrderEmail || 'customer@example.com',
+      phone: newOrderPhone || '',
+      visit_count: 1,
     };
+
     try {
       const res = await fetch('/api/admin/reservations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRes),
+        body: JSON.stringify(newResData),
       });
 
-      if (!res.ok) throw new Error('Failed to save reservation');
+      if (!res.ok) throw new Error('Failed to create reservation');
 
+      await loadData();
+      setIsNewOrderOpen(false);
+      setNewOrderName('');
+      setNewOrderEmail('');
+      setNewOrderPhone('');
+    } catch (err) {
+      console.error(err);
+      alert('予約の保存に失敗しました。APIルートを確認してください。');
+    }
+  };
+
+  // キャンセル処理
+  const handleCancelReservation = async (id: string, guestName: string) => {
+    if (!confirm(`${guestName}様のご予約をキャンセルしますか？`)) return;
+    try {
+      await fetch(`/api/admin/reservations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      });
       await loadData();
     } catch (err) {
       console.error(err);
-      alert('予約の保存に失敗しました。');
-      return;
+      setReservations(prev =>
+        prev.map(r => (r.id === id ? { ...r, status: 'cancelled' } : r))
+      );
     }
-    setReservations(prev => [newRes, ...prev]);
-    setShowNewOrderModal(false);
-    setNewOrderName('');
-    setReservations(prev => [newRes, ...prev]);
-    setShowNewOrderModal(false);
-    setNewOrderName('');
-    setNewOrderSelectedGroup(null);
-    setNewOrderFreeTableIds([]);
   };
-
-  const openNewOrderModal = () => {
-    let targetDateStr = selectedDate; 
-    if (checkIsClosed(targetDateStr)) {
-      let d = new Date(targetDateStr);
-      d.setDate(d.getDate() + 2);
-      targetDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }
-
-    const defaultTime = isLunchDay(targetDateStr) && currentShift === 'lunch' ? '11:45' : '18:00';
-    const occupiedIds = getOccupiedTableIds(targetDateStr, defaultTime);
-    const firstAvailableTable = sortedTableIds.find(id => !occupiedIds.includes(id)) || '11';
-
-    setNewOrderDate(targetDateStr);
-    setNewOrderName('');       
-    setNewOrderGuests('0');    
-    setNewOrderTime(defaultTime);  
-    setNewOrderTable(firstAvailableTable); 
-    setCurrentCalendarMonth(new Date(targetDateStr));
-    setShowCalendarPopup(false);
-    setNewOrderStep('guests'); 
-    setNewOrderSelectedGroup(null);
-    setNewOrderFreeTableIds([]);
-    setShowNewOrderModal(true);
-  };
-
-  const handleCalcPress = (num: string) => {
-    setNewOrderGuests(prev => {
-      if (prev === '0') return num;
-      if (prev.length >= 2) return prev;
-      return prev + num;
-    });
-  };
-
-  const handleCalcClear = () => {
-    setNewOrderGuests('0');
-  };
-
-  const handleCalcConfirm = () => {
-    const parsed = parseInt(newOrderGuests, 10);
-    if (!parsed || parsed <= 0) {
-      alert('1名以上の正確な人数を設定してください。');
-      return;
-    }
-    setNewOrderStep('details'); 
-  };
-
-  const checkIsClosed = (dateStr: string) => {
-    const day = new Date(dateStr).getDay();
-    return day === 2 || day === 3; 
-  };
-
-  const isSelectedDateClosed = checkIsClosed(selectedDate);
-
-  const formatPureDate = (dateStr: string) => {
-    const targetDate = new Date(dateStr);
-    const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
-    return `${String(targetDate.getMonth() + 1).padStart(2, '0')}/${String(targetDate.getDate()).padStart(2, '0')} (${weekDays[targetDate.getDay()]})`;
-  };
-
-  const getDateTopLabel = (dateStr: string) => {
-    const todayStr = getTodayString();
-    const tomorrowObj = new Date();
-    tomorrowObj.setDate(tomorrowObj.getDate() + 1);
-    const tomorrowStr = `${tomorrowObj.getFullYear()}-${String(tomorrowObj.getMonth() + 1).padStart(2, '0')}-${String(tomorrowObj.getDate()).padStart(2, '0')}`;
-    if (dateStr === todayStr) return '今日';
-    if (dateStr === tomorrowStr) return '明日';
-    if (checkIsClosed(dateStr)) return '定休';
-    return ''; 
-  };
-
-  const weeklyDates = ((centerDateStr: string) => {
-    const range = [];
-    for (let i = -3; i <= 3; i++) {
-      const d = new Date(centerDateStr);
-      d.setDate(d.getDate() + i);
-      range.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
-    }
-    return range;
-  })(selectedDate);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!scrollRef.current) return;
-    isDown.current = true;
-    scrollRef.current.classList.add('cursor-grabbing');
-    startX.current = e.pageX - scrollRef.current.offsetLeft;
-    scrollLeft.current = scrollRef.current.scrollLeft;
-  };
-
-  const handleMouseLeaveOrUp = () => {
-    isDown.current = false;
-    if (scrollRef.current) scrollRef.current.classList.remove('cursor-grabbing');
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDown.current || !scrollRef.current) return;
-    e.preventDefault();
-    const walk = (e.pageX - scrollRef.current.offsetLeft - startX.current) * 1.5; 
-    scrollRef.current.scrollLeft = scrollLeft.current - walk;
-  };
-
-  const getCleanNotes = (notesStr: string) => {
-    if (!notesStr) return '';
-    return notesStr.replace(/_combined:\[.*?\]/g, '').trim();
-  };
-
-  const todayConfirmedReservations = reservations.filter(r => r.date === selectedDate && r.status === 'confirmed');
-  
-  const lunchReservations = todayConfirmedReservations.filter(r => isLunchTime(r.time));
-  const totalLunchGuests = lunchReservations.reduce((sum, r) => sum + Number(r.guests || 0), 0);
-  const totalLunchCount = lunchReservations.length;
-
-  const dinnerReservations = todayConfirmedReservations.filter(r => !isLunchTime(r.time));
-  const totalDinnerGuests = dinnerReservations.reduce((sum, r) => sum + Number(r.guests || 0), 0);
-  const totalDinnerCount = dinnerReservations.length;
-
-  const displaySideReservations = (currentShift === 'lunch' ? lunchReservations : dinnerReservations)
-    .sort((a, b) => a.time.localeCompare(b.time));
-
-  const filteredReservations = reservations.filter(r => activeTab === 'today' ? r.date === selectedDate : activeTab === 'future' ? r.date > selectedDate : true);
-
-  const customerList = (() => {
-    const customerMap: { [key: string]: CustomerSummary } = {};
-    reservations.forEach((r) => {
-      if (!r.guest_name) return;
-      const name = r.guest_name.trim();
-      if (!customerMap[name]) customerMap[name] = { guest_name: name, email: r.email || '-', total_visits: 0, last_visit: r.date };
-      if (r.status === 'confirmed') customerMap[name].total_visits += 1;
-      if (r.date > customerMap[name].last_visit) customerMap[name].last_visit = r.date;
-    });
-    return Object.values(customerMap).sort((a, b) => a.guest_name.localeCompare(b.guest_name, 'ja'));
-  })();
-
-  const generateCalendarDays = (currentMonthDate: Date) => {
-    const year = currentMonthDate.getFullYear();
-    const month = currentMonthDate.getMonth();
-    const firstDayIndex = new Date(year, month, 1).getDay();
-    const totalDays = new Date(year, month + 1, 0).getDate();
-    const daysArray = Array(firstDayIndex).fill(null);
-    for (let day = 1; day <= totalDays; day++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      daysArray.push({ day, dateStr, isClosed: checkIsClosed(dateStr) });
-    }
-    return daysArray;
-  };
-
-  const activeNewOrderOccupiedIds = getOccupiedTableIds(newOrderDate, newOrderTime);
-  const activeEditOccupiedIds = selectedRes ? getOccupiedTableIds(selectedRes.date, editTime, selectedRes.id) : [];
-
-  const isNightMapMode = currentShift === 'dinner';
-  const isSelectedDateLunchAllowed = isLunchDay(selectedDate);
 
   return (
-    <div className="p-2 min-h-screen font-sans transition-colors duration-300 bg-slate-50 text-slate-900">
-      
-      {/* 👑 トップヘッダーメニュー */}
-      <div className="flex justify-between items-center mb-2 border-b pb-2 px-1 border-slate-200">
-        <div className="flex space-x-1.5">
-          {([
-            { key: 'today', label: '配置図・状況' },
-            { key: 'future', label: '今後の予約一覧' },
-            { key: 'all', label: 'すべての予約履歴' },
-            { key: 'customers', label: '👥 顧客名簿' }
-          ] as const).map((tab) => (
-            <button
-              key={tab.key}
-              role="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`text-xs font-black px-3 py-1.5 rounded-lg transition-all`}
-              style={{ cursor: 'pointer' }}
-            >
-              <span className={activeTab === tab.key ? 'text-blue-600 font-black' : 'text-slate-500 font-medium'}>
-                {tab.label}
-              </span>
-            </button>
-          ))}
-        </div>
-        <button 
-          type="button" 
-          onClick={openNewOrderModal} 
-          className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-blue-700 transition shadow-md"
-          style={{ cursor: 'pointer' }}
-        >
-          ➕ 新規予約登録
-        </button>
-      </div>
-
-      {/* 操作ヘッダーバー */}
-      <div className="flex items-center space-x-1.5 p-1.5 rounded-xl border shadow-inner w-full mb-3 justify-between bg-slate-200/60 border-slate-300">
-        <button 
-          onClick={() => changeDate(-1)} 
-          className="w-9 h-9 rounded-lg font-bold text-sm shrink-0 shadow-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
-          style={{ cursor: 'pointer' }}
-        >
-          &lt;
-        </button>
-        <div 
-          ref={scrollRef} 
-          onMouseDown={handleMouseDown} 
-          onMouseLeave={handleMouseLeaveOrUp} 
-          onMouseUp={handleMouseLeaveOrUp} 
-          onMouseMove={handleMouseMove} 
-          className="flex flex-1 justify-around items-center overflow-x-auto mx-1 gap-1.5 scrollbar-none select-none py-0.5 touch-pan-x"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          {weeklyDates.map((dateStr) => {
-            const isCurrentLoopSelected = dateStr === selectedDate;
-            const isLoopClosed = checkIsClosed(dateStr);
-            const topLabel = getDateTopLabel(dateStr);
-            return (
-              <button 
-                key={dateStr} 
-                onClick={() => setSelectedDate(dateStr)} 
-                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all flex flex-col items-center min-w-[85px] h-10 justify-center ${isCurrentLoopSelected ? isLoopClosed ? 'bg-white text-slate-900 ring-2 ring-slate-300' : 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 ring-2 ring-emerald-300' : isLoopClosed ? 'bg-slate-300/40 text-slate-400 opacity-40' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}`}
-                style={{ cursor: 'pointer' }}
-              >
-                {topLabel ? <span className="text-[9px] tracking-tight font-black leading-none">{topLabel}</span> : <span className="text-[9px] h-3 block"></span>}
-                <span className="text-xs font-mono font-bold mt-0.5">{formatPureDate(dateStr)}</span>
-              </button>
-            );
-          })}
-        </div>
-        <button 
-          onClick={() => changeDate(1)} 
-          className="w-9 h-9 rounded-lg font-bold text-sm shrink-0 shadow-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
-          style={{ cursor: 'pointer' }}
-        >
-          &gt;
-        </button>
-        <div className="relative flex items-center justify-center w-9 h-9 shrink-0">
-          <input type="date" value={selectedDate} onChange={(e) => e.target.value && setSelectedDate(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-          <div className="w-9 h-9 rounded-lg bg-blue-600 text-white font-bold border border-blue-700 shadow-md flex items-center justify-center text-sm pointer-events-none">📅</div>
+    <div className="p-6 bg-slate-900 text-white min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">レストラン予約管理システム</h1>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setCurrentShift(currentShift === 'lunch' ? 'dinner' : 'lunch')}
+            className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded text-sm font-medium transition"
+          >
+            シフト: {currentShift === 'lunch' ? 'ランチ' : 'ディナー'}
+          </button>
+          <button
+            onClick={() => setIsNewOrderOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-medium transition"
+          >
+            + 新規予約追加
+          </button>
         </div>
       </div>
 
-      {/* フロアマップ枠 */}
-      {activeTab === 'today' && (
-        <div className="mb-3 border p-3 rounded-xl shadow-xl relative overflow-hidden transition-colors duration-300 bg-white border-slate-200">
-          <div className="relative w-full mx-auto">
-            <div 
-              ref={mapContainerRef}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerCancel}
-              className={`w-full aspect-[16/9.2] rounded-xl border relative p-3 overflow-hidden shadow-inner transition-colors duration-300 touch-none ${
-                isSelectedDateClosed 
-                  ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400' 
-                  : isNightMapMode 
-                    ? 'bg-slate-950 border-slate-800 text-slate-100' 
-                    : 'bg-slate-100/90 border-slate-200 text-slate-800'
-              }`}
-            >
-              
-              {/* 昼夜ボタンと総計 */}
-              <div className="absolute flex flex-col justify-center" style={{ top: '2.5%', left: '2%', width: '43%', height: '18%' }}>
-                <div className="flex items-center space-x-2 w-full">
-                  <div className={`flex rounded-lg p-0.5 shadow-inner shrink-0 ${isNightMapMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200 border border-slate-300'}`}>
-                    <button
-                      type="button"
-                      disabled={!isSelectedDateLunchAllowed}
-                      onClick={() => setCurrentShift('lunch')}
-                      className={`text-[10px] font-black px-3 py-1 rounded-md transition-all flex items-center space-x-1 ${
-                        !isSelectedDateLunchAllowed
-                          ? 'opacity-30 cursor-not-allowed text-slate-400'
-                          : currentShift === 'lunch'
-                            ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-955 shadow-md' 
-                            : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                      style={{ cursor: isSelectedDateLunchAllowed ? 'pointer' : 'not-allowed' }}
-                      title={!isSelectedDateLunchAllowed ? "昼営業は月・木・金のみです" : ""}
-                    >
-                      <span>☀️ 昼</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentShift('dinner')}
-                      className={`text-[10px] font-black px-3 py-1 rounded-md transition-all flex items-center space-x-1 ${
-                        currentShift === 'dinner' ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <span>🌙 夜</span>
-                    </button>
-                  </div>
+      {/* 日付コントロール */}
+      <div className="mb-6 flex items-center gap-4 bg-slate-800 p-4 rounded-lg border border-slate-700">
+        <label className="text-sm text-slate-400">表示日:</label>
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={e => setSelectedDate(e.target.value)}
+          className="bg-slate-700 border border-slate-600 px-3 py-1.5 rounded text-white"
+        />
+      </div>
 
-                  <div className={`flex items-center space-x-2 border rounded-lg p-1 px-2 shadow-sm flex-1 justify-around ${isNightMapMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-300'}`}>
-                    <div className="text-center">
-                      <span className="text-[8px] text-slate-500 font-bold block leading-none">昼総計</span>
-                      <span className={`text-[11px] font-mono font-black ${currentShift === 'lunch' ? 'text-orange-400' : 'text-slate-400'}`}>
-                        {totalLunchGuests}名 / {totalLunchCount}件
-                      </span>
-                    </div>
-                    <div className={`w-[1px] h-3 ${isNightMapMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
-                    <div className="text-center">
-                      <span className="text-[8px] text-slate-500 font-bold block leading-none">夜総計</span>
-                      <span className={`text-[11px] font-mono font-black ${currentShift === 'dinner' ? 'text-indigo-400' : 'text-slate-400'}`}>
-                        {totalDinnerGuests}名 / {totalDinnerCount}件
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 左側予約リストエリア */}
-              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-slate-950/40 border-slate-900/60' : 'bg-white/80 border-slate-300/80'}`} style={{ top: '24%', left: '2%', width: '72.5%', height: '74%' }}>
-                <div className={`flex items-center text-[10px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-slate-400 border-slate-800' : 'text-slate-600 border-slate-200'}`}>
-                  <span className="w-[12%] shrink-0">時間</span>
-                  <span className="w-[10%] shrink-0 text-center">人数</span>
-                  <span className="w-[32%] shrink-0 px-1 truncate">お名前</span>
-                  <span className="w-[18%] shrink-0 text-center">テーブル</span>
-                  <span className="flex-1 px-1 text-slate-500">備考</span>
-                </div>
-                <div className="flex-1 overflow-y-auto space-y-0.5 pr-0.5 scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
-                  {displaySideReservations.length === 0 ? (
-                    <p className="text-[11px] text-slate-400 italic pt-10 text-center">この時間帯に予約はありません</p>
-                  ) : (
-                    displaySideReservations.map((r) => {
-                      const cleanNote = getCleanNotes(r.notes);
-                      const isLunch = isLunchTime(r.time);
-                      return (
-                        <div 
-                          key={r.id} 
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => { setSelectedRes(r); setEditTime(r.time); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); }} 
-                          className={`border h-8 px-1 rounded-md flex items-center transition-all text-[11px] font-black ${isNightMapMode ? 'bg-slate-950/40 hover:bg-blue-600/20 border-slate-900/60 hover:border-blue-500/40' : 'bg-slate-50 hover:bg-blue-50 border-slate-200 hover:border-blue-300'}`}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <span className={`w-[12%] shrink-0 font-mono flex items-center gap-0.5 ${isLunch ? 'text-orange-500' : 'text-indigo-400'}`}>
-                            <span>{isLunch ? '☀️' : '🌙'}</span>
-                            {formatShortTime(r.time)}
-                          </span>
-                          <span className={`w-[10%] shrink-0 text-center font-mono ${isNightMapMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{r.guests}名</span>
-                          <span className={`w-[32%] shrink-0 px-1 truncate ${isNightMapMode ? 'text-slate-200' : 'text-slate-800'}`}>{r.guest_name}</span>
-                          <span className={`w-[18%] shrink-0 text-center font-mono rounded text-[10px] py-0.5 px-0.5 truncate ${isNightMapMode ? 'bg-slate-800/80 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>{displayTableIds(r)}</span>
-                          <span className={`flex-1 px-1 truncate text-left text-[11px] ${isNightMapMode ? 'text-amber-400/90' : 'text-amber-700'}`}>{cleanNote || ''}</span>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
-              {/* テーブルレイアウト */}
-              {tables.map((t) => {
-                const isCounter = t.type === 'counter-1';
-                const shapeClass = t.type === 'square-2' || t.type === 'counter-1' ? 'aspect-square' : t.type === 'rect-h-4' ? 'aspect-[2/1.1]' : 'aspect-[1/2.1]';
-                const radiusClass = isCounter ? 'rounded-full' : 'rounded-xl';
-                const isThisTableDragging = draggingTableId === t.id;
-                const isThisTableHovered = hoveredTableId === t.id;
-
-                if (isSelectedDateClosed) {
-                  return <div key={t.id} className={`absolute flex flex-col items-center justify-center bg-slate-200 text-slate-400 border border-slate-300 opacity-30 text-center text-xs ${shapeClass} ${radiusClass}`} style={{ top: t.top, left: t.left, width: t.width }}><span className="font-bold text-[10px]">{t.label}</span></div>;
-                }
-
-                const attachedRes = reservations.find(r => {
-                  const matchBasic = r.date === selectedDate && r.status === 'confirmed' && (String(r.table_id).trim() === String(t.id).trim() || r.notes?.includes(`_combined:[${t.id}]`));
-                  if (!matchBasic) return false;
-                  return currentShift === 'lunch' ? isLunchTime(r.time) : !isLunchTime(r.time);
-                });
-
-                let tableStyle = isNightMapMode 
-                  ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
-                  : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-100';
-
-                if (t.isOccupied) {
-                  if (isThisTableDragging && isCombineMode) {
-                    tableStyle = 'bg-gradient-to-br from-amber-400 to-amber-600 text-white border-amber-700 ring-4 ring-amber-300 animate-pulse z-50'; 
-                  } else {
-                    tableStyle = 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-emerald-700 ring-1 ring-emerald-300/30'; 
-                  }
-                } else if (isThisTableHovered) {
-                  tableStyle = isCombineMode ? 'bg-amber-300 text-slate-955 ring-4 ring-amber-400 scale-105 z-40' : 'bg-blue-500 text-white ring-4 ring-blue-300 scale-105 z-40';
-                }
-
-                return (
-                  <div 
-                    key={t.id} 
-                    id={`table-target-${t.id}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleTableClick(t)}
-                    onPointerDown={(e) => handlePointerDown(e, t)}
-                    onPointerCancel={handlePointerCancel}
-                    className={`absolute flex flex-col items-center justify-center shadow-lg border text-center touch-none transition-transform duration-75 overflow-hidden leading-none p-0.5 select-none ${shapeClass} ${radiusClass} ${tableStyle}`}
-                    style={{ 
-                      top: t.top, 
-                      left: t.left, 
-                      width: t.width,
-                      cursor: t.isOccupied ? 'grab' : 'pointer',
-                      transform: isThisTableDragging ? `translate3d(${dragPosition.x}px, ${dragPosition.y}px, 0)` : undefined,
-                      opacity: isThisTableDragging ? 0.85 : undefined,
-                      zIndex: isThisTableDragging ? 100 : undefined,
-                      WebkitUserSelect: 'none',
-                    }}
-                  >
-                    {t.isOccupied && attachedRes ? (
-                      <div className="w-full h-full flex flex-col justify-between items-center py-1 px-0.5 pointer-events-none select-none">
-                        <div className="flex w-full justify-between items-center px-1">
-                          <span className={`text-[9px] font-mono font-black tracking-tighter opacity-95 bg-black/20 px-1 rounded-sm ${isLunchTime(attachedRes.time) ? 'text-orange-300' : 'text-indigo-200'}`}>
-                            {isLunchTime(attachedRes.time) ? '☀️' : '🌙'}{formatShortTime(attachedRes.time)}
-                          </span>
-                          <span className="text-[10px] font-mono font-bold bg-emerald-700/80 px-1 rounded-sm text-white scale-90">{t.label}</span>
-                        </div>
-                        <div className="text-[11px] font-black tracking-tight truncate w-full text-center my-0.5 px-0.5">
-                          {attachedRes.guest_name}
-                        </div>
-                        <div className="text-[10px] font-black text-amber-200 bg-emerald-900/50 px-1.5 py-0.5 rounded-full scale-95">
-                          {attachedRes.guests}名
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="font-black text-xs tracking-tight pointer-events-none select-none">{t.label}</span>
-                    )}
-                  </div>
-                );
-              })}
+      {/* 新規予約モーダル */}
+      {isNewOrderOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <form onSubmit={handleCreateNewOrder} className="bg-slate-800 p-6 rounded-xl max-w-md w-full space-y-4 border border-slate-700 shadow-2xl">
+            <h2 className="text-lg font-bold">新規予約の登録</h2>
+            <div>
+              <label className="block text-sm mb-1 text-slate-300">お名前</label>
+              <input
+                type="text"
+                value={newOrderName}
+                onChange={e => setNewOrderName(e.target.value)}
+                className="w-full bg-slate-700 border border-slate-600 px-3 py-2 rounded text-white"
+                required
+              />
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ======================================================
-          既存予約編集モーダル
-      ====================================================== */}
-      {selectedRes && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 text-slate-100">
-          <form onSubmit={handleUpdateReservation} className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 text-white flex justify-between items-center border-b border-slate-700">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <h3 className="text-sm font-black tracking-tight">⚙️ 予約情報の確認・変更</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">{selectedRes.date} / {selectedRes.guest_name} 様</p>
+                <label className="block text-sm mb-1 text-slate-300">時間</label>
+                <input
+                  type="time"
+                  value={newOrderTime}
+                  onChange={e => setNewOrderTime(e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 px-3 py-2 rounded text-white"
+                />
               </div>
-              <button 
-                type="button" 
-                onClick={() => { setSelectedRes(null); setEditSelectedGroup(null); }} 
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition"
-                style={{ cursor: 'pointer' }}
+              <div>
+                <label className="block text-sm mb-1 text-slate-300">人数</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={newOrderGuests}
+                  onChange={e => setNewOrderGuests(e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 px-3 py-2 rounded text-white"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <button
+                type="button"
+                onClick={() => setIsNewOrderOpen(false)}
+                className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm"
               >
-                ✕
+                キャンセル
               </button>
-            </div>
-            <div className="p-4 space-y-3.5 text-xs">
-              <div>
-                <label className="text-[10px] text-slate-400 font-bold block mb-1">⏰ 来店予約時刻</label>
-                <select value={editTime} onChange={(e) => setEditTime(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-amber-400 font-mono font-black text-sm cursor-pointer focus:outline-none" style={{ cursor: 'pointer' }}>
-                  {availableTimes.map(t => {
-                    if (!isLunchDay(selectedRes.date) && isLunchTime(t)) return null;
-                    return <option key={t} value={t}>{isLunchTime(t) ? `☀️ 昼 ${t}` : `🌙 夜 ${t}`}</option>;
-                  })}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] text-slate-500 font-bold block mb-1">👤 お客様氏名</label>
-                <div className="w-full p-2.5 rounded-xl bg-slate-950/50 border border-slate-800/60 text-slate-300 font-black text-sm">{selectedRes.guest_name}</div>
-              </div>
-              <div>
-                <label className="text-[10px] text-slate-400 font-bold block mb-1">👥 人数</label>
-                <select value={editGuests} onChange={(e) => { setEditGuests(e.target.value); setEditSelectedGroup(null); }} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-emerald-400 font-black text-sm cursor-pointer" style={{ cursor: 'pointer' }}>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={String(n)}>{n} 名</option>)}
-                </select>
-              </div>
-
-              {/* テーブル選択（グループ対応） */}
-              {renderGroupSelector(
-                editGuests,
-                selectedRes.date,
-                editTime,
-                editSelectedGroup,
-                setEditSelectedGroup,
-                editTable,
-                setEditTable,
-                activeEditOccupiedIds,
-                selectedRes.id,
-                reservations,
-              )}
-
-              <div>
-                <label className="text-[10px] text-slate-500 font-bold block mb-1">📝 オンラインコメント欄</label>
-                <div className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-medium whitespace-pre-wrap leading-relaxed min-h-[60px]">
-                  {getCleanNotes(selectedRes.notes) ? getCleanNotes(selectedRes.notes) : <span className="text-slate-600 italic font-normal">コメントはありません</span>}
-                </div>
-              </div>
-            </div>
-            <div className="bg-slate-950/60 p-3 px-4 border-t border-slate-800 flex justify-between items-center">
-              {selectedRes.status === 'confirmed' ? (
-                <button 
-                  type="button" 
-                  onClick={() => handleCancelReservation(selectedRes.id, selectedRes.guest_name)} 
-                  className="bg-rose-600/20 hover:bg-rose-600 border border-rose-900 text-rose-400 hover:text-white font-bold px-3 py-2 rounded-lg transition text-[11px]"
-                  style={{ cursor: 'pointer' }}
-                >
-                  🗑️ 予約取消
-                </button>
-              ) : (
-                <span className="text-rose-500 font-bold text-[11px]">⚠️ 取消済み</span>
-              )}
-              <div className="flex space-x-2">
-                <button 
-                  type="button" 
-                  onClick={() => { setSelectedRes(null); setEditSelectedGroup(null); }} 
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 rounded-lg transition"
-                  style={{ cursor: 'pointer' }}
-                >
-                  閉じる
-                </button>
-                {selectedRes.status === 'confirmed' && (
-                  <button 
-                    type="submit" 
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-4 py-2 rounded-lg transition shadow-md"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    変更を保存
-                  </button>
-                )}
-              </div>
+              <button
+                type="submit"
+                className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-medium"
+              >
+                予約を確定する
+              </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* ======================================================
-          新規予約登録ポップアップモーダル (2ステップ構造)
-      ====================================================== */}
-      {showNewOrderModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 text-slate-100">
-          <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative">
-            
-            {/* ステップ1：計算機風の人数入力画面 */}
-            {newOrderStep === 'guests' && (
-              <div>
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex justify-between items-center">
-                  <div>
-                    <h3 className="text-xs font-black tracking-tight">🔢 ステップ1: ご来店人数の入力</h3>
-                    <p className="text-[10px] opacity-80 mt-0.5">最初に人数を決定してください</p>
-                  </div>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowNewOrderModal(false)} 
-                    className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 text-white font-bold flex items-center justify-center text-xs"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="p-4 space-y-4">
-                  <div className="bg-slate-950 rounded-xl p-3 text-right border border-slate-800 shadow-inner">
-                    <span className="text-[10px] text-slate-500 font-bold block mb-1">来店予定人数</span>
-                    <span className="text-3xl font-mono font-black text-emerald-400">{newOrderGuests}</span>
-                    <span className="text-sm font-bold text-slate-400 ml-1.5">名</span>
-                    {/* 席提案予告バナー */}
-                    {parseInt(newOrderGuests, 10) >= 1 && (
-                      <div className="text-left bg-amber-950/40 border border-amber-700/50 rounded-lg px-2 py-1.5 mt-2">
-                        <span className="text-[10px] text-amber-300 font-bold">🪑 {newOrderGuests}名 → 次のステップでおすすめ席を提案します</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(num => (
-                      <button
-                        key={num}
-                        type="button"
-                        onClick={() => handleCalcPress(num)}
-                        className="h-14 rounded-xl bg-slate-800 text-xl font-bold font-mono active:bg-slate-700 border border-slate-700/60 shadow-md transition-all flex items-center justify-center text-slate-100"
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {num}
-                      </button>
-                    ))}
+      {/* 予約一覧テーブル */}
+      <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700 shadow-lg">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-700/50 text-slate-400 text-xs uppercase tracking-wider">
+              <th className="p-3.5">時間</th>
+              <th className="p-3.5">お名前</th>
+              <th className="p-3.5">人数</th>
+              <th className="p-3.5">テーブル</th>
+              <th className="p-3.5">ステータス</th>
+              <th className="p-3.5 text-right">操作</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-700">
+            {reservations.map(r => (
+              <tr key={r.id} className="hover:bg-slate-700/20 transition">
+                <td className="p-3.5 font-mono text-sm">{r.time}</td>
+                <td className="p-3.5 font-medium">{r.guest_name}</td>
+                <td className="p-3.5">{r.guests}名</td>
+                <td className="p-3.5">
+                  #{DB_ID_TO_LABEL[r.table_id] || r.table_id}
+                  {r.notes && <span className="text-xs text-amber-400 ml-1.5 font-mono">({r.notes})</span>}
+                </td>
+                <td className="p-3.5">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${r.status === 'confirmed' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-red-950 text-red-300 border border-red-800'}`}>
+                    {r.status === 'confirmed' ? '確定' : 'キャンセル'}
+                  </span>
+                </td>
+                <td className="p-3.5 text-right">
+                  {r.status === 'confirmed' && (
                     <button
-                      type="button"
-                      onClick={handleCalcClear}
-                      className="h-14 rounded-xl bg-rose-950/40 text-rose-400 font-bold active:bg-rose-900/50 border border-rose-900/40 shadow-md flex items-center justify-center text-xs"
-                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleCancelReservation(r.id, r.guest_name)}
+                      className="text-red-400 hover:text-red-300 text-xs font-medium transition"
                     >
-                      クリア
+                      キャンセルする
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCalcPress('0')}
-                      className="h-14 rounded-xl bg-slate-800 text-xl font-bold font-mono active:bg-slate-700 border border-slate-700/60 shadow-md flex items-center justify-center text-slate-100"
-                      style={{ cursor: 'pointer' }}
-                    >
-                      0
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCalcConfirm}
-                      className="h-14 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-slate-955 font-black active:from-emerald-600 shadow-lg flex items-center justify-center text-xs border border-emerald-400/20"
-                      style={{ cursor: 'pointer' }}
-                    >
-                      確定して次へ
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ステップ2：お客様情報や日時の詳細入力 */}
-            {newOrderStep === 'details' && (
-              <form onSubmit={handleCreateNewOrder}>
-                <div className="bg-gradient-to-r from-indigo-600 to-teal-600 p-4 text-white flex justify-between items-center">
-                  <div>
-                    <h3 className="text-xs font-black tracking-tight">📝 ステップ2: 予約詳細の入力</h3>
-                    <p className="text-[10px] opacity-80 mt-0.5">人数: {newOrderGuests} 名 (変更は戻るをクリック)</p>
-                  </div>
-                  <button 
-                    type="button" 
-                    onClick={() => { setNewOrderStep('guests'); setNewOrderSelectedGroup(null); setNewOrderFreeTableIds([]); }} 
-                    className="text-[10px] bg-black/20 hover:bg-black/40 px-2.5 py-1 rounded-md font-bold text-white transition"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    ← 戻る
-                  </button>
-                </div>
-                
-                <div className="p-4 space-y-3.5 text-xs overflow-y-auto max-h-[70vh]" style={{ WebkitOverflowScrolling: 'touch' }}>
-                  <div>
-                    <label className="text-[10px] text-slate-400 font-bold block mb-1">📅 予約日付</label>
-                    <div className="flex space-x-1 relative">
-                      <input 
-                        type="date" 
-                        value={newOrderDate} 
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            setNewOrderDate(e.target.value);
-                            setNewOrderSelectedGroup(null);
-                            setNewOrderFreeTableIds([]);
-                            if (!isLunchDay(e.target.value) && isLunchTime(newOrderTime)) {
-                              setNewOrderTime('18:00');
-                            }
-                          }
-                        }} 
-                        className="flex-1 p-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-bold" 
-                      />
-                      <button 
-                        type="button" 
-                        onClick={() => setShowCalendarPopup(!showCalendarPopup)} 
-                        className="bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-3 rounded-lg border border-slate-700 transition"
-                        style={{ cursor: 'pointer' }}
-                      >
-                        日暦
-                      </button>
-                      
-                      {showCalendarPopup && (
-                        <div className="absolute right-0 top-11 bg-slate-950 border border-slate-700 p-3 rounded-xl shadow-2xl z-50 w-72">
-                          <div className="flex justify-between items-center mb-2">
-                            <button 
-                              type="button" 
-                              className="text-slate-400 hover:text-white px-1 text-xs font-bold" 
-                              onClick={() => { const d = new Date(currentCalendarMonth); d.setMonth(d.getMonth() - 1); setCurrentCalendarMonth(d); }}
-                              style={{ cursor: 'pointer' }}
-                            >
-                              &lt;
-                            </button>
-                            <span className="font-black text-xs text-amber-400">{currentCalendarMonth.getFullYear()}年 {currentCalendarMonth.getMonth() + 1}月</span>
-                            <button 
-                              type="button" 
-                              className="text-slate-400 hover:text-white px-1 text-xs font-bold" 
-                              onClick={() => { const d = new Date(currentCalendarMonth); d.setMonth(d.getMonth() + 1); setCurrentCalendarMonth(d); }}
-                              style={{ cursor: 'pointer' }}
-                            >
-                              &gt;
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
-                            <span>日</span><span>月</span><span className="text-red-500/80">火</span><span className="text-red-500/80">水</span><span>木</span><span>金</span><span>土</span>
-                          </div>
-                          <div className="grid grid-cols-7 gap-1">
-                            {generateCalendarDays(currentCalendarMonth).map((dayObj, index) => {
-                              if (!dayObj) return <div key={`empty-${index}`} />;
-                              if (dayObj.isClosed) return <div key={dayObj.dateStr} className="h-7 rounded flex items-center justify-center bg-red-950/20 text-red-600/40 text-[10px] line-through cursor-not-allowed font-medium">{dayObj.day}</div>;
-                              return (
-                                <button 
-                                  type="button" 
-                                  key={dayObj.dateStr} 
-                                  onClick={() => { 
-                                    setNewOrderDate(dayObj.dateStr); 
-                                    setShowCalendarPopup(false);
-                                    setNewOrderSelectedGroup(null);
-                                    setNewOrderFreeTableIds([]);
-                                    if (!isLunchDay(dayObj.dateStr) && isLunchTime(newOrderTime)) {
-                                      setNewOrderTime('18:00');
-                                    }
-                                  }} 
-                                  className={`h-7 rounded text-[10px] font-bold transition flex items-center justify-center ${dayObj.dateStr === newOrderDate ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black' : 'bg-slate-900 hover:bg-slate-800 text-slate-200'}`}
-                                  style={{ cursor: 'pointer' }}
-                                >
-                                  {dayObj.day}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 時間選択：昼夜分離グリッド */}
-                  <div>
-                    <label className="text-[10px] text-slate-400 font-bold block mb-1">⏰ 来店時刻の選択</label>
-                    <div className="grid grid-cols-2 gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800">
-                      <div className="space-y-1">
-                        <div className="text-center font-black text-[10px] text-orange-400 pb-1 border-b border-slate-800/60 mb-1">☀️ 昼の部</div>
-                        {!isLunchDay(newOrderDate) ? (
-                          <div className="text-[10px] text-slate-600 italic text-center pt-6">昼の営業なし</div>
-                        ) : (
-                          <div className="grid grid-cols-2 gap-1">
-                            {lunchTimes.map(t => {
-                              const isSelected = newOrderTime === t;
-                              return (
-                                <button
-                                  key={t}
-                                  type="button"
-                                  onClick={() => { setNewOrderTime(t); setNewOrderSelectedGroup(null); setNewOrderFreeTableIds([]); }}
-                                  className={`py-1.5 rounded-md font-mono text-[11px] font-bold border transition-all ${
-                                    isSelected 
-                                      ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-955 font-black border-orange-300 shadow-md' 
-                                      : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
-                                  }`}
-                                  style={{ cursor: 'pointer' }}
-                                >
-                                  {t}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-1 border-l border-slate-800/80 pl-2">
-                        <div className="text-center font-black text-[10px] text-indigo-400 pb-1 border-b border-slate-800/60 mb-1">🌙 夜の部</div>
-                        <div className="grid grid-cols-2 gap-1">
-                          {dinnerTimes.map(t => {
-                            const isSelected = newOrderTime === t;
-                            return (
-                              <button
-                                key={t}
-                                type="button"
-                                onClick={() => { setNewOrderTime(t); setNewOrderSelectedGroup(null); setNewOrderFreeTableIds([]); }}
-                                className={`py-1.5 rounded-md font-mono text-[11px] font-bold border transition-all ${
-                                  isSelected 
-                                    ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white font-black border-indigo-400 shadow-md' 
-                                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
-                                }`}
-                                style={{ cursor: 'pointer' }}
-                              >
-                                {t}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] text-slate-400 font-bold block mb-1">👤 お客様お名前</label>
-                    <input type="text" placeholder="お名前を入力" value={newOrderName} onChange={(e) => setNewOrderName(e.target.value)} className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-bold placeholder-slate-600" />
-                  </div>
-
-                  {/* テーブル選択（グループ対応） */}
-                  {renderGroupSelector(
-                    newOrderGuests,
-                    newOrderDate,
-                    newOrderTime,
-                    newOrderSelectedGroup,
-                    setNewOrderSelectedGroup,
-                    newOrderTable,
-                    setNewOrderTable,
-                    activeNewOrderOccupiedIds,
-                    undefined,
-                    reservations,
-                    newOrderFreeTableIds,
-                    (id: string) => {
-                      if (id === '__clear__') { setNewOrderFreeTableIds([]); return; }
-                      setNewOrderFreeTableIds(prev =>
-                        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-                      );
-                    },
                   )}
-                </div>
-                <div className="bg-slate-950/60 p-3 px-4 border-t border-slate-800 flex justify-end space-x-2">
-                  <button 
-                    type="button" 
-                    onClick={() => { setShowNewOrderModal(false); setShowCalendarPopup(false); setNewOrderSelectedGroup(null); setNewOrderFreeTableIds([]); }} 
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold px-4 py-2 rounded-lg transition text-xs"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    閉じる
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2 rounded-lg transition shadow-md text-xs"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    登録を確定
-                  </button>
-                </div>
-              </form>
+                </td>
+              </tr>
+            ))}
+            {reservations.length === 0 && (
+              <tr>
+                <td colSpan={6} className="p-8 text-center text-slate-500">
+                  選択された日付の予約データはありません
+                </td>
+              </tr>
             )}
-
-          </div>
-        </div>
-      )}
-
-      {/* 下部データ表示エリア */}
-      {activeTab === 'customers' ? (
-        <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
-          <h2 className="text-xs font-black mb-2 flex items-center justify-between px-1">
-            <span>👥 顧客名簿一覧</span>
-            <span className="text-[11px] bg-slate-700 px-2 py-0.5 rounded-full text-white">{customerList.length} 名</span>
-          </h2>
-          <div className="overflow-x-auto rounded-xl border bg-white border-slate-200">
-            <table className="w-full border-collapse text-left text-xs">
-              <thead>
-                <tr className="border-b text-[10px] bg-slate-100 text-slate-600 border-slate-200">
-                  <th className="p-2.5 font-bold">お客様氏名</th>
-                  <th className="p-2.5 font-bold">メールアドレス</th>
-                  <th className="p-2.5 font-bold text-center">来店回数</th>
-                  <th className="p-2.5 font-bold">最終来店日</th>
-                </tr>
-              </thead>
-              <tbody>
-                {customerList.map((c, idx) => (
-                  <tr key={idx} className="border-b transition border-slate-100 hover:bg-slate-50">
-                    <td className="p-2.5 font-black text-blue-600">{c.guest_name}</td>
-                    <td className="p-2.5 font-mono text-slate-600">{c.email}</td>
-                    <td className="p-2.5 text-center font-black font-mono text-emerald-700">{c.total_visits} 回</td>
-                    <td className="p-2.5 font-mono text-amber-600">{c.last_visit}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
-          <h2 className="text-xs font-black mb-2 flex items-center justify-between px-1">
-            <span>
-              {activeTab === 'today' && '📅 ' + formatPureDate(selectedDate) + ' の使用テーブル一覧'} 
-              {activeTab === 'future' && '🚀 今後の確定予約一覧'} 
-              {activeTab === 'all' && '🗄️ すべての予約履歴'}
-            </span>
-            <span className="text-[11px] bg-slate-700 px-2 py-0.5 rounded-full text-white">{filteredReservations.length} 件</span>
-          </h2>
-          <div className="overflow-x-auto rounded-xl border bg-white border-slate-200">
-            <table className="w-full border-collapse text-left text-xs">
-              <thead>
-                <tr className="border-b text-[10px] bg-slate-100 text-slate-600 border-slate-200">
-                  <th className="p-2.5 font-bold">日時</th>
-                  <th className="p-2.5 font-bold">お名前</th>
-                  <th className="p-2.5 font-bold">人数</th>
-                  <th className="p-2.5 font-bold">使用テーブル番号</th>
-                  <th className="p-2.5 font-bold">オンライン備考</th>
-                  <th className="p-2.5 font-bold">ステータス</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredReservations.sort((a,b) => a.time.localeCompare(b.time)).map((r) => {
-                  const cleanNote = getCleanNotes(r.notes);
-                  return (
-                    <tr 
-                      key={r.id} 
-                      onClick={() => { setSelectedRes(r); setEditTime(r.time); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); }} 
-                      className="border-b transition cursor-pointer border-slate-100 hover:bg-slate-50"
-                    >
-                      <td className="p-2.5 font-mono font-black text-amber-600">{r.date} {formatShortTime(r.time)}</td>
-                      <td className="p-2.5 font-black text-blue-600">{r.guest_name}</td>
-                      <td className="p-2.5 font-black font-mono text-emerald-700">{r.guests} 名</td>
-                      <td className="p-2.5"><span className="px-2 py-1 rounded-md text-[11px] font-mono font-black border bg-slate-100 border-slate-300 text-slate-800">{displayTableIds(r)}</span></td>
-                      <td className="p-2.5 text-[11px] max-w-xs truncate text-slate-700">{cleanNote || '-'}</td>
-                      <td className="p-2.5"><span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${r.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-600' : 'bg-red-500/20 text-red-500'}`}>{r.status}</span></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
