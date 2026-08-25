@@ -455,15 +455,7 @@ export default function AdminPage() {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isCombineMode, setIsCombineMode] = useState(false); 
   const [hasMovedSignificantly, setHasMovedSignificantly] = useState(false);
-const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) {
-    return null;
-  }
   const initialTables: TableStatus[] = [
     { id: '51', label: '51', isOccupied: false, type: 'rect-h-4', top: '4%',   left: '48%',  width: '9.5%' },
     { id: '52', label: '52', isOccupied: false, type: 'rect-h-4', top: '4%',   left: '58.5%', width: '9.5%' },
@@ -847,51 +839,46 @@ const [isMounted, setIsMounted] = useState(false);
     }
   };
 
-const handleUpdateReservation = async (e: React.FormEvent) => {
+  const handleUpdateReservation = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRes) return;
 
     const occupiedIds = getOccupiedTableIds(selectedRes.date, editTime, selectedRes.id);
-    let finalTableId = editTable;
-    let finalNotes = getCleanNotes(selectedRes.notes);
 
     if (editSelectedGroup) {
       const allGroupIds = [editSelectedGroup.mainTable, ...editSelectedGroup.combinedTables];
       const conflict = allGroupIds.find(id => occupiedIds.includes(id));
-      if (conflict) { alert(`⚠️ テーブル ${conflict} はすでに埋まっています。`); return; }
-      finalTableId = editSelectedGroup.mainTable;
-      finalNotes = buildCombinedNotes(editSelectedGroup, finalNotes);
+      if (conflict) {
+        alert(`⚠️ テーブル ${conflict} はすでに埋まっています。`);
+        return;
+      }
+      const newNotes = buildCombinedNotes(editSelectedGroup, getCleanNotes(selectedRes.notes));
+      setReservations(prev => prev.map(r => r.id === selectedRes.id ? {
+        ...r,
+        time: editTime,
+        guests: Number(editGuests),
+        table_id: editSelectedGroup.mainTable,
+        notes: newNotes,
+      } : r));
     } else {
       if (occupiedIds.includes(String(editTable).trim())) {
-        alert(`⚠️ テーブル番号 ${editTable} はすでに埋まっています。`); return;
+        alert(`⚠️ テーブル番号 ${editTable} はすでに埋まっています。`);
+        return;
       }
+      const cleanedNotes = getCleanNotes(selectedRes.notes);
+      setReservations(prev => prev.map(r => r.id === selectedRes.id ? {
+        ...r,
+        time: editTime,
+        guests: Number(editGuests),
+        table_id: editTable,
+        notes: cleanedNotes,
+      } : r));
     }
-
-    const dbTableId = LABEL_TO_DB_ID[finalTableId] || 1;
-
-    try {
-      const res = await fetch('/api/admin/reservations/' + selectedRes.id, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: selectedRes.id,
-          time: editTime,
-          guests: Number(editGuests),
-          table_id: dbTableId,
-          notes: finalNotes,
-        }),
-      });
-      if (!res.ok) throw new Error('API Error');
-      await loadData();
-    } catch (err) {
-      alert('予約更新に失敗しました。');
-      return;
-    }
-
     setSelectedRes(null);
     setEditSelectedGroup(null);
   };
- const handleCreateNewOrder = async (e: React.FormEvent) => {
+
+  const handleCreateNewOrder = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newOrderName.trim()) {
       alert('お客様のお名前を入力してください。');
@@ -950,24 +937,7 @@ const handleUpdateReservation = async (e: React.FormEvent) => {
       email: 'customer@example.com',
       visit_count: 1
     };
-    try {
-      const res = await fetch('/api/admin/reservations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRes),
-      });
 
-      if (!res.ok) throw new Error('Failed to save reservation');
-
-      await loadData();
-    } catch (err) {
-      console.error(err);
-      alert('予約の保存に失敗しました。');
-      return;
-    }
-    setReservations(prev => [newRes, ...prev]);
-    setShowNewOrderModal(false);
-    setNewOrderName('');
     setReservations(prev => [newRes, ...prev]);
     setShowNewOrderModal(false);
     setNewOrderName('');
