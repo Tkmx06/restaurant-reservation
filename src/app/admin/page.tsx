@@ -839,11 +839,14 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateReservation = (e: React.FormEvent) => {
+  const handleUpdateReservation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRes) return;
 
     const occupiedIds = getOccupiedTableIds(selectedRes.date, editTime, selectedRes.id);
+
+    let finalTableId = editTable;
+    let finalNotes = getCleanNotes(selectedRes.notes);
 
     if (editSelectedGroup) {
       const allGroupIds = [editSelectedGroup.mainTable, ...editSelectedGroup.combinedTables];
@@ -852,33 +855,48 @@ export default function AdminPage() {
         alert(`⚠️ テーブル ${conflict} はすでに埋まっています。`);
         return;
       }
-      const newNotes = buildCombinedNotes(editSelectedGroup, getCleanNotes(selectedRes.notes));
-      setReservations(prev => prev.map(r => r.id === selectedRes.id ? {
-        ...r,
-        time: editTime,
-        guests: Number(editGuests),
-        table_id: editSelectedGroup.mainTable,
-        notes: newNotes,
-      } : r));
+      finalTableId = editSelectedGroup.mainTable;
+      finalNotes = buildCombinedNotes(editSelectedGroup, getCleanNotes(selectedRes.notes));
     } else {
       if (occupiedIds.includes(String(editTable).trim())) {
         alert(`⚠️ テーブル番号 ${editTable} はすでに埋まっています。`);
         return;
       }
-      const cleanedNotes = getCleanNotes(selectedRes.notes);
+    }
+
+    try {
+      // ─── 追加：データベースに変更内容を送る ───
+      const res = await fetch('/api/admin/reservations', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedRes.id,
+          time: editTime,
+          guests: Number(editGuests),
+          table_id: LABEL_TO_DB_ID[finalTableId] ?? finalTableId,
+          notes: finalNotes,
+        })
+      });
+      if (!res.ok) throw new Error('API Error');
+
       setReservations(prev => prev.map(r => r.id === selectedRes.id ? {
         ...r,
         time: editTime,
         guests: Number(editGuests),
-        table_id: editTable,
-        notes: cleanedNotes,
+        table_id: finalTableId,
+        notes: finalNotes,
       } : r));
+    } catch (err) {
+      console.error(err);
+      alert('予約変更処理に失敗しました。');
+      return;
     }
+
     setSelectedRes(null);
     setEditSelectedGroup(null);
   };
 
-  const handleCreateNewOrder = (e: React.FormEvent) => {
+  const handleCreateNewOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newOrderName.trim()) {
       alert('お客様のお名前を入力してください。');
@@ -925,20 +943,40 @@ export default function AdminPage() {
       }
     }
 
-    const newRes = {
-      id: `newres-${Date.now()}`,
-      guest_name: newOrderName,
-      date: newOrderDate,
-      time: newOrderTime,
-      guests: Number(newOrderGuests) || 2,
-      table_id: finalTableId,
-      status: 'confirmed',
-      notes: finalNotes,
-      email: 'customer@example.com',
-      visit_count: 1
-    };
+    try {
+      // ─── 追加：データベースに新規予約を送る ───
+      const res = await fetch('/api/admin/reservations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guest_name: newOrderName,
+          date: newOrderDate,
+          time: newOrderTime,
+          guests: Number(newOrderGuests) || 2,
+          table_id: LABEL_TO_DB_ID[finalTableId] ?? finalTableId,
+          notes: finalNotes,
+        })
+      });
+      if (!res.ok) throw new Error('API Error');
+      const result = await res.json();
+      const created = result.reservation;
+      const dbId = Number(created.table_id);
+      const mappedLabel = DB_ID_TO_LABEL[dbId] || String(created.table_id);
 
-    setReservations(prev => [newRes, ...prev]);
+      const newRes = {
+        ...created,
+        table_id: mappedLabel,
+        email: created.email || 'customer@example.com',
+        visit_count: created.visit_count ?? 1
+      };
+
+      setReservations(prev => [newRes, ...prev]);
+    } catch (err) {
+      console.error(err);
+      alert('予約登録処理に失敗しました。');
+      return;
+    }
+
     setShowNewOrderModal(false);
     setNewOrderName('');
     setNewOrderSelectedGroup(null);
