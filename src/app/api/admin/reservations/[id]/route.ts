@@ -7,29 +7,28 @@ const supabase = createClient(
 );
 
 // ==========================================
-// 予約ステータスの部分更新（PATCH）※管理者用（キャンセル等）
+// 予約の部分更新（PATCH）※管理者用（キャンセル・時間/テーブル変更等）
 // ==========================================
 export async function PATCH(req: NextRequest, ctx: RouteContext<'/api/admin/reservations/[id]'>) {
   try {
     const { id } = await ctx.params;
     const body = await req.json();
-    const { status } = body;
 
-    if (!status) {
-      return NextResponse.json({ error: 'statusが必要です' }, { status: 400 });
-    }
+    const updateData: any = {};
+    if (body.time !== undefined) updateData.time = body.time;
+    if (body.guests !== undefined) updateData.guests = Number(body.guests);
+    if (body.table_id !== undefined) updateData.table_id = body.table_id;
+    if (body.notes !== undefined) updateData.notes = body.notes;
+    if (body.status !== undefined) updateData.status = body.status;
 
     const { data, error } = await supabase
       .from('reservations')
-      .update({ status })
+      .update(updateData)
       .eq('id', id)
-      .select();
+      .select()
+      .single();
 
-    if (error) {
-      console.error('Supabase Update Error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
+    if (error) throw error;
     return NextResponse.json({ success: true, reservation: data });
   } catch (err: any) {
     console.error(err);
