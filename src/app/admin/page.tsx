@@ -688,7 +688,7 @@ export default function AdminPage() {
     }
   };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
+  const handlePointerUp = async (e: React.PointerEvent) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
@@ -696,35 +696,11 @@ export default function AdminPage() {
 
     if (!draggingTableId) return;
 
+    const activeDraggingTableId = draggingTableId;
+    const activeHoveredTableId = hoveredTableId;
+    const activeIsCombineMode = isCombineMode;
+
     const currentShiftReservations = reservations.filter(r => r.date === selectedDate && r.status === 'confirmed' && (currentShift === 'lunch' ? isLunchTime(r.time) : !isLunchTime(r.time)));
-
-    if (isCombineMode && hoveredTableId) {
-      const foundRes = currentShiftReservations.find(r => 
-        String(r.table_id).trim() === String(draggingTableId).trim() || r.notes?.includes(`_combined:[${draggingTableId}]`)
-      );
-
-      if (foundRes) {
-        setReservations(prev => prev.map(r => {
-          if (r.id === foundRes.id) {
-            const currentNotes = r.notes || '';
-            const updatedNotes = `${currentNotes} _combined:[${hoveredTableId}]`.trim();
-            return { ...r, notes: updatedNotes };
-          }
-          return r;
-        }));
-      }
-    } 
-    else if (!isCombineMode && hoveredTableId) {
-      const foundRes = currentShiftReservations.find(r => String(r.table_id).trim() === String(draggingTableId).trim());
-      if (foundRes) {
-        setReservations(prev => prev.map(r => {
-          if (r.id === foundRes.id) {
-            return { ...r, table_id: hoveredTableId };
-          }
-          return r;
-        }));
-      }
-    }
 
     try {
       if (e.currentTarget && typeof e.currentTarget.releasePointerCapture === 'function') {
@@ -733,6 +709,53 @@ export default function AdminPage() {
     } catch (err) {}
 
     resetDragState();
+
+    if (activeIsCombineMode && activeHoveredTableId) {
+      const foundRes = currentShiftReservations.find(r =>
+        String(r.table_id).trim() === String(activeDraggingTableId).trim() || r.notes?.includes(`_combined:[${activeDraggingTableId}]`)
+      );
+
+      if (foundRes) {
+        const currentNotes = foundRes.notes || '';
+        const updatedNotes = `${currentNotes} _combined:[${activeHoveredTableId}]`.trim();
+
+        try {
+          // ─── 追加：テーブル連結をデータベースに送る ───
+          const res = await fetch('/api/admin/reservations', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: foundRes.id, notes: updatedNotes }),
+          });
+          if (!res.ok) throw new Error('API Error');
+
+          setReservations(prev => prev.map(r => r.id === foundRes.id ? { ...r, notes: updatedNotes } : r));
+        } catch (err) {
+          console.error(err);
+          alert('テーブルの連結に失敗しました。');
+        }
+      }
+    }
+    else if (!activeIsCombineMode && activeHoveredTableId) {
+      const foundRes = currentShiftReservations.find(r => String(r.table_id).trim() === String(activeDraggingTableId).trim());
+      if (foundRes) {
+        const newTableId = activeHoveredTableId;
+
+        try {
+          // ─── 追加：テーブル移動をデータベースに送る ───
+          const res = await fetch('/api/admin/reservations', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: foundRes.id, table_id: LABEL_TO_DB_ID[newTableId] ?? newTableId }),
+          });
+          if (!res.ok) throw new Error('API Error');
+
+          setReservations(prev => prev.map(r => r.id === foundRes.id ? { ...r, table_id: newTableId } : r));
+        } catch (err) {
+          console.error(err);
+          alert('テーブルの移動に失敗しました。');
+        }
+      }
+    }
   };
 
   const handlePointerCancel = (e: React.PointerEvent) => {
