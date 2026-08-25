@@ -736,23 +736,47 @@ export default function AdminPage() {
       }
     }
     else if (!activeIsCombineMode && activeHoveredTableId) {
-      const foundRes = currentShiftReservations.find(r => String(r.table_id).trim() === String(activeDraggingTableId).trim());
-      if (foundRes) {
-        const newTableId = activeHoveredTableId;
+      const newTableId = activeHoveredTableId;
+      const foundResAsMain = currentShiftReservations.find(r => String(r.table_id).trim() === String(activeDraggingTableId).trim());
 
+      if (foundResAsMain) {
         try {
           // ─── 追加：テーブル移動をデータベースに送る ───
           const res = await fetch('/api/admin/reservations', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: foundRes.id, table_id: LABEL_TO_DB_ID[newTableId] ?? newTableId }),
+            body: JSON.stringify({ id: foundResAsMain.id, table_id: LABEL_TO_DB_ID[newTableId] ?? newTableId }),
           });
           if (!res.ok) throw new Error('API Error');
 
-          setReservations(prev => prev.map(r => r.id === foundRes.id ? { ...r, table_id: newTableId } : r));
+          setReservations(prev => prev.map(r => r.id === foundResAsMain.id ? { ...r, table_id: newTableId } : r));
         } catch (err) {
           console.error(err);
           alert('テーブルの移動に失敗しました。');
+        }
+      } else {
+        // メインではなく連結中のサブテーブルをドラッグした場合、そのテーブルだけを新しいテーブルに差し替える
+        const foundResAsSub = currentShiftReservations.find(r => r.notes?.includes(`_combined:[${activeDraggingTableId}]`));
+        if (foundResAsSub) {
+          const currentNotes = foundResAsSub.notes || '';
+          const oldTag = `_combined:[${activeDraggingTableId}]`;
+          const newTag = `_combined:[${newTableId}]`;
+          const updatedNotes = currentNotes.replace(oldTag, newTag).replace(/\s+/g, ' ').trim();
+
+          try {
+            // ─── 追加：連結テーブルの差し替えをデータベースに送る ───
+            const res = await fetch('/api/admin/reservations', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: foundResAsSub.id, notes: updatedNotes }),
+            });
+            if (!res.ok) throw new Error('API Error');
+
+            setReservations(prev => prev.map(r => r.id === foundResAsSub.id ? { ...r, notes: updatedNotes } : r));
+          } catch (err) {
+            console.error(err);
+            alert('テーブルの入れ替えに失敗しました。');
+          }
         }
       }
     }
@@ -771,28 +795,37 @@ export default function AdminPage() {
     resetDragState();
   };
 
-  const handleTableClick = (table: TableStatus) => {
-    if (draggingTableId || hasMovedSignificantly) return; 
+  const handleTableClick = async (table: TableStatus) => {
+    if (draggingTableId || hasMovedSignificantly) return;
     if (isSelectedDateClosed) return;
 
     const currentShiftReservations = reservations.filter(r => r.date === selectedDate && r.status === 'confirmed' && (currentShift === 'lunch' ? isLunchTime(r.time) : !isLunchTime(r.time)));
 
     if (table.isOccupied) {
-      const foundRes = currentShiftReservations.find(r => 
+      const foundRes = currentShiftReservations.find(r =>
         String(r.table_id).trim() === String(table.id).trim() || r.notes?.includes(`_combined:[${table.id}]`)
       );
       if (foundRes) {
         if (String(foundRes.table_id).trim() !== String(table.id).trim()) {
-          setReservations(prev => prev.map(r => {
-            if (r.id === foundRes.id) {
-              const currentNotes = r.notes || '';
-              const targetTag = `_combined:[${table.id}]`;
-              const updatedNotes = currentNotes.replace(targetTag, '').replace(/\s+/g, ' ').trim();
-              return { ...r, notes: updatedNotes };
-            }
-            return r;
-          }));
-          return; 
+          const currentNotes = foundRes.notes || '';
+          const targetTag = `_combined:[${table.id}]`;
+          const updatedNotes = currentNotes.replace(targetTag, '').replace(/\s+/g, ' ').trim();
+
+          try {
+            // ─── 追加：連結解除をデータベースに送る ───
+            const res = await fetch('/api/admin/reservations', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: foundRes.id, notes: updatedNotes }),
+            });
+            if (!res.ok) throw new Error('API Error');
+
+            setReservations(prev => prev.map(r => r.id === foundRes.id ? { ...r, notes: updatedNotes } : r));
+          } catch (err) {
+            console.error(err);
+            alert('テーブルの連結解除に失敗しました。');
+          }
+          return;
         }
 
         setSelectedRes(foundRes);
