@@ -796,17 +796,17 @@ export default function AdminPage() {
         }
 
         setSelectedRes(foundRes);
-        setEditTime(foundRes.time);
+        setEditTime(formatShortTime(foundRes.time));
         setEditGuests(String(foundRes.guests));
         setEditTable(String(foundRes.table_id));
         setEditSelectedGroup(null);
       }
     } else {
-      const defaultTime = currentShift === 'lunch' ? '11:45' : '18:00';
+      const defaultTime = '18:00';
       setNewOrderTable(table.id);
       setNewOrderDate(selectedDate);
       setNewOrderName('');
-      setNewOrderGuests('0'); 
+      setNewOrderGuests('0');
       setNewOrderTime(defaultTime);
       setCurrentCalendarMonth(new Date(selectedDate));
       setShowCalendarPopup(false);
@@ -1014,7 +1014,7 @@ export default function AdminPage() {
       targetDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    const defaultTime = isLunchDay(targetDateStr) && currentShift === 'lunch' ? '11:45' : '18:00';
+    const defaultTime = '18:00';
     const occupiedIds = getOccupiedTableIds(targetDateStr, defaultTime);
     const firstAvailableTable = sortedTableIds.find(id => !occupiedIds.includes(id)) || '11';
 
@@ -1329,7 +1329,7 @@ export default function AdminPage() {
                           key={r.id} 
                           role="button"
                           tabIndex={0}
-                          onClick={() => { setSelectedRes(r); setEditTime(r.time); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); }} 
+                          onClick={() => { setSelectedRes(r); setEditTime(formatShortTime(r.time)); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); }} 
                           className={`border h-8 px-1 rounded-md flex items-center transition-all text-[11px] font-black ${isNightMapMode ? 'bg-slate-950/40 hover:bg-blue-600/20 border-slate-900/60 hover:border-blue-500/40' : 'bg-slate-50 hover:bg-blue-50 border-slate-200 hover:border-blue-300'}`}
                           style={{ cursor: 'pointer' }}
                         >
@@ -1871,7 +1871,7 @@ export default function AdminPage() {
                   return (
                     <tr 
                       key={r.id} 
-                      onClick={() => { setSelectedRes(r); setEditTime(r.time); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); }} 
+                      onClick={() => { setSelectedRes(r); setEditTime(formatShortTime(r.time)); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); }} 
                       className="border-b transition cursor-pointer border-slate-100 hover:bg-slate-50"
                     >
                       <td className="p-2.5 font-mono font-black text-amber-600">{r.date} {formatShortTime(r.time)}</td>
