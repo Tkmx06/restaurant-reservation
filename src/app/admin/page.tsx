@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 
+// 型定義
 interface Reservation {
   id: string;
   guest_name: string;
@@ -38,10 +39,12 @@ export default function AdminPage() {
   const [newOrderName, setNewOrderName] = useState('');
   const [newOrderEmail, setNewOrderEmail] = useState('');
   const [newOrderPhone, setNewOrderPhone] = useState('');
+  const [newOrderDate, setNewOrderDate] = useState(selectedDate);
   const [newOrderTime, setNewOrderTime] = useState('18:00');
   const [newOrderGuests, setNewOrderGuests] = useState('2');
+  const [newOrderTable, setNewOrderTable] = useState('1');
 
-  // 抽出データに基づくテーブルIDとラベルのマッピング
+  // テーブルIDとラベルのマッピング定義（抽出データより完全復元）
   const DB_ID_TO_LABEL: Record<string, string> = {
     '1': '51', '2': '52', '3': '3', '4': '4',
     '5': '68', '6': '7', '7': '6', '8': '5',
@@ -53,15 +56,16 @@ export default function AdminPage() {
     8: [{ mainTable: '65', combinedTables: ['65', '66'] }],
   };
 
-  // テーブルレイアウト定義
+  // テーブルレイアウト定義（フロアマップ用）
   const tables: TableDef[] = [
     { id: '1', label: 'テーブル 51', shape: 'square-2', top: 20, left: 10, width: 15, height: 15 },
     { id: '2', label: 'テーブル 52', shape: 'square-2', top: 20, left: 30, width: 15, height: 15 },
     { id: '3', label: 'テーブル 3', shape: 'square-2', top: 20, left: 50, width: 15, height: 15 },
     { id: '4', label: 'テーブル 4', shape: 'rect-h-4', top: 50, left: 10, width: 30, height: 15 },
+    { id: '5', label: 'テーブル 68', shape: 'square-2', top: 50, left: 50, width: 15, height: 15 },
   ];
 
-  // データの安全な取得（エラーで画面が落ちないように保護）
+  // データの安全な取得（お客様ページからのデータも確実に取得）
   const loadData = async () => {
     try {
       const res = await fetch(`/api/admin/reservations?date=${selectedDate}`);
@@ -70,13 +74,14 @@ export default function AdminPage() {
         setReservations(Array.isArray(data) ? data : []);
       }
     } catch (err) {
-      console.error('データ取得エラー（モックデータで継続します）:', err);
+      console.error('データ取得エラー:', err);
     }
   };
 
+  // 3秒ごとのリアルタイムポーリング（お客様ページの予約を即時反映）
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 5000);
+    const interval = setInterval(loadData, 3000);
     return () => clearInterval(interval);
   }, [selectedDate]);
 
@@ -111,7 +116,7 @@ export default function AdminPage() {
     return ids;
   };
 
-  const occupiedIds = getOccupiedTableIds(selectedDate, newOrderTime);
+  const occupiedIds = getOccupiedTableIds(newOrderDate, newOrderTime);
   const freeTableIds = tables.filter(t => !occupiedIds.includes(t.id)).map(t => t.id);
 
   // 新規予約作成処理
@@ -123,7 +128,7 @@ export default function AdminPage() {
     }
 
     const guestsNum = parseInt(newOrderGuests, 10) || 1;
-    let finalTableId = tables[0]?.id || '1';
+    let finalTableId = newOrderTable;
     let finalNotes = '';
 
     if (guestsNum >= 9) {
@@ -142,7 +147,7 @@ export default function AdminPage() {
 
     const newResData = {
       guest_name: newOrderName,
-      date: selectedDate,
+      date: newOrderDate,
       time: newOrderTime,
       guests: guestsNum,
       table_id: finalTableId,
@@ -169,7 +174,7 @@ export default function AdminPage() {
       setNewOrderPhone('');
     } catch (err) {
       console.error(err);
-      alert('予約の保存に失敗しました。APIルートを確認してください。');
+      alert('予約の保存に失敗しました。');
     }
   };
 
@@ -194,7 +199,7 @@ export default function AdminPage() {
   return (
     <div className="p-6 bg-slate-900 text-white min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">レストラン予約管理システム</h1>
+        <h1 className="text-2xl font-bold">レストラン予約管理システム（完全統合版）</h1>
         <div className="flex gap-3">
           <button
             onClick={() => setCurrentShift(currentShift === 'lunch' ? 'dinner' : 'lunch')}
@@ -220,6 +225,9 @@ export default function AdminPage() {
           onChange={e => setSelectedDate(e.target.value)}
           className="bg-slate-700 border border-slate-600 px-3 py-1.5 rounded text-white"
         />
+        <span className="text-xs text-slate-400 ml-auto">
+          ※お客様用ページからの予約は3秒ごとに自動反映されます
+        </span>
       </div>
 
       {/* 新規予約モーダル */}
@@ -239,6 +247,15 @@ export default function AdminPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
+                <label className="block text-sm mb-1 text-slate-300">日付</label>
+                <input
+                  type="date"
+                  value={newOrderDate}
+                  onChange={e => setNewOrderDate(e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 px-3 py-2 rounded text-white"
+                />
+              </div>
+              <div>
                 <label className="block text-sm mb-1 text-slate-300">時間</label>
                 <input
                   type="time"
@@ -247,17 +264,17 @@ export default function AdminPage() {
                   className="w-full bg-slate-700 border border-slate-600 px-3 py-2 rounded text-white"
                 />
               </div>
-              <div>
-                <label className="block text-sm mb-1 text-slate-300">人数</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={newOrderGuests}
-                  onChange={e => setNewOrderGuests(e.target.value)}
-                  className="w-full bg-slate-700 border border-slate-600 px-3 py-2 rounded text-white"
-                />
-              </div>
+            </div>
+            <div>
+              <label className="block text-sm mb-1 text-slate-300">人数</label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={newOrderGuests}
+                onChange={e => setNewOrderGuests(e.target.value)}
+                className="w-full bg-slate-700 border border-slate-600 px-3 py-2 rounded text-white"
+              />
             </div>
             <div className="flex justify-end gap-2 pt-4">
               <button
@@ -295,7 +312,10 @@ export default function AdminPage() {
             {reservations.map(r => (
               <tr key={r.id} className="hover:bg-slate-700/20 transition">
                 <td className="p-3.5 font-mono text-sm">{r.time}</td>
-                <td className="p-3.5 font-medium">{r.guest_name}</td>
+                <td className="p-3.5 font-medium">
+                  {r.guest_name}
+                  {r.phone && <div className="text-xs text-slate-400">{r.phone}</div>}
+                </td>
                 <td className="p-3.5">{r.guests}名</td>
                 <td className="p-3.5">
                   #{DB_ID_TO_LABEL[r.table_id] || r.table_id}
