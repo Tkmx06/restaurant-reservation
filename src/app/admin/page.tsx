@@ -437,6 +437,312 @@ const renderGroupSelector = (
   );
 };
 
+// ─── スマホ幅（sm未満）専用のフロアマップグリッド用ゾーン定義 ───
+// 使用頻度の高い順に上から並べる
+const MOBILE_FLOOR_ZONES: string[][] = [
+  ['65', '66', '67', '68'],
+  ['11', '12', '13', '14', '15'],
+  ['21', '22', '23', '70'],
+  ['1', '2', '3', '4'],
+  ['51', '52', '53', '54'],
+];
+
+interface MobileAdminViewProps {
+  selectedDate: string;
+  formatPureDate: (dateStr: string) => string;
+  getDateTopLabel: (dateStr: string) => string;
+  changeDate: (days: number) => void;
+  currentShift: 'lunch' | 'dinner';
+  setCurrentShift: (shift: 'lunch' | 'dinner') => void;
+  isSelectedDateLunchAllowed: boolean;
+  handleGoToToday: () => void;
+  setShowBusinessDaysModal: (v: boolean) => void;
+  openNewOrderModal: () => void;
+  mobileTab: 'list' | 'floor' | 'customers' | 'history';
+  setMobileTab: (tab: 'list' | 'floor' | 'customers' | 'history') => void;
+  displaySideReservations: any[];
+  totalLunchGuests: number;
+  totalLunchCount: number;
+  totalDinnerGuests: number;
+  totalDinnerCount: number;
+  isLunchTime: (timeStr: string) => boolean;
+  formatShortTime: (timeStr: string) => string;
+  getCleanNotes: (notesStr: string) => string;
+  displayTableIds: (r: any) => string;
+  tables: TableStatus[];
+  reservations: any[];
+  isSelectedDateClosed: boolean;
+  setSelectedRes: (r: any) => void;
+  setEditTime: (t: string) => void;
+  setEditGuests: (g: string) => void;
+  setEditTable: (t: string) => void;
+  setEditSelectedGroup: (g: any) => void;
+  filteredCustomerList: CustomerSummary[];
+  customerSearchQuery: string;
+  setCustomerSearchQuery: (q: string) => void;
+  openCustomerEditModal: (c: CustomerSummary) => void;
+  filteredReservations: any[];
+  activeTab: 'today' | 'future' | 'all' | 'customers';
+  setActiveTab: (t: 'today' | 'future' | 'all' | 'customers') => void;
+}
+
+function MobileAdminView(props: MobileAdminViewProps) {
+  const {
+    selectedDate, formatPureDate, getDateTopLabel, changeDate,
+    currentShift, setCurrentShift, isSelectedDateLunchAllowed,
+    handleGoToToday, setShowBusinessDaysModal, openNewOrderModal,
+    mobileTab, setMobileTab,
+    displaySideReservations, totalLunchGuests, totalLunchCount, totalDinnerGuests, totalDinnerCount,
+    isLunchTime, formatShortTime, getCleanNotes, displayTableIds,
+    tables, reservations, isSelectedDateClosed,
+    setSelectedRes, setEditTime, setEditGuests, setEditTable, setEditSelectedGroup,
+    filteredCustomerList, customerSearchQuery, setCustomerSearchQuery, openCustomerEditModal,
+    filteredReservations,
+  } = props;
+
+  const totalGuests = currentShift === 'lunch' ? totalLunchGuests : totalDinnerGuests;
+  const totalCount = currentShift === 'lunch' ? totalLunchCount : totalDinnerCount;
+
+  const openReservation = (r: any) => {
+    setSelectedRes(r);
+    setEditTime(formatShortTime(r.time));
+    setEditGuests(String(r.guests));
+    setEditTable(String(r.table_id));
+    setEditSelectedGroup(null);
+  };
+
+  const navItems: { key: 'list' | 'floor' | 'customers' | 'history'; icon: string; label: string }[] = [
+    { key: 'list', icon: '📋', label: '予約一覧' },
+    { key: 'floor', icon: '🗺️', label: 'フロアマップ' },
+    { key: 'customers', icon: '👥', label: '顧客名簿' },
+    { key: 'history', icon: '🗄️', label: '履歴' },
+  ];
+
+  return (
+    <div className="sm:hidden fixed inset-0 bg-slate-950 text-slate-200 flex flex-col z-0">
+      {/* スティッキーヘッダー */}
+      <div className="shrink-0 px-4 pt-3.5 pb-3 bg-slate-900 border-b border-slate-800">
+        <div className="flex items-center justify-between mb-2.5">
+          <button onClick={() => changeDate(-1)} style={{ cursor: 'pointer' }} className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-base">◀</button>
+          <div className="flex flex-col items-center">
+            <span className="text-[17px] font-black text-white">{formatPureDate(selectedDate)}</span>
+            <span className="text-[10px] font-extrabold text-emerald-400">{getDateTopLabel(selectedDate) || ' '}</span>
+          </div>
+          <button onClick={() => changeDate(1)} style={{ cursor: 'pointer' }} className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-base">▶</button>
+        </div>
+
+        {(mobileTab === 'list' || mobileTab === 'floor') && (
+          <div className="flex bg-slate-950 rounded-xl p-1 border border-slate-800 mb-2">
+            <button
+              disabled={!isSelectedDateLunchAllowed}
+              onClick={() => setCurrentShift('lunch')}
+              style={{ cursor: isSelectedDateLunchAllowed ? 'pointer' : 'not-allowed' }}
+              className={`flex-1 text-center py-2 rounded-lg text-xs font-black transition ${!isSelectedDateLunchAllowed ? 'opacity-30 text-slate-500' : currentShift === 'lunch' ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-950' : 'text-slate-400'}`}
+            >
+              ☀️ 昼
+            </button>
+            <button
+              onClick={() => setCurrentShift('dinner')}
+              style={{ cursor: 'pointer' }}
+              className={`flex-1 text-center py-2 rounded-lg text-xs font-black transition ${currentShift === 'dinner' ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white' : 'text-slate-400'}`}
+            >
+              🌙 夜
+            </button>
+          </div>
+        )}
+
+        <div className="flex items-center gap-1.5">
+          <button onClick={handleGoToToday} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-white text-slate-700 text-[11px] font-black flex items-center justify-center gap-1">🏠 今日</button>
+          <button onClick={() => setShowBusinessDaysModal(true)} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-slate-700 text-slate-100 text-[11px] font-black flex items-center justify-center gap-1">📅 営業日</button>
+          <button onClick={openNewOrderModal} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-emerald-950 text-[11px] font-black flex items-center justify-center gap-1">➕ 新規予約</button>
+        </div>
+      </div>
+
+      {/* 本文 */}
+      <div className="flex-1 min-h-0 overflow-y-auto pb-24">
+
+        {mobileTab === 'list' && (
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-[13px] font-black text-slate-100">{currentShift === 'lunch' ? '昼' : '夜'}の予約</span>
+              <span className="text-[11px] font-black bg-slate-700 text-white px-2.5 py-0.5 rounded-full">{totalCount}件 / {totalGuests}名</span>
+            </div>
+            {isSelectedDateClosed ? (
+              <p className="text-xs text-slate-500 italic text-center py-10">この日は定休日です</p>
+            ) : displaySideReservations.length === 0 ? (
+              <p className="text-xs text-slate-500 italic text-center py-10">この時間帯に予約はありません</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {displaySideReservations.map((r) => {
+                  const colorClasses = getGuestCountColorClasses(r.guests);
+                  const accent = colorClasses.split(' ')[0].replace('from-', 'border-');
+                  return (
+                    <div
+                      key={r.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openReservation(r)}
+                      style={{ cursor: 'pointer' }}
+                      className={`flex items-center gap-3 bg-slate-900 border border-slate-800 border-l-4 ${accent} rounded-xl px-3.5 py-3`}
+                    >
+                      <div className="flex flex-col items-start shrink-0 w-11">
+                        <span className="text-[13px] font-mono font-black text-slate-100">{formatShortTime(r.time)}</span>
+                        <span className="text-[9px] font-extrabold text-slate-500">{isLunchTime(r.time) ? '昼' : '夜'}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-extrabold text-white truncate">{r.guest_name}</div>
+                        <div className="text-[10px] font-bold text-slate-500 mt-0.5">{r.guests}名</div>
+                      </div>
+                      <span className={`shrink-0 text-[11px] font-black px-2.5 py-1 rounded-full bg-gradient-to-br ${colorClasses.split(' ').slice(0, 2).join(' ')} text-white`}>
+                        {displayTableIds(r)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {mobileTab === 'floor' && (
+          <div className="p-4">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4">
+              {GUEST_COUNT_LEGEND.map((g) => (
+                <div key={g.label} className="flex items-center gap-1">
+                  <span className={`w-2.5 h-2.5 rounded-full ${g.swatch}`} />
+                  <span className="text-[10px] font-bold text-slate-400">{g.label}</span>
+                </div>
+              ))}
+            </div>
+            {isSelectedDateClosed ? (
+              <p className="text-xs text-slate-500 italic text-center py-10">この日は定休日です</p>
+            ) : (
+              MOBILE_FLOOR_ZONES.map((zoneIds, zi) => (
+                <div key={zi} className="grid grid-cols-4 gap-2 mb-3.5">
+                  {zoneIds.map((tid) => {
+                    const t = tables.find((tt) => tt.id === tid);
+                    if (!t) return null;
+                    const attachedRes = reservations.find((r) => {
+                      const matchBasic = r.date === selectedDate && r.status === 'confirmed' && (String(r.table_id).trim() === String(t.id).trim() || r.notes?.includes(`_combined:[${t.id}]`));
+                      if (!matchBasic) return false;
+                      return currentShift === 'lunch' ? isLunchTime(r.time) : !isLunchTime(r.time);
+                    });
+                    const colorClasses = attachedRes ? getGuestCountColorClasses(attachedRes.guests) : '';
+                    return (
+                      <div
+                        key={tid}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => attachedRes && openReservation(attachedRes)}
+                        style={{ cursor: attachedRes ? 'pointer' : 'default' }}
+                        className={`aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5 border ${attachedRes ? `bg-gradient-to-br ${colorClasses.split(' ').slice(0, 2).join(' ')} border-transparent` : 'bg-slate-900 border-slate-800'}`}
+                      >
+                        <span className={`text-xs font-black ${attachedRes ? 'text-white' : 'text-slate-600'}`}>{t.label}</span>
+                        <span className={`text-[8px] font-extrabold ${attachedRes ? 'text-white/85' : 'text-slate-600'}`}>{attachedRes ? `${attachedRes.guests}名` : '空席'}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {mobileTab === 'customers' && (
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-[13px] font-black text-slate-100">👥 顧客名簿</span>
+              <span className="text-[11px] font-black bg-slate-700 text-white px-2.5 py-0.5 rounded-full">{filteredCustomerList.length}名</span>
+            </div>
+            <input
+              type="text"
+              value={customerSearchQuery}
+              onChange={(e) => setCustomerSearchQuery(e.target.value)}
+              placeholder="🔍 名前・会社名・メールアドレスで検索"
+              className="w-full mb-3 p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            />
+            <div className="flex flex-col gap-2">
+              {filteredCustomerList.map((c, idx) => (
+                <div
+                  key={idx}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openCustomerEditModal(c)}
+                  style={{ cursor: 'pointer' }}
+                  className="bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-3"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-extrabold text-white">{c.guest_name}</span>
+                    <span className="text-[10px] font-black font-mono bg-slate-800 text-emerald-400 px-2 py-0.5 rounded-full">{c.total_visits}回</span>
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-500 truncate">{c.email}</div>
+                  {c.company_name && <div className="text-[10px] text-slate-600 mt-0.5">{c.company_name}</div>}
+                </div>
+              ))}
+              {filteredCustomerList.length === 0 && (
+                <p className="text-xs text-slate-500 italic text-center py-10">該当する顧客が見つかりません</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {mobileTab === 'history' && (
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-[13px] font-black text-slate-100">🗄️ すべての予約履歴</span>
+              <span className="text-[11px] font-black bg-slate-700 text-white px-2.5 py-0.5 rounded-full">{filteredReservations.length}件</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {[...filteredReservations].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map((r) => {
+                const cleanNote = getCleanNotes(r.notes);
+                return (
+                  <div
+                    key={r.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openReservation(r)}
+                    style={{ cursor: 'pointer' }}
+                    className="bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-3"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-mono font-black text-amber-500">{r.date} {formatShortTime(r.time)}</span>
+                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${r.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{r.status}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-extrabold text-white truncate">{r.guest_name}</span>
+                      <span className="text-[10px] font-mono font-black bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md shrink-0">{displayTableIds(r)}</span>
+                    </div>
+                    {cleanNote && <div className="text-[10px] text-amber-500/80 mt-1 truncate">{cleanNote}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {/* ボトムナビゲーション */}
+      <div className="shrink-0 flex bg-slate-900 border-t border-slate-800 px-1 pt-2 pb-3.5">
+        {navItems.map((item) => {
+          const isActive = mobileTab === item.key;
+          return (
+            <button
+              key={item.key}
+              onClick={() => setMobileTab(item.key)}
+              style={{ cursor: 'pointer' }}
+              className="flex-1 flex flex-col items-center gap-0.5 py-1"
+            >
+              <span className={`text-lg ${isActive ? '' : 'opacity-50'}`}>{item.icon}</span>
+              <span className={`text-[9px] font-black ${isActive ? 'text-emerald-400' : 'text-slate-500'}`}>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'today' | 'future' | 'all' | 'customers'>('today');
   
@@ -467,6 +773,15 @@ export default function AdminPage() {
   const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date());
 
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+
+  // ─── スマホ向けボトムナビの選択状態（activeTabと連動させる） ───
+  const [mobileTabState, setMobileTabState] = useState<'list' | 'floor' | 'customers' | 'history'>('list');
+  const setMobileTab = (tab: 'list' | 'floor' | 'customers' | 'history') => {
+    setMobileTabState(tab);
+    if (tab === 'list' || tab === 'floor') setActiveTab('today');
+    else if (tab === 'customers') setActiveTab('customers');
+    else setActiveTab('all');
+  };
   const [editingCustomer, setEditingCustomer] = useState<CustomerSummary | null>(null);
   const [ceName, setCeName] = useState('');
   const [ceEmail, setCeEmail] = useState('');
@@ -1557,6 +1872,8 @@ export default function AdminPage() {
   return (
     <div className="p-2 min-h-screen font-sans transition-colors duration-300 bg-slate-50 text-slate-900">
       
+      {/* ===== PC・タブレット向けレイアウト（sm以上でのみ表示） ===== */}
+      <div className="hidden sm:block">
       {/* 👑 トップヘッダーメニュー */}
       <div className="flex justify-between items-center mb-2 border-b pb-2 px-1 border-slate-200">
         <div className="flex space-x-1.5">
@@ -1850,6 +2167,8 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+      </div>
+      {/* ===== ここまでPC・タブレット向け ===== */}
 
       {/* ======================================================
           営業日の変更モーダル
@@ -2578,7 +2897,8 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 下部データ表示エリア */}
+      {/* 下部データ表示エリア（PC・タブレット向け） */}
+      <div className="hidden sm:block">
       {activeTab === 'customers' ? (
         <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
           <h2 className="text-xs font-black mb-2 flex items-center justify-between px-1">
@@ -2674,6 +2994,47 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+      </div>
+
+      {/* ===== スマホ向けレイアウト（sm未満でのみ表示） ===== */}
+      <MobileAdminView
+        selectedDate={selectedDate}
+        formatPureDate={formatPureDate}
+        getDateTopLabel={getDateTopLabel}
+        changeDate={changeDate}
+        currentShift={currentShift}
+        setCurrentShift={setCurrentShift}
+        isSelectedDateLunchAllowed={isSelectedDateLunchAllowed}
+        handleGoToToday={handleGoToToday}
+        setShowBusinessDaysModal={setShowBusinessDaysModal}
+        openNewOrderModal={openNewOrderModal}
+        mobileTab={mobileTabState}
+        setMobileTab={setMobileTab}
+        displaySideReservations={displaySideReservations}
+        totalLunchGuests={totalLunchGuests}
+        totalLunchCount={totalLunchCount}
+        totalDinnerGuests={totalDinnerGuests}
+        totalDinnerCount={totalDinnerCount}
+        isLunchTime={isLunchTime}
+        formatShortTime={formatShortTime}
+        getCleanNotes={getCleanNotes}
+        displayTableIds={displayTableIds}
+        tables={tables}
+        reservations={reservations}
+        isSelectedDateClosed={isSelectedDateClosed}
+        setSelectedRes={setSelectedRes}
+        setEditTime={setEditTime}
+        setEditGuests={setEditGuests}
+        setEditTable={setEditTable}
+        setEditSelectedGroup={setEditSelectedGroup}
+        filteredCustomerList={filteredCustomerList}
+        customerSearchQuery={customerSearchQuery}
+        setCustomerSearchQuery={setCustomerSearchQuery}
+        openCustomerEditModal={openCustomerEditModal}
+        filteredReservations={filteredReservations}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
     </div>
   );
 }
