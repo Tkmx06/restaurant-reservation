@@ -187,6 +187,7 @@ export default function ReservationPage() {
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [closedDays, setClosedDays] = useState<number[]>([]);
+  const [overridesMap, setOverridesMap] = useState<Record<string, boolean>>({});
   
   // 空き席計算用に、既存の全予約情報を管理する
   const [allReservations, setAllReservations] = useState<any[]>([]);
@@ -201,9 +202,24 @@ export default function ReservationPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.closedDays) setClosedDays(data.closedDays);
+        if (data.overrides) {
+          const map: Record<string, boolean> = {};
+          data.overrides.forEach((o: { date: string; is_closed: boolean }) => {
+            map[o.date] = o.is_closed;
+          });
+          setOverridesMap(map);
+        }
       })
       .catch((err) => console.error('定休日の取得に失敗:', err));
   }, []);
+
+  // 特定日の営業/休業を判定（特別営業日の設定が曜日パターンより優先）
+  const isDateClosed = (dateStr: string, dayOfWeek: number) => {
+    if (Object.prototype.hasOwnProperty.call(overridesMap, dateStr)) {
+      return overridesMap[dateStr];
+    }
+    return closedDays.includes(dayOfWeek);
+  };
 
   // 2. 既存の全予約リストを定期的にロード (空きテーブル算出に必須)
   useEffect(() => {
@@ -224,13 +240,13 @@ export default function ReservationPage() {
       for (let i = 0; i < 7; i++) {
         const checkDate = new Date();
         checkDate.setDate(d.getDate() + i);
-        if (!closedDays.includes(checkDate.getDay())) {
+        if (!isDateClosed(formatDateStr(checkDate), checkDate.getDay())) {
           setDate(formatDateStr(checkDate));
           break;
         }
       }
     }
-  }, [closedDays, date]);
+  }, [closedDays, overridesMap, date]);
 
   const totalGuests = adults + children;
   const dateList = getDaysRange();
@@ -272,7 +288,7 @@ export default function ReservationPage() {
       daysArray.push({
         day,
         dateStr: formatDateStr(dateObj),
-        isClosed: closedDays.includes(dateObj.getDay()),
+        isClosed: isDateClosed(formatDateStr(dateObj), dateObj.getDay()),
         isPast: dateObj < today, // 今日より過去の日付かを判定
       });
     }
@@ -444,7 +460,7 @@ export default function ReservationPage() {
                   {dateList.map((dateObj, idx) => {
                     const dateStr = formatDateStr(dateObj);
                     const isSelected = date === dateStr;
-                    const isClosed = closedDays.includes(dateObj.getDay());
+                    const isClosed = isDateClosed(dateStr, dateObj.getDay());
                     const dayLabel = getDayLabel(dateObj, idx);
                     const dayNum = dateObj.getDate();
 

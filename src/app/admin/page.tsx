@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 interface TableStatus {
   id: string;      
@@ -113,6 +114,26 @@ const GROUPS_BY_GUESTS: Record<number, TableGroup[]> = {
 };
 
 const LARGE_PARTY_THRESHOLD = 1;
+
+// 人数帯ごとのテーブル配色（凡例 GUEST_COUNT_LEGEND と対応）
+const GUEST_COUNT_LEGEND = [
+  { label: '1名', swatch: 'bg-sky-500', classes: 'from-sky-500 to-sky-600 border-sky-700 ring-sky-300/30' },
+  { label: '2名', swatch: 'bg-emerald-500', classes: 'from-emerald-500 to-emerald-600 border-emerald-700 ring-emerald-300/30' },
+  { label: '3-4名', swatch: 'bg-amber-500', classes: 'from-amber-500 to-amber-600 border-amber-700 ring-amber-300/30' },
+  { label: '5-6名', swatch: 'bg-violet-500', classes: 'from-violet-500 to-violet-600 border-violet-700 ring-violet-300/30' },
+  { label: '7-8名', swatch: 'bg-rose-500', classes: 'from-rose-500 to-rose-600 border-rose-700 ring-rose-300/30' },
+  { label: '9名以上', swatch: 'bg-red-600', classes: 'from-red-600 to-red-700 border-red-800 ring-red-300/30' },
+];
+
+const getGuestCountColorClasses = (guests: number | undefined) => {
+  const n = Number(guests) || 0;
+  if (n <= 1) return GUEST_COUNT_LEGEND[0].classes;
+  if (n === 2) return GUEST_COUNT_LEGEND[1].classes;
+  if (n <= 4) return GUEST_COUNT_LEGEND[2].classes;
+  if (n <= 6) return GUEST_COUNT_LEGEND[3].classes;
+  if (n <= 8) return GUEST_COUNT_LEGEND[4].classes;
+  return GUEST_COUNT_LEGEND[5].classes;
+};
 
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
 const getTodayString = () => {
@@ -441,6 +462,38 @@ export default function AdminPage() {
   const [showCalendarPopup, setShowCalendarPopup] = useState(false);
   const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date());
 
+  // ─── 営業日（特定日の営業/休業）管理 ───
+  const [closedWeekDays, setClosedWeekDays] = useState<number[]>([]);
+  const [businessDayOverrides, setBusinessDayOverrides] = useState<{ date: string; is_closed: boolean }[]>([]);
+  const [showBusinessDaysModal, setShowBusinessDaysModal] = useState(false);
+  const [bdStartDate, setBdStartDate] = useState(() => getTodayString());
+  const [bdEndDate, setBdEndDate] = useState(() => getTodayString());
+  const [bdIsClosed, setBdIsClosed] = useState(true);
+  const [bdPendingEntries, setBdPendingEntries] = useState<{ startDate: string; endDate: string; is_closed: boolean }[]>([]);
+  const [bdSaving, setBdSaving] = useState(false);
+  const [bdShowCalendarPopup, setBdShowCalendarPopup] = useState(false);
+  const [bdCalendarMonth, setBdCalendarMonth] = useState(new Date());
+  const [bdShowEndCalendarPopup, setBdShowEndCalendarPopup] = useState(false);
+  const [bdEndCalendarMonth, setBdEndCalendarMonth] = useState(new Date());
+  const [bdCalendarPos, setBdCalendarPos] = useState<{ top: number; left: number } | null>(null);
+  const [bdEndCalendarPos, setBdEndCalendarPos] = useState<{ top: number; left: number } | null>(null);
+  const bdStartFieldRef = useRef<HTMLDivElement>(null);
+  const bdEndFieldRef = useRef<HTMLDivElement>(null);
+
+  const openBdStartCalendar = () => {
+    const rect = bdStartFieldRef.current?.getBoundingClientRect();
+    if (rect) setBdCalendarPos({ top: rect.bottom + 4, left: rect.left });
+    setBdShowCalendarPopup(true);
+    setBdShowEndCalendarPopup(false);
+  };
+
+  const openBdEndCalendar = () => {
+    const rect = bdEndFieldRef.current?.getBoundingClientRect();
+    if (rect) setBdEndCalendarPos({ top: rect.bottom + 4, left: rect.right - 288 });
+    setBdShowEndCalendarPopup(true);
+    setBdShowCalendarPopup(false);
+  };
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDown = useRef(false);
   const startX = useRef(0);
@@ -549,6 +602,93 @@ export default function AdminPage() {
 
     return () => clearInterval(interval);
   }, [selectedDate, currentShift]);
+
+  async function loadBusinessDays() {
+    try {
+      const res = await fetch('/api/business-hours');
+      const data = await res.json();
+      if (data.closedDays) setClosedWeekDays(data.closedDays);
+      if (data.overrides) setBusinessDayOverrides(data.overrides);
+    } catch (err) {
+      console.error('営業日データの読み込みに失敗しました:', err);
+    }
+  }
+
+  useEffect(() => {
+    loadBusinessDays();
+  }, []);
+
+  const overridesMap: Record<string, boolean> = {};
+  businessDayOverrides.forEach((o) => { overridesMap[o.date] = o.is_closed; });
+
+  // 開始日の変更時、終了日を自動で開始日に揃える（単日入力を基本にしつつ、必要なら終了日側だけ後から伸ばせる）
+  const handleBdStartDateChange = (dateStr: string) => {
+    setBdStartDate(dateStr);
+    setBdEndDate(dateStr);
+  };
+
+  const handleAddBdEntry = () => {
+    const endDate = bdEndDate || bdStartDate;
+    if (endDate < bdStartDate) {
+      alert('終了日は開始日以降の日付を指定してください。');
+      return;
+    }
+
+    if (bdIsClosed) {
+      const affected = reservations.filter(
+        (r) => r.status === 'confirmed' && r.date >= bdStartDate && r.date <= endDate
+      );
+      if (affected.length > 0) {
+        const rangeLabel = endDate !== bdStartDate ? `${bdStartDate} 〜 ${endDate}` : bdStartDate;
+        const proceed = window.confirm(
+          `${rangeLabel} には既に ${affected.length} 件の予約が入っています。休業に設定しますか？`
+        );
+        if (!proceed) return;
+      }
+    }
+
+    setBdPendingEntries((prev) => [...prev, { startDate: bdStartDate, endDate, is_closed: bdIsClosed }]);
+    handleBdStartDateChange(getTodayString());
+  };
+
+  const handleRemoveBdEntry = (index: number) => {
+    setBdPendingEntries((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveBdEntries = async () => {
+    if (bdPendingEntries.length === 0) return;
+    setBdSaving(true);
+    try {
+      await Promise.all(bdPendingEntries.map((entry) =>
+        fetch('/api/admin/business-days', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate: entry.startDate, endDate: entry.endDate, is_closed: entry.is_closed }),
+        })
+      ));
+      setBdPendingEntries([]);
+      await loadBusinessDays();
+    } catch (err) {
+      console.error(err);
+      alert('営業日の保存に失敗しました。');
+    } finally {
+      setBdSaving(false);
+    }
+  };
+
+  const handleDeleteOverride = async (date: string) => {
+    try {
+      await fetch('/api/admin/business-days', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date }),
+      });
+      await loadBusinessDays();
+    } catch (err) {
+      console.error(err);
+      alert('解除に失敗しました。');
+    }
+  };
 
   useEffect(() => {
     const targetReservations = reservations.filter((r: any) => {
@@ -1185,8 +1325,11 @@ export default function AdminPage() {
   };
 
   const checkIsClosed = (dateStr: string) => {
+    if (Object.prototype.hasOwnProperty.call(overridesMap, dateStr)) {
+      return overridesMap[dateStr];
+    }
     const day = new Date(dateStr).getDay();
-    return day === 2 || day === 3; 
+    return closedWeekDays.includes(day);
   };
 
   const isSelectedDateClosed = checkIsClosed(selectedDate);
@@ -1314,14 +1457,24 @@ export default function AdminPage() {
             </button>
           ))}
         </div>
-        <button 
-          type="button" 
-          onClick={openNewOrderModal} 
-          className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-blue-700 transition shadow-md"
-          style={{ cursor: 'pointer' }}
-        >
-          ➕ 新規予約登録
-        </button>
+        <div className="flex space-x-1.5">
+          <button
+            type="button"
+            onClick={() => setShowBusinessDaysModal(true)}
+            className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-slate-800 transition shadow-md"
+            style={{ cursor: 'pointer' }}
+          >
+            📅 営業日の変更
+          </button>
+          <button
+            type="button"
+            onClick={openNewOrderModal}
+            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-blue-700 transition shadow-md"
+            style={{ cursor: 'pointer' }}
+          >
+            ➕ 新規予約登録
+          </button>
+        </div>
       </div>
 
       {/* 操作ヘッダーバー */}
@@ -1375,6 +1528,15 @@ export default function AdminPage() {
       {/* フロアマップ枠 */}
       {activeTab === 'today' && (
         <div className="mb-3 border p-3 rounded-xl shadow-xl relative overflow-hidden transition-colors duration-300 bg-white border-slate-200">
+          {/* 人数帯カラー凡例 */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 px-1">
+            {GUEST_COUNT_LEGEND.map((g) => (
+              <div key={g.label} className="flex items-center gap-1">
+                <span className={`w-2.5 h-2.5 rounded-full ${g.swatch}`} />
+                <span className="text-[10px] font-bold text-slate-500">{g.label}</span>
+              </div>
+            ))}
+          </div>
           <div className="relative w-full mx-auto">
             <div 
               ref={mapContainerRef}
@@ -1498,15 +1660,15 @@ export default function AdminPage() {
                   return currentShift === 'lunch' ? isLunchTime(r.time) : !isLunchTime(r.time);
                 });
 
-                let tableStyle = isNightMapMode 
+                let tableStyle = isNightMapMode
                   ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
                   : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-100';
 
                 if (t.isOccupied) {
                   if (isThisTableDragging && isCombineMode) {
-                    tableStyle = 'bg-gradient-to-br from-amber-400 to-amber-600 text-white border-amber-700 ring-4 ring-amber-300 animate-pulse z-50'; 
+                    tableStyle = 'bg-gradient-to-br from-amber-400 to-amber-600 text-white border-amber-700 ring-4 ring-amber-300 animate-pulse z-50';
                   } else {
-                    tableStyle = 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-emerald-700 ring-1 ring-emerald-300/30'; 
+                    tableStyle = `bg-gradient-to-br ${getGuestCountColorClasses(attachedRes?.guests)} text-white ring-1`;
                   }
                 } else if (isThisTableHovered) {
                   tableStyle = isCombineMode ? 'bg-amber-300 text-slate-955 ring-4 ring-amber-400 scale-105 z-40' : 'bg-blue-500 text-white ring-4 ring-blue-300 scale-105 z-40';
@@ -1539,12 +1701,12 @@ export default function AdminPage() {
                           <span className={`text-[9px] font-mono font-black tracking-tighter opacity-95 bg-black/20 px-1 rounded-sm ${isLunchTime(attachedRes.time) ? 'text-orange-300' : 'text-indigo-200'}`}>
                             {isLunchTime(attachedRes.time) ? '☀️' : '🌙'}{formatShortTime(attachedRes.time)}
                           </span>
-                          <span className="text-[10px] font-mono font-bold bg-emerald-700/80 px-1 rounded-sm text-white scale-90">{t.label}</span>
+                          <span className="text-[10px] font-mono font-bold bg-black/30 px-1 rounded-sm text-white scale-90">{t.label}</span>
                         </div>
                         <div className="text-[11px] font-black tracking-tight truncate w-full text-center my-0.5 px-0.5">
                           {attachedRes.guest_name}
                         </div>
-                        <div className="text-[10px] font-black text-amber-200 bg-emerald-900/50 px-1.5 py-0.5 rounded-full scale-95">
+                        <div className="text-[10px] font-black text-amber-200 bg-black/40 px-1.5 py-0.5 rounded-full scale-95">
                           {attachedRes.guests}名
                         </div>
                       </div>
@@ -1554,6 +1716,280 @@ export default function AdminPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================
+          営業日の変更モーダル
+      ====================================================== */}
+      {showBusinessDaysModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 text-slate-100">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 text-white flex justify-between items-center border-b border-slate-700">
+              <h3 className="text-sm font-black tracking-tight">📅 営業日の変更</h3>
+              <button
+                type="button"
+                onClick={() => { setShowBusinessDaysModal(false); setBdPendingEntries([]); setBdShowCalendarPopup(false); setBdShowEndCalendarPopup(false); }}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition"
+                style={{ cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3.5 text-xs max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-2">
+                <div ref={bdStartFieldRef}>
+                  <label className="text-[10px] text-slate-400 font-bold block mb-1">開始日</label>
+                  <div className="flex space-x-1">
+                    <input
+                      type="date"
+                      value={bdStartDate}
+                      onChange={(e) => e.target.value && handleBdStartDateChange(e.target.value)}
+                      onFocus={openBdStartCalendar}
+                      className="flex-1 w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => (bdShowCalendarPopup ? setBdShowCalendarPopup(false) : openBdStartCalendar())}
+                      className="bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-3 rounded-lg border border-slate-700 transition"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      📅
+                    </button>
+                  </div>
+                </div>
+                <div ref={bdEndFieldRef}>
+                  <label className="text-[10px] text-slate-500 font-bold block mb-1">終了日（複数日をまとめる場合のみ変更）</label>
+                  <div className="flex space-x-1">
+                    <input
+                      type="date"
+                      value={bdEndDate}
+                      onChange={(e) => e.target.value && setBdEndDate(e.target.value)}
+                      onFocus={openBdEndCalendar}
+                      min={bdStartDate}
+                      className="flex-1 w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => (bdShowEndCalendarPopup ? setBdShowEndCalendarPopup(false) : openBdEndCalendar())}
+                      className="bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-3 rounded-lg border border-slate-700 transition"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      📅
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {bdShowCalendarPopup && bdCalendarPos && typeof document !== 'undefined' && createPortal(
+                <>
+                  <div className="fixed inset-0 z-[60]" onClick={() => setBdShowCalendarPopup(false)} />
+                  <div
+                    className="fixed bg-slate-950 border border-slate-700 p-3 rounded-xl shadow-2xl z-[61] w-72"
+                    style={{ top: bdCalendarPos.top, left: bdCalendarPos.left }}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <button
+                        type="button"
+                        className="text-slate-400 hover:text-white px-1 text-xs font-bold"
+                        onClick={() => { const d = new Date(bdCalendarMonth); d.setMonth(d.getMonth() - 1); setBdCalendarMonth(d); }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        &lt;
+                      </button>
+                      <span className="font-black text-xs text-amber-400">{bdCalendarMonth.getFullYear()}年 {bdCalendarMonth.getMonth() + 1}月</span>
+                      <button
+                        type="button"
+                        className="text-slate-400 hover:text-white px-1 text-xs font-bold"
+                        onClick={() => { const d = new Date(bdCalendarMonth); d.setMonth(d.getMonth() + 1); setBdCalendarMonth(d); }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        &gt;
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
+                      <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1">
+                      {generateCalendarDays(bdCalendarMonth).map((dayObj, index) => {
+                        if (!dayObj) return <div key={`empty-${index}`} />;
+                        const isSelected = dayObj.dateStr === bdStartDate;
+                        return (
+                          <button
+                            type="button"
+                            key={dayObj.dateStr}
+                            onClick={() => { handleBdStartDateChange(dayObj.dateStr); setBdShowCalendarPopup(false); }}
+                            className={`h-7 rounded text-[10px] font-bold transition flex items-center justify-center ${
+                              isSelected
+                                ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
+                                : dayObj.isClosed
+                                  ? 'bg-rose-950/40 text-rose-400/80 hover:bg-rose-900/50'
+                                  : 'bg-slate-900 hover:bg-slate-800 text-slate-200'
+                            }`}
+                            style={{ cursor: 'pointer' }}
+                            title={dayObj.isClosed ? '現在は休業日' : '現在は営業日'}
+                          >
+                            {dayObj.day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>,
+                document.body
+              )}
+
+              {bdShowEndCalendarPopup && bdEndCalendarPos && typeof document !== 'undefined' && createPortal(
+                <>
+                  <div className="fixed inset-0 z-[60]" onClick={() => setBdShowEndCalendarPopup(false)} />
+                  <div
+                    className="fixed bg-slate-950 border border-slate-700 p-3 rounded-xl shadow-2xl z-[61] w-72"
+                    style={{ top: bdEndCalendarPos.top, left: bdEndCalendarPos.left }}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <button
+                        type="button"
+                        className="text-slate-400 hover:text-white px-1 text-xs font-bold"
+                        onClick={() => { const d = new Date(bdEndCalendarMonth); d.setMonth(d.getMonth() - 1); setBdEndCalendarMonth(d); }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        &lt;
+                      </button>
+                      <span className="font-black text-xs text-amber-400">{bdEndCalendarMonth.getFullYear()}年 {bdEndCalendarMonth.getMonth() + 1}月</span>
+                      <button
+                        type="button"
+                        className="text-slate-400 hover:text-white px-1 text-xs font-bold"
+                        onClick={() => { const d = new Date(bdEndCalendarMonth); d.setMonth(d.getMonth() + 1); setBdEndCalendarMonth(d); }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        &gt;
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
+                      <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1">
+                      {generateCalendarDays(bdEndCalendarMonth).map((dayObj, index) => {
+                        if (!dayObj) return <div key={`empty-${index}`} />;
+                        const isBeforeStart = dayObj.dateStr < bdStartDate;
+                        const isSelected = dayObj.dateStr === bdEndDate;
+                        if (isBeforeStart) {
+                          return <div key={dayObj.dateStr} className="h-7 rounded flex items-center justify-center text-slate-700 text-[10px] cursor-not-allowed">{dayObj.day}</div>;
+                        }
+                        return (
+                          <button
+                            type="button"
+                            key={dayObj.dateStr}
+                            onClick={() => { setBdEndDate(dayObj.dateStr); setBdShowEndCalendarPopup(false); }}
+                            className={`h-7 rounded text-[10px] font-bold transition flex items-center justify-center ${
+                              isSelected
+                                ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
+                                : dayObj.isClosed
+                                  ? 'bg-rose-950/40 text-rose-400/80 hover:bg-rose-900/50'
+                                  : 'bg-slate-900 hover:bg-slate-800 text-slate-200'
+                            }`}
+                            style={{ cursor: 'pointer' }}
+                            title={dayObj.isClosed ? '現在は休業日' : '現在は営業日'}
+                          >
+                            {dayObj.day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>,
+                document.body
+              )}
+
+              <div className="flex rounded-lg overflow-hidden border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setBdIsClosed(false)}
+                  className={`flex-1 py-2 text-xs font-black transition ${!bdIsClosed ? 'bg-emerald-600 text-white' : 'bg-slate-950 text-slate-500'}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  営業する
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBdIsClosed(true)}
+                  className={`flex-1 py-2 text-xs font-black transition ${bdIsClosed ? 'bg-rose-600 text-white' : 'bg-slate-950 text-slate-500'}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  休業する
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddBdEntry}
+                className="w-full bg-blue-600/20 hover:bg-blue-600 border border-blue-800 text-blue-300 hover:text-white font-bold py-2 rounded-lg transition text-[11px]"
+                style={{ cursor: 'pointer' }}
+              >
+                ＋ この内容を追加
+              </button>
+
+              {bdPendingEntries.length > 0 && (
+                <div className="space-y-1.5 border-t border-slate-800 pt-3">
+                  <p className="text-[10px] text-slate-500 font-bold">保存待ちの変更</p>
+                  {bdPendingEntries.map((entry, i) => (
+                    <div key={i} className="flex items-center justify-between bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
+                      <span className="font-mono text-[11px] text-slate-300">
+                        {entry.startDate}{entry.endDate !== entry.startDate ? ` 〜 ${entry.endDate}` : ''}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${entry.is_closed ? 'bg-rose-900/60 text-rose-300' : 'bg-emerald-900/60 text-emerald-300'}`}>
+                          {entry.is_closed ? '休業' : '営業'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBdEntry(i)}
+                          className="text-slate-500 hover:text-rose-400 text-xs"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleSaveBdEntries}
+                    disabled={bdSaving}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-black py-2.5 rounded-xl transition text-xs"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {bdSaving ? '保存中...' : '保存する'}
+                  </button>
+                </div>
+              )}
+
+              {businessDayOverrides.length > 0 && (
+                <div className="space-y-1.5 border-t border-slate-800 pt-3">
+                  <p className="text-[10px] text-slate-500 font-bold">設定済みの特別営業日</p>
+                  {businessDayOverrides.map((o) => (
+                    <div key={o.date} className="flex items-center justify-between bg-slate-950/60 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+                      <span className="font-mono text-[11px] text-slate-300">{o.date}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${o.is_closed ? 'bg-rose-900/60 text-rose-300' : 'bg-emerald-900/60 text-emerald-300'}`}>
+                          {o.is_closed ? '休業' : '営業'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOverride(o.date)}
+                          className="text-[10px] text-slate-500 hover:text-rose-400 font-bold"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          解除
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

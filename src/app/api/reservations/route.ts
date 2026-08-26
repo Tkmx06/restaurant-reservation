@@ -30,23 +30,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '必須項目が入力されていません。' }, { status: 400 });
     }
 
-    // 2. 定休日チェック
+    // 2. 定休日チェック（特定日の営業/休業設定があればそちらを優先）
     const dayOfWeek = new Date(date).getDay();
 
-    const { data: businessHours, error: bhError } = await supabase
-      .from('business_hours')
-      .select('*')
-      .eq('day_of_week', dayOfWeek);
+    const { data: override, error: overrideError } = await supabase
+      .from('business_day_overrides')
+      .select('is_closed')
+      .eq('date', date)
+      .maybeSingle();
 
-    if (bhError) {
-      console.error('営業時間データの取得に失敗しました:', bhError);
+    if (overrideError) {
+      console.error('特別営業日データの取得に失敗しました:', overrideError);
     }
 
-    if (businessHours && businessHours.length > 0) {
-      const isClosedToday = businessHours.some((bh) => bh.is_closed === true || bh.is_closed === 'true');
-      if (isClosedToday) {
-        return NextResponse.json({ error: '申し訳ございません、ご希望の日は定休日です。' }, { status: 400 });
+    let isClosedToday: boolean;
+
+    if (override) {
+      isClosedToday = override.is_closed;
+    } else {
+      const { data: businessHours, error: bhError } = await supabase
+        .from('business_hours')
+        .select('*')
+        .eq('day_of_week', dayOfWeek);
+
+      if (bhError) {
+        console.error('営業時間データの取得に失敗しました:', bhError);
       }
+
+      isClosedToday = !!(businessHours && businessHours.length > 0 &&
+        businessHours.some((bh) => bh.is_closed === true || bh.is_closed === 'true'));
+    }
+
+    if (isClosedToday) {
+      return NextResponse.json({ error: '申し訳ございません、ご希望の日は定休日です。' }, { status: 400 });
     }
 
     // 3. 顧客情報・来店回数の処理
@@ -85,6 +101,7 @@ export async function POST(req: NextRequest) {
     const bookingDate = `${date} ${time}`;
     const guests = totalGuests;
     const selectedLocale = locale || 'de'; // フォームから選ばれた言語（デフォルトはドイツ語 'de'）
+    const cancelUrl = `${req.nextUrl.origin}/reservation/cancel/${newReservation.cancel_token}?locale=${selectedLocale}`;
 
     try {
       await Promise.all([
@@ -94,6 +111,7 @@ export async function POST(req: NextRequest) {
           bookingDate,
           guests,
           locale: selectedLocale,
+          cancelUrl,
         }),
         sendStaffNotification({
           customerName: name,

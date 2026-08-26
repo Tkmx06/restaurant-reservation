@@ -1,6 +1,6 @@
 import { resend } from './resend';
 
-const FROM_EMAIL = 'onboarding@resend.dev';
+const FROM_EMAIL = 'reservation@t-style-de.com';
 
 interface BookingEmailProps {
   customerName: string;
@@ -8,6 +8,7 @@ interface BookingEmailProps {
   bookingDate: string;
   guests: number | string;
   locale?: 'de' | 'en' | 'ja';
+  cancelUrl?: string;
 }
 
 // 1. 予約確認メール（お客様向け）
@@ -17,6 +18,7 @@ export async function sendCustomerConfirmation({
   bookingDate,
   guests,
   locale = 'de',
+  cancelUrl,
 }: BookingEmailProps) {
   const texts = {
     de: {
@@ -26,6 +28,8 @@ export async function sendCustomerConfirmation({
       dateLabel: 'Datum & Uhrzeit',
       guestsLabel: 'Personenanzahl',
       thanks: 'Wir freuen uns auf Ihren Besuch im Japanisches Bistro T-style.',
+      cancelText: 'Falls Sie Ihre Reservierung stornieren müssen, klicken Sie bitte auf den folgenden Link:',
+      cancelLink: 'Reservierung stornieren',
     },
     en: {
       subject: '【ご予約完了】 Japanisches Bistro T-style',
@@ -34,6 +38,8 @@ export async function sendCustomerConfirmation({
       dateLabel: 'Date & Time',
       guestsLabel: 'Number of guests',
       thanks: 'We look forward to welcoming you to Japanisches Bistro T-style.',
+      cancelText: 'If you need to cancel your reservation, please click the link below:',
+      cancelLink: 'Cancel reservation',
     },
     ja: {
       subject: '【ご予約完了】 Japanisches Bistro T-style',
@@ -42,6 +48,8 @@ export async function sendCustomerConfirmation({
       dateLabel: '日時',
       guestsLabel: '人数',
       thanks: 'Japanisches Bistro T-styleへのご来店を心よりお待ちしております。',
+      cancelText: 'ご予約をキャンセルされる場合は、以下のリンクよりお手続きください。',
+      cancelLink: 'ご予約をキャンセルする',
     },
     es: {
       subject: '【ご予約完了】 Japanisches Bistro T-style',
@@ -50,6 +58,8 @@ export async function sendCustomerConfirmation({
       dateLabel: 'Fecha y hora',
       guestsLabel: 'Número de personas',
       thanks: 'Esperamos darle la bienvenida en Japanisches Bistro T-style.',
+      cancelText: 'Si necesita cancelar su reserva, haga clic en el siguiente enlace:',
+      cancelLink: 'Cancelar reserva',
     }
   };
 
@@ -69,6 +79,11 @@ export async function sendCustomerConfirmation({
             <li><strong>${t.guestsLabel}:</strong> ${guests}</li>
           </ul>
           <p>${t.thanks}</p>
+          ${cancelUrl ? `
+          <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #555;">
+            ${t.cancelText}<br />
+            <a href="${cancelUrl}" style="color: #b91c1c;">${t.cancelLink}</a>
+          </p>` : ''}
         </div>
       `,
     });
@@ -104,6 +119,36 @@ export async function sendStaffNotification({
     });
   } catch (error) {
     console.error('スタッフ向け通知エラー:', error);
+    throw error;
+  }
+}
+
+// 3. お客様によるキャンセル発生時の通知メール（スタッフ向け）
+export async function sendCancellationStaffNotification({
+  customerName,
+  customerEmail,
+  bookingDate,
+  guests,
+}: BookingEmailProps) {
+  const STAFF_EMAIL = 'taka01234567890@gmail.com';
+  try {
+    await resend.emails.send({
+      from: `予約通知システム <${FROM_EMAIL}>`,
+      to: [STAFF_EMAIL],
+      subject: `【予約キャンセル】${customerName}様 (${guests}名)`,
+      html: `
+        <div>
+          <h3>お客様ご自身により予約がキャンセルされました。</h3>
+          <ul>
+            <li><strong>お客様名:</strong> ${customerName} (${customerEmail})</li>
+            <li><strong>人数:</strong> ${guests}</li>
+            <li><strong>日時:</strong> ${bookingDate}</li>
+          </ul>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('キャンセル通知エラー:', error);
     throw error;
   }
 }
