@@ -2,14 +2,14 @@ import { resend } from './resend';
 
 const FROM_EMAIL = 'reservation@t-style-de.com';
 
-// "2026-08-25 18:00" のような文字列を "2026年8月25日 18:00" に変換（スタッフ向け通知の件名用）
+// "2026-08-25 18:00" のような文字列を "8月25日 18:00" に変換（スタッフ向け通知の件名用、年は省略）
 function formatJapaneseDateTime(bookingDate: string): string {
   const [datePart, timePart] = bookingDate.split(' ');
   const dateMatch = datePart?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!dateMatch) return bookingDate;
-  const [, y, m, d] = dateMatch;
+  const [, , m, d] = dateMatch;
   const timeShort = timePart ? timePart.slice(0, 5) : '';
-  return `${y}年${Number(m)}月${Number(d)}日${timeShort ? `　${timeShort}` : ''}`;
+  return `${Number(m)}月${Number(d)}日${timeShort ? `　${timeShort}` : ''}`;
 }
 
 interface BookingEmailProps {
@@ -118,11 +118,12 @@ export async function sendStaffNotification({
       subject: `${formatJapaneseDateTime(bookingDate)}　${guests}名`,
       html: `
         <div>
-          <h3>【新規予約】${customerName}様</h3>
+          <h3>【新規予約】${customerName}</h3>
           <ul>
-            <li><strong>お客様名:</strong> ${customerName} (${customerEmail})</li>
+            <li><strong>お客様名:</strong> ${customerName}</li>
             <li><strong>人数:</strong> ${guests}</li>
             <li><strong>日時:</strong> ${bookingDate}</li>
+            <li><strong>メールアドレス:</strong> ${customerEmail}</li>
           </ul>
         </div>
       `,
@@ -148,11 +149,12 @@ export async function sendCancellationStaffNotification({
       subject: `✕ ${formatJapaneseDateTime(bookingDate)}　${guests}名`,
       html: `
         <div>
-          <h3>【キャンセル】${customerName}様</h3>
+          <h3>【キャンセル】${customerName}</h3>
           <ul>
-            <li><strong>お客様名:</strong> ${customerName} (${customerEmail})</li>
+            <li><strong>お客様名:</strong> ${customerName}</li>
             <li><strong>人数:</strong> ${guests}</li>
             <li><strong>日時:</strong> ${bookingDate}</li>
+            <li><strong>メールアドレス:</strong> ${customerEmail}</li>
           </ul>
         </div>
       `,

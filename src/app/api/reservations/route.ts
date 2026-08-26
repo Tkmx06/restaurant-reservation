@@ -9,6 +9,29 @@ const supabase = createClient(
 
 const PERSONAL_DOMAINS = ['gmail.com', 'yahoo.com', 'yahoo.co.jp', 'hotmail.com', 'outlook.com', 'icloud.com', 'web.de', 'gmx.de', 't-online.de'];
 
+// ─── 画面のテーブル名からデータベースの数値IDへの変換表（二重予約チェック用） ───
+const LABEL_TO_DB_ID: Record<string, number> = {
+  '51': 1, '52': 2, '53': 3, '54': 4, '68': 5, '67': 6, '66': 7, '65': 8,
+  '1': 9, '2': 10, '3': 11, '4': 12, '23': 13, '70': 14, '22': 15, '21': 16,
+  '11': 17, '15': 18, '14': 19, '13': 20, '12': 21,
+};
+
+const SESSION_DURATION_MIN = 120; // 1組あたり2時間滞在とみなして重複判定
+
+const timeToMinutes = (timeStr: string) => {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+};
+
+// notesに埋め込まれた結合テーブルのラベル(_combined:[13]等)をDB数値IDへ変換して集める
+const extractCombinedDbIds = (notes: string | null | undefined): number[] => {
+  const matches = notes?.match(/_combined:\[(.*?)\]/g);
+  if (!matches) return [];
+  return matches
+    .map((m) => LABEL_TO_DB_ID[m.replace('_combined:[', '').replace(']', '').trim()])
+    .filter((id): id is number => !!id);
+};
+
 function extractCompanyDomain(email: string): { domain: string | null; companyName: string | null } {
   const domain = email.split('@')[1]?.toLowerCase();
   if (!domain || PERSONAL_DOMAINS.includes(domain)) {
@@ -65,7 +88,57 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '申し訳ございません、ご希望の日は定休日です。' }, { status: 400 });
     }
 
-    // 3. 顧客情報・来店回数の処理
+    // 3. 過去日・予約受付期間（本日から4ヶ月先まで）のチェック
+    const localToday = new Intl.DateTimeFormat('ja-JP', {
+      timeZone: 'Europe/Berlin',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date()).replace(/\//g, '-');
+
+    if (date < localToday) {
+      return NextResponse.json({ error: 'ご指定の日付は既に過ぎています。' }, { status: 400 });
+    }
+
+    const maxDateObj = new Date(`${localToday}T00:00:00`);
+    maxDateObj.setMonth(maxDateObj.getMonth() + 4);
+    const maxDateStr = `${maxDateObj.getFullYear()}-${String(maxDateObj.getMonth() + 1).padStart(2, '0')}-${String(maxDateObj.getDate()).padStart(2, '0')}`;
+
+    if (date > maxDateStr) {
+      return NextResponse.json({ error: 'ご予約は本日から4ヶ月先までの日付でお願いいたします。' }, { status: 400 });
+    }
+
+    // 4. 二重予約防止チェック（同日・前後2時間以内に同じテーブル/結合テーブルの予約がないか）
+    const { data: sameDayReservations, error: sameDayError } = await supabase
+      .from('reservations')
+      .select('table_id, time, notes')
+      .eq('date', date)
+      .eq('status', 'confirmed');
+
+    if (sameDayError) {
+      console.error('空席チェックに失敗しました:', sameDayError);
+    }
+
+    const targetMin = timeToMinutes(time);
+    const occupiedDbIds = new Set<number>();
+    (sameDayReservations || []).forEach((r) => {
+      const rMin = timeToMinutes(String(r.time).slice(0, 5));
+      if (Math.abs(rMin - targetMin) >= SESSION_DURATION_MIN) return;
+      occupiedDbIds.add(Number(r.table_id));
+      extractCombinedDbIds(r.notes).forEach((id) => occupiedDbIds.add(id));
+    });
+
+    const requestedDbIds = new Set<number>([Number(table_id), ...extractCombinedDbIds(notes)]);
+    const hasConflict = [...requestedDbIds].some((id) => occupiedDbIds.has(id));
+
+    if (hasConflict) {
+      return NextResponse.json(
+        { error: '大変申し訳ございません、ご指定の時間帯は満席となりました。別のお時間かお日にちをお試しください。' },
+        { status: 409 }
+      );
+    }
+
+    // 5. 顧客情報・来店回数の処理
     const { domain, companyName } = extractCompanyDomain(email);
 
     const { count } = await supabase
@@ -75,7 +148,7 @@ export async function POST(req: NextRequest) {
 
     const visitCount = (count || 0) + 1;
 
-    // 4. 予約の確定（挿入）
+    // 6. 予約の確定（挿入）
     const { data: newReservation, error: insertError } = await supabase
       .from('reservations')
       .insert({
