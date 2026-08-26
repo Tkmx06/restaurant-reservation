@@ -776,19 +776,23 @@ export default function AdminPage() {
 
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
 
-  // ─── PC版/モバイル版の手動切り替え（未選択時は画面幅で自動判定） ───
-  const [forcedView, setForcedView] = useState<'auto' | 'pc' | 'mobile'>('auto');
+  // ─── PC版/モバイル版の手動切り替え ───
+  const [forcedView, setForcedView] = useState<'pc' | 'mobile'>('pc');
   useEffect(() => {
     const saved = localStorage.getItem('adminForcedView');
-    if (saved === 'pc' || saved === 'mobile' || saved === 'auto') setForcedView(saved);
+    if (saved === 'pc' || saved === 'mobile') {
+      setForcedView(saved);
+    } else if (window.innerWidth < 640) {
+      setForcedView('mobile');
+    }
   }, []);
-  const cycleForcedView = () => {
-    const next = forcedView === 'auto' ? 'pc' : forcedView === 'pc' ? 'mobile' : 'auto';
+  const toggleForcedView = () => {
+    const next = forcedView === 'pc' ? 'mobile' : 'pc';
     setForcedView(next);
     localStorage.setItem('adminForcedView', next);
   };
-  const desktopVisibilityClass = forcedView === 'mobile' ? 'hidden' : forcedView === 'pc' ? 'block' : 'hidden sm:block';
-  const mobileVisibilityClass = forcedView === 'pc' ? 'hidden' : forcedView === 'mobile' ? 'block' : 'sm:hidden';
+  const desktopVisibilityClass = forcedView === 'pc' ? 'block' : 'hidden';
+  const mobileVisibilityClass = forcedView === 'mobile' ? 'block' : 'hidden';
 
   // ─── スマホ向けボトムナビの選択状態（activeTabと連動させる） ───
   const [mobileTabState, setMobileTabState] = useState<'list' | 'floor' | 'customers' | 'history'>('list');
@@ -1888,16 +1892,15 @@ export default function AdminPage() {
   return (
     <div className="p-2 min-h-screen font-sans transition-colors duration-300 bg-slate-50 text-slate-900">
 
-      {/* PC版/モバイル版 手動切り替えボタン（常に表示） */}
+      {/* PC版/モバイル版 手動切り替えボタン（常に表示・切り替え先の名前を表示） */}
       <button
         type="button"
-        onClick={cycleForcedView}
+        onClick={toggleForcedView}
         style={{ cursor: 'pointer' }}
         className="fixed top-1/2 right-2 -translate-y-1/2 z-40 flex items-center gap-1.5 px-2.5 py-2 rounded-full shadow-lg text-[10px] font-black bg-slate-900/90 text-white border border-slate-700"
       >
-        {forcedView === 'auto' && <>🔄 自動</>}
-        {forcedView === 'pc' && <>💻 PC版</>}
-        {forcedView === 'mobile' && <>📱 モバイル版</>}
+        {forcedView === 'pc' && <>📱 モバイル</>}
+        {forcedView === 'mobile' && <>💻 PC</>}
       </button>
 
       {/* ===== PC・タブレット向けレイアウト（sm以上でのみ表示、手動切り替え可） ===== */}
