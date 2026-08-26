@@ -449,7 +449,9 @@ const MOBILE_FLOOR_ZONES: string[][] = [
 
 interface MobileAdminViewProps {
   visibilityClassName: string;
+  toggleForcedView: () => void;
   selectedDate: string;
+  setSelectedDate: (d: string) => void;
   formatPureDate: (dateStr: string) => string;
   getDateTopLabel: (dateStr: string) => string;
   changeDate: (days: number) => void;
@@ -490,7 +492,8 @@ interface MobileAdminViewProps {
 function MobileAdminView(props: MobileAdminViewProps) {
   const {
     visibilityClassName,
-    selectedDate, formatPureDate, getDateTopLabel, changeDate,
+    toggleForcedView,
+    selectedDate, setSelectedDate, formatPureDate, getDateTopLabel, changeDate,
     currentShift, setCurrentShift, isSelectedDateLunchAllowed,
     handleGoToToday, setShowBusinessDaysModal, openNewOrderModal,
     mobileTab, setMobileTab,
@@ -524,13 +527,24 @@ function MobileAdminView(props: MobileAdminViewProps) {
     <div className={`${visibilityClassName} fixed inset-0 bg-slate-950 text-slate-200 flex flex-col z-0`}>
       {/* スティッキーヘッダー */}
       <div className="shrink-0 px-4 pt-3.5 pb-3 bg-slate-900 border-b border-slate-800">
-        <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-2 mb-2.5">
+          <div className="flex-1 flex items-center justify-between">
           <button onClick={() => changeDate(-1)} style={{ cursor: 'pointer' }} className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-base">◀</button>
           <div className="flex flex-col items-center">
             <span className="text-[17px] font-black text-white">{formatPureDate(selectedDate)}</span>
             <span className="text-[10px] font-extrabold text-emerald-400">{getDateTopLabel(selectedDate) || ' '}</span>
           </div>
           <button onClick={() => changeDate(1)} style={{ cursor: 'pointer' }} className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-base">▶</button>
+          </div>
+          <div className="relative w-10 h-10 shrink-0">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base pointer-events-none">📅</div>
+          </div>
         </div>
 
         {(mobileTab === 'list' || mobileTab === 'floor') && (
@@ -557,6 +571,12 @@ function MobileAdminView(props: MobileAdminViewProps) {
           <button onClick={handleGoToToday} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-white text-slate-700 text-[11px] font-black flex items-center justify-center gap-1">🏠 今日</button>
           <button onClick={() => setShowBusinessDaysModal(true)} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-slate-700 text-slate-100 text-[11px] font-black flex items-center justify-center gap-1">📅 営業日</button>
           <button onClick={openNewOrderModal} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-emerald-950 text-[11px] font-black flex items-center justify-center gap-1">➕ 新規予約</button>
+        </div>
+
+        <div className="flex justify-end mt-2">
+          <button onClick={toggleForcedView} style={{ cursor: 'pointer' }} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 text-[10px] font-black">
+            💻 PC
+          </button>
         </div>
       </div>
 
@@ -1892,17 +1912,6 @@ export default function AdminPage() {
   return (
     <div className="p-2 min-h-screen font-sans transition-colors duration-300 bg-slate-50 text-slate-900">
 
-      {/* PC版/モバイル版 手動切り替えボタン（常に表示・切り替え先の名前を表示） */}
-      <button
-        type="button"
-        onClick={toggleForcedView}
-        style={{ cursor: 'pointer' }}
-        className="fixed top-1/2 right-2 -translate-y-1/2 z-40 flex items-center gap-1.5 px-2.5 py-2 rounded-full shadow-lg text-[10px] font-black bg-slate-900/90 text-white border border-slate-700"
-      >
-        {forcedView === 'pc' && <>📱 モバイル</>}
-        {forcedView === 'mobile' && <>💻 PC</>}
-      </button>
-
       {/* ===== PC・タブレット向けレイアウト（sm以上でのみ表示、手動切り替え可） ===== */}
       <div className={desktopVisibilityClass}>
       {/* 👑 トップヘッダーメニュー */}
@@ -1951,6 +1960,14 @@ export default function AdminPage() {
             style={{ cursor: 'pointer' }}
           >
             ➕ 新規予約登録
+          </button>
+          <button
+            type="button"
+            onClick={toggleForcedView}
+            className="bg-white hover:bg-slate-100 text-slate-500 text-xs font-black px-3 py-1.5 rounded-xl border border-slate-300 transition shadow-md"
+            style={{ cursor: 'pointer' }}
+          >
+            📱 モバイル
           </button>
         </div>
       </div>
@@ -3030,7 +3047,9 @@ export default function AdminPage() {
       {/* ===== スマホ向けレイアウト（sm未満でのみ表示） ===== */}
       <MobileAdminView
         visibilityClassName={mobileVisibilityClass}
+        toggleForcedView={toggleForcedView}
         selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate}
         formatPureDate={formatPureDate}
         getDateTopLabel={getDateTopLabel}
         changeDate={changeDate}
