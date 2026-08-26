@@ -1,6 +1,7 @@
 import { resend } from './resend';
 
 const FROM_EMAIL = 'reservation@t-style-de.com';
+const MENU_URL = 'https://t-stylefrankfurt.my.canva.site/';
 
 // "2026-08-25 18:00" のような文字列を "8月25日 18:00" に変換（スタッフ向け通知の件名用、年は省略）
 function formatJapaneseDateTime(bookingDate: string): string {
@@ -38,6 +39,8 @@ export async function sendCustomerConfirmation({
       dateLabel: 'Datum & Uhrzeit',
       guestsLabel: 'Personenanzahl',
       thanks: 'Wir freuen uns auf Ihren Besuch im Japanisches Bistro T-style.',
+      menuText: 'Unsere Speisekarte finden Sie hier:',
+      menuLink: 'Zur Speisekarte',
       cancelText: 'Falls Sie Ihre Reservierung stornieren müssen, klicken Sie bitte auf den folgenden Link:',
       cancelLink: 'Reservierung stornieren',
     },
@@ -48,6 +51,8 @@ export async function sendCustomerConfirmation({
       dateLabel: 'Date & Time',
       guestsLabel: 'Number of guests',
       thanks: 'We look forward to welcoming you to Japanisches Bistro T-style.',
+      menuText: 'You can view our menu here:',
+      menuLink: 'View menu',
       cancelText: 'If you need to cancel your reservation, please click the link below:',
       cancelLink: 'Cancel reservation',
     },
@@ -58,6 +63,8 @@ export async function sendCustomerConfirmation({
       dateLabel: '日時',
       guestsLabel: '人数',
       thanks: 'Japanisches Bistro T-styleへのご来店を心よりお待ちしております。',
+      menuText: 'メニューはこちらからご覧いただけます。',
+      menuLink: 'メニューを見る',
       cancelText: 'ご予約をキャンセルされる場合は、以下のリンクよりお手続きください。',
       cancelLink: 'ご予約をキャンセルする',
     },
@@ -68,6 +75,8 @@ export async function sendCustomerConfirmation({
       dateLabel: 'Fecha y hora',
       guestsLabel: 'Número de personas',
       thanks: 'Esperamos darle la bienvenida en Japanisches Bistro T-style.',
+      menuText: 'Puede consultar nuestra carta aquí:',
+      menuLink: 'Ver la carta',
       cancelText: 'Si necesita cancelar su reserva, haga clic en el siguiente enlace:',
       cancelLink: 'Cancelar reserva',
     }
@@ -89,6 +98,10 @@ export async function sendCustomerConfirmation({
             <li><strong>${t.guestsLabel}:</strong> ${guests}</li>
           </ul>
           <p>${t.thanks}</p>
+          <p style="margin-top: 16px;">
+            ${t.menuText}<br />
+            <a href="${MENU_URL}" style="color: #1d4ed8;">${t.menuLink}</a>
+          </p>
           ${cancelUrl ? `
           <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #555;">
             ${t.cancelText}<br />
@@ -118,13 +131,9 @@ export async function sendStaffNotification({
       subject: `${formatJapaneseDateTime(bookingDate)}　${guests}名`,
       html: `
         <div>
-          <h3>【新規予約】${customerName}</h3>
-          <ul>
-            <li><strong>お客様名:</strong> ${customerName}</li>
-            <li><strong>人数:</strong> ${guests}</li>
-            <li><strong>日時:</strong> ${bookingDate}</li>
-            <li><strong>メールアドレス:</strong> ${customerEmail}</li>
-          </ul>
+          <p style="margin: 4px 0;">【新規予約】${customerName}</p>
+          <p style="margin: 4px 0;">${bookingDate}</p>
+          <p style="margin: 4px 0;">${customerEmail}</p>
         </div>
       `,
     });
@@ -149,13 +158,9 @@ export async function sendCancellationStaffNotification({
       subject: `✕ ${formatJapaneseDateTime(bookingDate)}　${guests}名`,
       html: `
         <div>
-          <h3>【キャンセル】${customerName}</h3>
-          <ul>
-            <li><strong>お客様名:</strong> ${customerName}</li>
-            <li><strong>人数:</strong> ${guests}</li>
-            <li><strong>日時:</strong> ${bookingDate}</li>
-            <li><strong>メールアドレス:</strong> ${customerEmail}</li>
-          </ul>
+          <p style="margin: 4px 0;">【キャンセル】${customerName}</p>
+          <p style="margin: 4px 0;">${bookingDate}</p>
+          <p style="margin: 4px 0;">${customerEmail}</p>
         </div>
       `,
     });

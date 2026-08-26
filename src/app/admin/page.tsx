@@ -16,8 +16,12 @@ interface TableStatus {
 interface CustomerSummary {
   guest_name: string;
   email: string;
+  phone: string;
+  company_name: string;
+  notes: string;
   total_visits: number;
   last_visit: string;
+  latestReservationId: number | string;
 }
 
 interface TableGroup {
@@ -461,6 +465,15 @@ export default function AdminPage() {
 
   const [showCalendarPopup, setShowCalendarPopup] = useState(false);
   const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date());
+
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [editingCustomer, setEditingCustomer] = useState<CustomerSummary | null>(null);
+  const [ceName, setCeName] = useState('');
+  const [ceEmail, setCeEmail] = useState('');
+  const [cePhone, setCePhone] = useState('');
+  const [ceCompany, setCeCompany] = useState('');
+  const [ceNotes, setCeNotes] = useState('');
+  const [ceSaving, setCeSaving] = useState(false);
 
   // ─── 営業日（特定日の営業/休業）管理 ───
   const [closedWeekDays, setClosedWeekDays] = useState<number[]>([]);
@@ -1334,6 +1347,20 @@ export default function AdminPage() {
 
   const isSelectedDateClosed = checkIsClosed(selectedDate);
 
+  // 「今日」ボタン: 本日が営業日ならそこへ、休業日なら次の営業日へジャンプ
+  const handleGoToToday = () => {
+    for (let i = 0; i < 14; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!checkIsClosed(dateStr)) {
+        setSelectedDate(dateStr);
+        return;
+      }
+    }
+    setSelectedDate(getTodayString());
+  };
+
   const formatPureDate = (dateStr: string) => {
     const targetDate = new Date(dateStr);
     const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
@@ -1406,12 +1433,79 @@ export default function AdminPage() {
     reservations.forEach((r) => {
       if (!r.guest_name) return;
       const name = r.guest_name.trim();
-      if (!customerMap[name]) customerMap[name] = { guest_name: name, email: r.email || '-', total_visits: 0, last_visit: r.date };
+      if (!customerMap[name]) {
+        customerMap[name] = {
+          guest_name: name,
+          email: r.email || '-',
+          phone: r.phone || '-',
+          company_name: r.company_name || '',
+          notes: getCleanNotes(r.notes || ''),
+          total_visits: 0,
+          last_visit: r.date,
+          latestReservationId: r.id,
+        };
+      }
       if (r.status === 'confirmed') customerMap[name].total_visits += 1;
-      if (r.date > customerMap[name].last_visit) customerMap[name].last_visit = r.date;
+      // 最新の予約情報で連絡先・備考を上書きしておく（最新が正とみなす）
+      if (r.date >= customerMap[name].last_visit) {
+        customerMap[name].last_visit = r.date;
+        customerMap[name].email = r.email || customerMap[name].email;
+        customerMap[name].phone = r.phone || customerMap[name].phone;
+        customerMap[name].company_name = r.company_name || customerMap[name].company_name;
+        customerMap[name].notes = getCleanNotes(r.notes || '') || customerMap[name].notes;
+        customerMap[name].latestReservationId = r.id;
+      }
     });
     return Object.values(customerMap).sort((a, b) => a.guest_name.localeCompare(b.guest_name, 'ja'));
   })();
+
+  const openCustomerEditModal = (c: CustomerSummary) => {
+    setEditingCustomer(c);
+    setCeName(c.guest_name);
+    setCeEmail(c.email === '-' ? '' : c.email);
+    setCePhone(c.phone === '-' ? '' : c.phone);
+    setCeCompany(c.company_name);
+    setCeNotes(c.notes);
+  };
+
+  const handleSaveCustomer = async () => {
+    if (!editingCustomer || !ceName.trim()) return;
+    setCeSaving(true);
+    try {
+      const res = await fetch('/api/admin/customers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          oldName: editingCustomer.guest_name,
+          name: ceName.trim(),
+          email: ceEmail.trim(),
+          phone: cePhone.trim(),
+          company_name: ceCompany.trim(),
+          notes: ceNotes.trim(),
+          latestReservationId: editingCustomer.latestReservationId,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setEditingCustomer(null);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      alert('顧客情報の更新に失敗しました。');
+    } finally {
+      setCeSaving(false);
+    }
+  };
+
+  const filteredCustomerList = customerSearchQuery.trim()
+    ? customerList.filter((c) => {
+        const q = customerSearchQuery.trim().toLowerCase();
+        return (
+          c.guest_name.toLowerCase().includes(q) ||
+          c.company_name.toLowerCase().includes(q) ||
+          c.email.toLowerCase().includes(q)
+        );
+      })
+    : customerList;
 
   const generateCalendarDays = (currentMonthDate: Date) => {
     const year = currentMonthDate.getFullYear();
@@ -1458,6 +1552,14 @@ export default function AdminPage() {
           ))}
         </div>
         <div className="flex space-x-1.5">
+          <button
+            type="button"
+            onClick={handleGoToToday}
+            className="bg-white hover:bg-slate-100 text-slate-700 text-xs font-black px-4 py-1.5 rounded-xl border border-slate-300 transition shadow-md"
+            style={{ cursor: 'pointer' }}
+          >
+            🏠 今日
+          </button>
           <button
             type="button"
             onClick={() => setShowBusinessDaysModal(true)}
@@ -1996,6 +2098,64 @@ export default function AdminPage() {
       )}
 
       {/* ======================================================
+          顧客情報の編集モーダル
+      ====================================================== */}
+      {editingCustomer && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 text-slate-100">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 text-white flex justify-between items-center border-b border-slate-700">
+              <div>
+                <h3 className="text-sm font-black tracking-tight">👤 顧客情報の編集</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">来店回数: {editingCustomer.total_visits}回 / 最終来店: {editingCustomer.last_visit}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingCustomer(null)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition"
+                style={{ cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 space-y-3 text-xs max-h-[70vh] overflow-y-auto">
+              <div>
+                <label className="text-[10px] text-slate-400 font-bold block mb-1">お名前</label>
+                <input value={ceName} onChange={(e) => setCeName(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-bold" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-400 font-bold block mb-1">メールアドレス</label>
+                <input value={ceEmail} onChange={(e) => setCeEmail(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-400 font-bold block mb-1">電話番号</label>
+                <input value={cePhone} onChange={(e) => setCePhone(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-400 font-bold block mb-1">会社名</label>
+                <input value={ceCompany} onChange={(e) => setCeCompany(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 font-bold block mb-1">備考（直近の予約に反映されます）</label>
+                <textarea value={ceNotes} onChange={(e) => setCeNotes(e.target.value)} rows={3} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100" />
+              </div>
+              <p className="text-[10px] text-slate-500 leading-relaxed">
+                お名前・メール・電話番号・会社名はこの方の全ての予約履歴に反映されます。備考のみ直近の予約に反映されます。
+              </p>
+              <button
+                type="button"
+                onClick={handleSaveCustomer}
+                disabled={ceSaving || !ceName.trim()}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-black py-2.5 rounded-xl transition text-xs"
+                style={{ cursor: 'pointer' }}
+              >
+                {ceSaving ? '保存中...' : '保存する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================
           既存予約編集モーダル
       ====================================================== */}
       {selectedRes && (
@@ -2386,27 +2546,48 @@ export default function AdminPage() {
         <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
           <h2 className="text-xs font-black mb-2 flex items-center justify-between px-1">
             <span>👥 顧客名簿一覧</span>
-            <span className="text-[11px] bg-slate-700 px-2 py-0.5 rounded-full text-white">{customerList.length} 名</span>
+            <span className="text-[11px] bg-slate-700 px-2 py-0.5 rounded-full text-white">{filteredCustomerList.length} 名</span>
           </h2>
+          <input
+            type="text"
+            value={customerSearchQuery}
+            onChange={(e) => setCustomerSearchQuery(e.target.value)}
+            placeholder="🔍 名前・会社名・メールアドレスで検索"
+            className="w-full mb-2 p-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+          />
           <div className="overflow-x-auto rounded-xl border bg-white border-slate-200">
             <table className="w-full border-collapse text-left text-xs">
               <thead>
                 <tr className="border-b text-[10px] bg-slate-100 text-slate-600 border-slate-200">
                   <th className="p-2.5 font-bold">お客様氏名</th>
                   <th className="p-2.5 font-bold">メールアドレス</th>
+                  <th className="p-2.5 font-bold">会社名</th>
                   <th className="p-2.5 font-bold text-center">来店回数</th>
                   <th className="p-2.5 font-bold">最終来店日</th>
                 </tr>
               </thead>
               <tbody>
-                {customerList.map((c, idx) => (
-                  <tr key={idx} className="border-b transition border-slate-100 hover:bg-slate-50">
-                    <td className="p-2.5 font-black text-blue-600">{c.guest_name}</td>
-                    <td className="p-2.5 font-mono text-slate-600">{c.email}</td>
+                {filteredCustomerList.map((c, idx) => (
+                  <tr
+                    key={idx}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openCustomerEditModal(c)}
+                    className="border-b transition border-slate-100 hover:bg-blue-50 cursor-pointer"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td className="p-2.5 font-black text-blue-600 underline decoration-blue-200">{c.guest_name}</td>
+                    <td className="p-2.5 font-mono text-slate-600 underline decoration-slate-200">{c.email}</td>
+                    <td className="p-2.5 text-slate-500">{c.company_name || '-'}</td>
                     <td className="p-2.5 text-center font-black font-mono text-emerald-700">{c.total_visits} 回</td>
                     <td className="p-2.5 font-mono text-amber-600">{c.last_visit}</td>
                   </tr>
                 ))}
+                {filteredCustomerList.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-4 text-center text-slate-400 italic">該当する顧客が見つかりません</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
