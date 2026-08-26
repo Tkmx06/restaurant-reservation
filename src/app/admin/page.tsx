@@ -515,7 +515,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
   const generateMobileCalendarDays = (currentMonthDate: Date) => {
     const year = currentMonthDate.getFullYear();
     const month = currentMonthDate.getMonth();
-    const firstDayIndex = new Date(year, month, 1).getDay();
+    const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7; // 月曜始まり
     const totalDays = new Date(year, month + 1, 0).getDate();
     const daysArray: ({ day: number; dateStr: string; isClosed: boolean } | null)[] = Array(firstDayIndex).fill(null);
     for (let day = 1; day <= totalDays; day++) {
@@ -586,7 +586,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
                     </button>
                   </div>
                   <div className="grid grid-cols-7 gap-1 text-center font-bold text-[9px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
-                    <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+                    <span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span>
                   </div>
                   <div className="grid grid-cols-7 gap-1">
                     {generateMobileCalendarDays(mobileCalendarMonth).map((dayObj, index) => {
@@ -602,7 +602,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
                             isSelected
                               ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-950 font-black'
                               : dayObj.isClosed
-                                ? 'bg-rose-600/30 border border-rose-600 text-rose-200 font-black line-through'
+                                ? 'bg-slate-800/70 text-slate-600 line-through'
                                 : 'bg-slate-800 text-slate-200'
                           }`}
                         >
@@ -1965,7 +1965,7 @@ export default function AdminPage() {
   const generateCalendarDays = (currentMonthDate: Date) => {
     const year = currentMonthDate.getFullYear();
     const month = currentMonthDate.getMonth();
-    const firstDayIndex = new Date(year, month, 1).getDay();
+    const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7; // 月曜始まり
     const totalDays = new Date(year, month + 1, 0).getDate();
     const daysArray = Array(firstDayIndex).fill(null);
     for (let day = 1; day <= totalDays; day++) {
@@ -2119,7 +2119,7 @@ export default function AdminPage() {
                   </button>
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
-                  <span>日</span><span>月</span><span className="text-rose-500/80">火</span><span className="text-rose-500/80">水</span><span>木</span><span>金</span><span>土</span>
+                  <span>月</span><span className="text-rose-500/80">火</span><span className="text-rose-500/80">水</span><span>木</span><span>金</span><span>土</span><span>日</span>
                 </div>
                 <div className="grid grid-cols-7 gap-1">
                   {generateCalendarDays(mainCalendarMonth).map((dayObj, index) => {
@@ -2135,7 +2135,7 @@ export default function AdminPage() {
                           isSelected
                             ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
                             : dayObj.isClosed
-                              ? 'bg-rose-600/30 border border-rose-600 text-rose-200 font-black line-through hover:bg-rose-600/50'
+                              ? 'bg-slate-900/70 text-slate-600 line-through hover:bg-slate-800/70'
                               : 'bg-slate-900 hover:bg-slate-800 text-slate-200'
                         }`}
                         style={{ cursor: 'pointer' }}
@@ -2146,7 +2146,7 @@ export default function AdminPage() {
                   })}
                 </div>
                 <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800 text-[9px] text-slate-500">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-rose-600/30 border border-rose-600 inline-block" />
+                  <span className="w-2.5 h-2.5 rounded-sm bg-slate-800 border border-slate-700 inline-block" />
                   <span>休業日</span>
                 </div>
               </div>
@@ -2443,7 +2443,7 @@ export default function AdminPage() {
                       </button>
                     </div>
                     <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
-                      <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+                      <span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span>
                     </div>
                     <div className="grid grid-cols-7 gap-1">
                       {generateCalendarDays(bdCalendarMonth).map((dayObj, index) => {
@@ -2458,7 +2458,7 @@ export default function AdminPage() {
                               isSelected
                                 ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
                                 : dayObj.isClosed
-                                  ? 'bg-rose-600/30 border border-rose-600 text-rose-200 font-black hover:bg-rose-600/50'
+                                  ? 'bg-slate-900/70 text-slate-600 line-through hover:bg-slate-800/70'
                                   : 'bg-slate-900 hover:bg-slate-800 text-slate-200'
                             }`}
                             style={{ cursor: 'pointer' }}
@@ -2501,7 +2501,7 @@ export default function AdminPage() {
                       </button>
                     </div>
                     <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
-                      <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+                      <span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span>
                     </div>
                     <div className="grid grid-cols-7 gap-1">
                       {generateCalendarDays(bdEndCalendarMonth).map((dayObj, index) => {
@@ -2520,7 +2520,7 @@ export default function AdminPage() {
                               isSelected
                                 ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
                                 : dayObj.isClosed
-                                  ? 'bg-rose-600/30 border border-rose-600 text-rose-200 font-black hover:bg-rose-600/50'
+                                  ? 'bg-slate-900/70 text-slate-600 line-through hover:bg-slate-800/70'
                                   : 'bg-slate-900 hover:bg-slate-800 text-slate-200'
                             }`}
                             style={{ cursor: 'pointer' }}
@@ -2940,12 +2940,12 @@ export default function AdminPage() {
                             </button>
                           </div>
                           <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
-                            <span>日</span><span>月</span><span className="text-red-500/80">火</span><span className="text-red-500/80">水</span><span>木</span><span>金</span><span>土</span>
+                            <span>月</span><span className="text-red-500/80">火</span><span className="text-red-500/80">水</span><span>木</span><span>金</span><span>土</span><span>日</span>
                           </div>
                           <div className="grid grid-cols-7 gap-1">
                             {generateCalendarDays(currentCalendarMonth).map((dayObj, index) => {
                               if (!dayObj) return <div key={`empty-${index}`} />;
-                              if (dayObj.isClosed) return <div key={dayObj.dateStr} title="休業日" className="h-7 rounded flex items-center justify-center bg-rose-600/25 border border-rose-700/60 text-rose-300 text-[10px] line-through cursor-not-allowed font-black">{dayObj.day}</div>;
+                              if (dayObj.isClosed) return <div key={dayObj.dateStr} title="休業日" className="h-7 rounded flex items-center justify-center bg-slate-900/50 text-slate-700 text-[10px] line-through cursor-not-allowed font-medium">{dayObj.day}</div>;
                               return (
                                 <button 
                                   type="button" 

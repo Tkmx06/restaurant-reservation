@@ -274,7 +274,7 @@ export default function ReservationPage() {
   const generateCalendarDays = (currentMonthDate: Date) => {
     const year = currentMonthDate.getFullYear();
     const month = currentMonthDate.getMonth();
-    const firstDayIndex = new Date(year, month, 1).getDay();
+    const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7; // 月曜始まり
     const totalDays = new Date(year, month + 1, 0).getDate();
     const daysArray = Array(firstDayIndex).fill(null);
     
@@ -489,10 +489,10 @@ export default function ReservationPage() {
                           padding: '10px 0',
                           borderRadius: 12,
                           border: isSelected ? '1px solid #E21A22' : '1px solid transparent',
-                          background: isSelected ? '#E21A22' : isClosed ? '#FEE2E2' : '#F3F4F6',
-                          color: isSelected ? '#FFFFFF' : isClosed ? '#DC2626' : '#374151',
+                          background: isSelected ? '#E21A22' : 'transparent',
+                          color: isSelected ? '#FFFFFF' : isClosed ? '#B0B0B0' : '#374151',
                           textDecoration: isClosed ? 'line-through' : 'none',
-                          opacity: isClosed ? 0.9 : 1,
+                          opacity: isClosed ? 0.45 : 1,
                           pointerEvents: isClosed ? 'none' : 'auto',
                           transition: 'all 0.15s ease',
                         }}
@@ -597,7 +597,7 @@ export default function ReservationPage() {
                   </div>
                   {/* 曜日ヘッダー */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, textAlign: 'center', fontSize: 9, fontWeight: 700, color: '#9CA3AF', marginBottom: 8 }}>
-                    <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
                   </div>
                   {/* 日数マス目 */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
@@ -615,12 +615,12 @@ export default function ReservationPage() {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              background: dayObj.isClosed ? '#FEE2E2' : '#F9FAFB',
-                              color: dayObj.isClosed ? '#DC2626' : '#9CA3AF',
+                              background: '#F9FAFB',
+                              color: '#B0B0B0',
                               fontSize: 11,
-                              fontWeight: dayObj.isClosed ? 800 : 500,
+                              fontWeight: 500,
                               textDecoration: dayObj.isClosed ? 'line-through' : 'none',
-                              opacity: dayObj.isClosed ? 0.95 : 0.35,
+                              opacity: 0.35,
                               cursor: 'not-allowed',
                             }}
                           >
