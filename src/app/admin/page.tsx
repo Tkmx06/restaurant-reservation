@@ -718,9 +718,24 @@ export default function AdminPage() {
       const y = e.clientY;
       let foundHoverId: string | null = null;
 
+      // 連結モード中は、ドラッグ元と同じグループの別テーブルにも重ねられるようにする（そこへ統合するため）
+      let sameGroupMemberIds: string[] = [];
+      if (isCombineMode) {
+        const currentShiftReservations = reservations.filter(r => r.date === selectedDate && r.status === 'confirmed' && (currentShift === 'lunch' ? isLunchTime(r.time) : !isLunchTime(r.time)));
+        const draggedRes = currentShiftReservations.find(r =>
+          String(r.table_id).trim() === String(draggingTableId).trim() || r.notes?.includes(`_combined:[${draggingTableId}]`)
+        );
+        if (draggedRes) {
+          const subIds = (draggedRes.notes?.match(/_combined:\[(.*?)\]/g) || [])
+            .map((m: string) => m.replace('_combined:[', '').replace(']', '').trim())
+            .filter(Boolean);
+          sameGroupMemberIds = [String(draggedRes.table_id).trim(), ...subIds];
+        }
+      }
+
       tables.forEach(t => {
         if (t.id === draggingTableId) return;
-        if (t.isOccupied) return;
+        if (t.isOccupied && !sameGroupMemberIds.includes(t.id)) return;
 
         const el = document.getElementById(`table-target-${t.id}`);
         if (el) {
@@ -763,63 +778,86 @@ export default function AdminPage() {
 
       if (foundRes) {
         const currentNotes = foundRes.notes || '';
-        const updatedNotes = `${currentNotes} _combined:[${activeHoveredTableId}]`.trim();
+        const subIds = (currentNotes.match(/_combined:\[(.*?)\]/g) || [])
+          .map((m: string) => m.replace('_combined:[', '').replace(']', '').trim())
+          .filter(Boolean);
+        const isSameGroupTarget = String(foundRes.table_id).trim() === String(activeHoveredTableId).trim() || subIds.includes(activeHoveredTableId);
 
-        try {
-          // ─── 追加：テーブル連結をデータベースに送る ───
-          const res = await fetch('/api/admin/reservations', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: foundRes.id, notes: updatedNotes }),
-          });
-          if (!res.ok) throw new Error('API Error');
+        if (isSameGroupTarget) {
+          // 同じグループの別テーブルに重ねた場合：重ねた先の1テーブルに統合する（連結タグは全て解除）
+          const updatedNotes = getCleanNotes(currentNotes);
 
-          setReservations(prev => prev.map(r => r.id === foundRes.id ? { ...r, notes: updatedNotes } : r));
-        } catch (err) {
-          console.error(err);
-          alert('テーブルの連結に失敗しました。');
+          try {
+            // ─── 追加：テーブル統合をデータベースに送る ───
+            const res = await fetch('/api/admin/reservations', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: foundRes.id, table_id: LABEL_TO_DB_ID[activeHoveredTableId] ?? activeHoveredTableId, notes: updatedNotes }),
+            });
+            if (!res.ok) throw new Error('API Error');
+
+            setReservations(prev => prev.map(r => r.id === foundRes.id ? { ...r, table_id: activeHoveredTableId, notes: updatedNotes } : r));
+          } catch (err) {
+            console.error(err);
+            alert('テーブルの統合に失敗しました。');
+          }
+        } else {
+          const updatedNotes = `${currentNotes} _combined:[${activeHoveredTableId}]`.trim();
+
+          try {
+            // ─── 追加：テーブル連結をデータベースに送る ───
+            const res = await fetch('/api/admin/reservations', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: foundRes.id, notes: updatedNotes }),
+            });
+            if (!res.ok) throw new Error('API Error');
+
+            setReservations(prev => prev.map(r => r.id === foundRes.id ? { ...r, notes: updatedNotes } : r));
+          } catch (err) {
+            console.error(err);
+            alert('テーブルの連結に失敗しました。');
+          }
         }
       }
     }
     else if (!activeIsCombineMode && activeHoveredTableId) {
+      // メイン・サブどちらをドラッグしても、連結グループ全体を相対位置を保ったまま平行移動する
       const newTableId = activeHoveredTableId;
-      const foundResAsMain = currentShiftReservations.find(r => String(r.table_id).trim() === String(activeDraggingTableId).trim());
+      const foundRes = currentShiftReservations.find(r =>
+        String(r.table_id).trim() === String(activeDraggingTableId).trim() || r.notes?.includes(`_combined:[${activeDraggingTableId}]`)
+      );
 
-      if (foundResAsMain) {
-        // メインテーブルをドラッグした場合：連結中のサブがあれば、ドロップ先の1テーブルに統合する（連結タグは全て解除）
-        const hasSubs = /_combined:\[/.test(foundResAsMain.notes || '');
-        const updatedNotes = hasSubs ? getCleanNotes(foundResAsMain.notes) : (foundResAsMain.notes || '');
+      if (foundRes) {
+        const mainId = String(foundRes.table_id).trim();
+        const subIds = (foundRes.notes?.match(/_combined:\[(.*?)\]/g) || [])
+          .map((m: string) => m.replace('_combined:[', '').replace(']', '').trim())
+          .filter(Boolean);
 
-        try {
-          // ─── 追加：テーブル移動（統合）をデータベースに送る ───
-          const res = await fetch('/api/admin/reservations', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: foundResAsMain.id, table_id: LABEL_TO_DB_ID[newTableId] ?? newTableId, notes: updatedNotes }),
-          });
-          if (!res.ok) throw new Error('API Error');
+        if (subIds.length === 0) {
+          // 連結なしの単独予約：そのまま移動
+          try {
+            // ─── 追加：テーブル移動をデータベースに送る ───
+            const res = await fetch('/api/admin/reservations', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: foundRes.id, table_id: LABEL_TO_DB_ID[newTableId] ?? newTableId }),
+            });
+            if (!res.ok) throw new Error('API Error');
 
-          setReservations(prev => prev.map(r => r.id === foundResAsMain.id ? { ...r, table_id: newTableId, notes: updatedNotes } : r));
-        } catch (err) {
-          console.error(err);
-          alert(hasSubs ? 'テーブルの統合に失敗しました。' : 'テーブルの移動に失敗しました。');
-        }
-      } else {
-        // メインではなく連結中のサブテーブルをドラッグした場合：グループ全体を相対位置を保ったまま平行移動する
-        const foundResAsSub = currentShiftReservations.find(r => r.notes?.includes(`_combined:[${activeDraggingTableId}]`));
-        if (foundResAsSub) {
-          const mainId = String(foundResAsSub.table_id).trim();
-          const subIds = (foundResAsSub.notes?.match(/_combined:\[(.*?)\]/g) || [])
-            .map((m: string) => m.replace('_combined:[', '').replace(']', '').trim())
-            .filter(Boolean);
-
-          const occupiedIds = getOccupiedTableIds(foundResAsSub.date, foundResAsSub.time, foundResAsSub.id);
+            setReservations(prev => prev.map(r => r.id === foundRes.id ? { ...r, table_id: newTableId } : r));
+          } catch (err) {
+            console.error(err);
+            alert('テーブルの移動に失敗しました。');
+          }
+        } else {
+          const occupiedIds = getOccupiedTableIds(foundRes.date, foundRes.time, foundRes.id);
           const plan = computeGroupParallelMove(activeDraggingTableId, newTableId, mainId, subIds, occupiedIds);
 
           if (!plan) {
             alert('グループ全体を移動できる配置が見つかりませんでした。');
           } else {
-            const cleanNotes = getCleanNotes(foundResAsSub.notes);
+            const cleanNotes = getCleanNotes(foundRes.notes);
             const newTags = plan.newSubIds.map(id => `_combined:[${id}]`).join(' ');
             const updatedNotes = cleanNotes ? `${cleanNotes} ${newTags}`.trim() : newTags;
 
@@ -828,11 +866,11 @@ export default function AdminPage() {
               const res = await fetch('/api/admin/reservations', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: foundResAsSub.id, table_id: LABEL_TO_DB_ID[plan.newMainId] ?? plan.newMainId, notes: updatedNotes }),
+                body: JSON.stringify({ id: foundRes.id, table_id: LABEL_TO_DB_ID[plan.newMainId] ?? plan.newMainId, notes: updatedNotes }),
               });
               if (!res.ok) throw new Error('API Error');
 
-              setReservations(prev => prev.map(r => r.id === foundResAsSub.id ? { ...r, table_id: plan.newMainId, notes: updatedNotes } : r));
+              setReservations(prev => prev.map(r => r.id === foundRes.id ? { ...r, table_id: plan.newMainId, notes: updatedNotes } : r));
             } catch (err) {
               console.error(err);
               alert('グループの移動に失敗しました。');
