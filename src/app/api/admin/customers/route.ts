@@ -58,3 +58,29 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: '顧客情報の更新に失敗しました。' }, { status: 500 });
   }
 }
+
+// ==========================================
+// 顧客の削除（同じ guest_name の予約履歴を完全に削除する、取り消し不可）
+// ==========================================
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { name } = body;
+
+    if (!name) {
+      return NextResponse.json({ error: '氏名が指定されていません。' }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('reservations')
+      .delete()
+      .eq('guest_name', name);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error(err);
+    return NextResponse.json({ error: '顧客の削除に失敗しました。' }, { status: 500 });
+  }
+}

@@ -1496,6 +1496,34 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteCustomer = async () => {
+    if (!editingCustomer) return;
+    const typed = window.prompt(
+      `本当に削除する場合は、お客様氏名「${editingCustomer.guest_name}」と一致するように入力してください。\nこの方の予約履歴（${editingCustomer.total_visits}件）が完全に削除され、元に戻せません。`
+    );
+    if (typed === null) return;
+    if (typed !== editingCustomer.guest_name) {
+      alert('入力が一致しなかったため、削除をキャンセルしました。');
+      return;
+    }
+    setCeSaving(true);
+    try {
+      const res = await fetch('/api/admin/customers', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editingCustomer.guest_name }),
+      });
+      if (!res.ok) throw new Error();
+      setEditingCustomer(null);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      alert('削除に失敗しました。');
+    } finally {
+      setCeSaving(false);
+    }
+  };
+
   const filteredCustomerList = customerSearchQuery.trim()
     ? customerList.filter((c) => {
         const q = customerSearchQuery.trim().toLowerCase();
@@ -2149,6 +2177,15 @@ export default function AdminPage() {
                 style={{ cursor: 'pointer' }}
               >
                 {ceSaving ? '保存中...' : '保存する'}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteCustomer}
+                disabled={ceSaving}
+                className="w-full bg-rose-600/10 hover:bg-rose-600 border border-rose-900 text-rose-400 hover:text-white disabled:opacity-60 font-bold py-2.5 rounded-xl transition text-xs"
+                style={{ cursor: 'pointer' }}
+              >
+                🗑️ この顧客の予約履歴を完全に削除
               </button>
             </div>
           </div>
