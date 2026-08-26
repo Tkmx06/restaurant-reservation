@@ -448,6 +448,7 @@ const MOBILE_FLOOR_ZONES: string[][] = [
 ];
 
 interface MobileAdminViewProps {
+  visibilityClassName: string;
   selectedDate: string;
   formatPureDate: (dateStr: string) => string;
   getDateTopLabel: (dateStr: string) => string;
@@ -488,6 +489,7 @@ interface MobileAdminViewProps {
 
 function MobileAdminView(props: MobileAdminViewProps) {
   const {
+    visibilityClassName,
     selectedDate, formatPureDate, getDateTopLabel, changeDate,
     currentShift, setCurrentShift, isSelectedDateLunchAllowed,
     handleGoToToday, setShowBusinessDaysModal, openNewOrderModal,
@@ -519,7 +521,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
   ];
 
   return (
-    <div className="sm:hidden fixed inset-0 bg-slate-950 text-slate-200 flex flex-col z-0">
+    <div className={`${visibilityClassName} fixed inset-0 bg-slate-950 text-slate-200 flex flex-col z-0`}>
       {/* スティッキーヘッダー */}
       <div className="shrink-0 px-4 pt-3.5 pb-3 bg-slate-900 border-b border-slate-800">
         <div className="flex items-center justify-between mb-2.5">
@@ -773,6 +775,20 @@ export default function AdminPage() {
   const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date());
 
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+
+  // ─── PC版/モバイル版の手動切り替え（未選択時は画面幅で自動判定） ───
+  const [forcedView, setForcedView] = useState<'auto' | 'pc' | 'mobile'>('auto');
+  useEffect(() => {
+    const saved = localStorage.getItem('adminForcedView');
+    if (saved === 'pc' || saved === 'mobile' || saved === 'auto') setForcedView(saved);
+  }, []);
+  const cycleForcedView = () => {
+    const next = forcedView === 'auto' ? 'pc' : forcedView === 'pc' ? 'mobile' : 'auto';
+    setForcedView(next);
+    localStorage.setItem('adminForcedView', next);
+  };
+  const desktopVisibilityClass = forcedView === 'mobile' ? 'hidden' : forcedView === 'pc' ? 'block' : 'hidden sm:block';
+  const mobileVisibilityClass = forcedView === 'pc' ? 'hidden' : forcedView === 'mobile' ? 'block' : 'sm:hidden';
 
   // ─── スマホ向けボトムナビの選択状態（activeTabと連動させる） ───
   const [mobileTabState, setMobileTabState] = useState<'list' | 'floor' | 'customers' | 'history'>('list');
@@ -1871,9 +1887,21 @@ export default function AdminPage() {
 
   return (
     <div className="p-2 min-h-screen font-sans transition-colors duration-300 bg-slate-50 text-slate-900">
-      
-      {/* ===== PC・タブレット向けレイアウト（sm以上でのみ表示） ===== */}
-      <div className="hidden sm:block">
+
+      {/* PC版/モバイル版 手動切り替えボタン（常に表示） */}
+      <button
+        type="button"
+        onClick={cycleForcedView}
+        style={{ cursor: 'pointer' }}
+        className="fixed top-1/2 right-2 -translate-y-1/2 z-40 flex items-center gap-1.5 px-2.5 py-2 rounded-full shadow-lg text-[10px] font-black bg-slate-900/90 text-white border border-slate-700"
+      >
+        {forcedView === 'auto' && <>🔄 自動</>}
+        {forcedView === 'pc' && <>💻 PC版</>}
+        {forcedView === 'mobile' && <>📱 モバイル版</>}
+      </button>
+
+      {/* ===== PC・タブレット向けレイアウト（sm以上でのみ表示、手動切り替え可） ===== */}
+      <div className={desktopVisibilityClass}>
       {/* 👑 トップヘッダーメニュー */}
       <div className="flex justify-between items-center mb-2 border-b pb-2 px-1 border-slate-200">
         <div className="flex space-x-1.5">
@@ -2898,7 +2926,7 @@ export default function AdminPage() {
       )}
 
       {/* 下部データ表示エリア（PC・タブレット向け） */}
-      <div className="hidden sm:block">
+      <div className={desktopVisibilityClass}>
       {activeTab === 'customers' ? (
         <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
           <h2 className="text-xs font-black mb-2 flex items-center justify-between px-1">
@@ -2998,6 +3026,7 @@ export default function AdminPage() {
 
       {/* ===== スマホ向けレイアウト（sm未満でのみ表示） ===== */}
       <MobileAdminView
+        visibilityClassName={mobileVisibilityClass}
         selectedDate={selectedDate}
         formatPureDate={formatPureDate}
         getDateTopLabel={getDateTopLabel}
