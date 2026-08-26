@@ -489,9 +489,10 @@ export default function ReservationPage() {
                           padding: '10px 0',
                           borderRadius: 12,
                           border: isSelected ? '1px solid #E21A22' : '1px solid transparent',
-                          background: isSelected ? '#E21A22' : isClosed ? 'transparent' : '#F3F4F6',
-                          color: isSelected ? '#FFFFFF' : isClosed ? '#7F8C8D' : '#374151', // 定休日は濃いめのグレー文字
-                          opacity: isClosed ? 0.55 : 1, // 視認性を上げるために透明度を0.55へアップ
+                          background: isSelected ? '#E21A22' : isClosed ? '#FEE2E2' : '#F3F4F6',
+                          color: isSelected ? '#FFFFFF' : isClosed ? '#DC2626' : '#374151',
+                          textDecoration: isClosed ? 'line-through' : 'none',
+                          opacity: isClosed ? 0.9 : 1,
                           pointerEvents: isClosed ? 'none' : 'auto',
                           transition: 'all 0.15s ease',
                         }}
@@ -614,12 +615,12 @@ export default function ReservationPage() {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              background: dayObj.isClosed ? '#FEF2F2' : '#F9FAFB',
-                              color: dayObj.isClosed ? '#EF4444' : '#9CA3AF',
+                              background: dayObj.isClosed ? '#FEE2E2' : '#F9FAFB',
+                              color: dayObj.isClosed ? '#DC2626' : '#9CA3AF',
                               fontSize: 11,
-                              fontWeight: 500,
+                              fontWeight: dayObj.isClosed ? 800 : 500,
                               textDecoration: dayObj.isClosed ? 'line-through' : 'none',
-                              opacity: 0.35,
+                              opacity: dayObj.isClosed ? 0.95 : 0.35,
                               cursor: 'not-allowed',
                             }}
                           >

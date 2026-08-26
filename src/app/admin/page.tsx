@@ -452,6 +452,7 @@ interface MobileAdminViewProps {
   toggleForcedView: () => void;
   selectedDate: string;
   setSelectedDate: (d: string) => void;
+  checkIsClosed: (dateStr: string) => boolean;
   formatPureDate: (dateStr: string) => string;
   getDateTopLabel: (dateStr: string) => string;
   changeDate: (days: number) => void;
@@ -493,7 +494,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
   const {
     visibilityClassName,
     toggleForcedView,
-    selectedDate, setSelectedDate, formatPureDate, getDateTopLabel, changeDate,
+    selectedDate, setSelectedDate, checkIsClosed, formatPureDate, getDateTopLabel, changeDate,
     currentShift, setCurrentShift, isSelectedDateLunchAllowed,
     handleGoToToday, setShowBusinessDaysModal, openNewOrderModal,
     mobileTab, setMobileTab,
@@ -507,6 +508,22 @@ function MobileAdminView(props: MobileAdminViewProps) {
 
   const totalGuests = currentShift === 'lunch' ? totalLunchGuests : totalDinnerGuests;
   const totalCount = currentShift === 'lunch' ? totalLunchCount : totalDinnerCount;
+
+  const [showMobileCalendarPopup, setShowMobileCalendarPopup] = useState(false);
+  const [mobileCalendarMonth, setMobileCalendarMonth] = useState(new Date());
+
+  const generateMobileCalendarDays = (currentMonthDate: Date) => {
+    const year = currentMonthDate.getFullYear();
+    const month = currentMonthDate.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const daysArray: ({ day: number; dateStr: string; isClosed: boolean } | null)[] = Array(firstDayIndex).fill(null);
+    for (let day = 1; day <= totalDays; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      daysArray.push({ day, dateStr, isClosed: checkIsClosed(dateStr) });
+    }
+    return daysArray;
+  };
 
   const openReservation = (r: any) => {
     setSelectedRes(r);
@@ -537,13 +554,66 @@ function MobileAdminView(props: MobileAdminViewProps) {
           <button onClick={() => changeDate(1)} style={{ cursor: 'pointer' }} className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-base">▶</button>
           </div>
           <div className="relative w-10 h-10 shrink-0">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            />
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base pointer-events-none">📅</div>
+            <button
+              type="button"
+              onClick={() => { setMobileCalendarMonth(new Date(selectedDate + 'T00:00:00')); setShowMobileCalendarPopup(!showMobileCalendarPopup); }}
+              style={{ cursor: 'pointer' }}
+              className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-base"
+            >
+              📅
+            </button>
+            {showMobileCalendarPopup && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowMobileCalendarPopup(false)} />
+                <div className="absolute right-0 top-12 bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-2xl z-50 w-64">
+                  <div className="flex justify-between items-center mb-2">
+                    <button
+                      type="button"
+                      onClick={() => { const d = new Date(mobileCalendarMonth); d.setMonth(d.getMonth() - 1); setMobileCalendarMonth(d); }}
+                      style={{ cursor: 'pointer' }}
+                      className="text-slate-400 hover:text-white px-1 text-xs font-bold"
+                    >
+                      &lt;
+                    </button>
+                    <span className="font-black text-xs text-amber-400">{mobileCalendarMonth.getFullYear()}年 {mobileCalendarMonth.getMonth() + 1}月</span>
+                    <button
+                      type="button"
+                      onClick={() => { const d = new Date(mobileCalendarMonth); d.setMonth(d.getMonth() + 1); setMobileCalendarMonth(d); }}
+                      style={{ cursor: 'pointer' }}
+                      className="text-slate-400 hover:text-white px-1 text-xs font-bold"
+                    >
+                      &gt;
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 text-center font-bold text-[9px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
+                    <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {generateMobileCalendarDays(mobileCalendarMonth).map((dayObj, index) => {
+                      if (!dayObj) return <div key={`empty-${index}`} />;
+                      const isSelected = dayObj.dateStr === selectedDate;
+                      return (
+                        <button
+                          type="button"
+                          key={dayObj.dateStr}
+                          onClick={() => { setSelectedDate(dayObj.dateStr); setShowMobileCalendarPopup(false); }}
+                          style={{ cursor: 'pointer' }}
+                          className={`h-7 rounded text-[10px] font-bold flex items-center justify-center ${
+                            isSelected
+                              ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-950 font-black'
+                              : dayObj.isClosed
+                                ? 'bg-rose-600/30 border border-rose-600 text-rose-200 font-black line-through'
+                                : 'bg-slate-800 text-slate-200'
+                          }`}
+                        >
+                          {dayObj.day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -793,6 +863,8 @@ export default function AdminPage() {
 
   const [showCalendarPopup, setShowCalendarPopup] = useState(false);
   const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date());
+  const [showMainCalendarPopup, setShowMainCalendarPopup] = useState(false);
+  const [mainCalendarMonth, setMainCalendarMonth] = useState(new Date());
 
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
 
@@ -2015,8 +2087,71 @@ export default function AdminPage() {
           &gt;
         </button>
         <div className="relative flex items-center justify-center w-9 h-9 shrink-0">
-          <input type="date" value={selectedDate} onChange={(e) => e.target.value && setSelectedDate(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-          <div className="w-9 h-9 rounded-lg bg-blue-600 text-white font-bold border border-blue-700 shadow-md flex items-center justify-center text-sm pointer-events-none">📅</div>
+          <button
+            type="button"
+            onClick={() => { setMainCalendarMonth(new Date(selectedDate + 'T00:00:00')); setShowMainCalendarPopup(!showMainCalendarPopup); }}
+            style={{ cursor: 'pointer' }}
+            className="w-9 h-9 rounded-lg bg-blue-600 text-white font-bold border border-blue-700 shadow-md flex items-center justify-center text-sm"
+          >
+            📅
+          </button>
+          {showMainCalendarPopup && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowMainCalendarPopup(false)} />
+              <div className="absolute right-0 top-11 bg-slate-950 border border-slate-700 p-3 rounded-xl shadow-2xl z-50 w-72 text-slate-100">
+                <div className="flex justify-between items-center mb-2">
+                  <button
+                    type="button"
+                    className="text-slate-400 hover:text-white px-1 text-xs font-bold"
+                    onClick={() => { const d = new Date(mainCalendarMonth); d.setMonth(d.getMonth() - 1); setMainCalendarMonth(d); }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    &lt;
+                  </button>
+                  <span className="font-black text-xs text-amber-400">{mainCalendarMonth.getFullYear()}年 {mainCalendarMonth.getMonth() + 1}月</span>
+                  <button
+                    type="button"
+                    className="text-slate-400 hover:text-white px-1 text-xs font-bold"
+                    onClick={() => { const d = new Date(mainCalendarMonth); d.setMonth(d.getMonth() + 1); setMainCalendarMonth(d); }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    &gt;
+                  </button>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
+                  <span>日</span><span>月</span><span className="text-rose-500/80">火</span><span className="text-rose-500/80">水</span><span>木</span><span>金</span><span>土</span>
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {generateCalendarDays(mainCalendarMonth).map((dayObj, index) => {
+                    if (!dayObj) return <div key={`empty-${index}`} />;
+                    const isSelected = dayObj.dateStr === selectedDate;
+                    return (
+                      <button
+                        type="button"
+                        key={dayObj.dateStr}
+                        onClick={() => { setSelectedDate(dayObj.dateStr); setShowMainCalendarPopup(false); }}
+                        title={dayObj.isClosed ? '休業日' : '営業日'}
+                        className={`h-7 rounded text-[10px] font-bold transition flex items-center justify-center ${
+                          isSelected
+                            ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
+                            : dayObj.isClosed
+                              ? 'bg-rose-600/30 border border-rose-600 text-rose-200 font-black line-through hover:bg-rose-600/50'
+                              : 'bg-slate-900 hover:bg-slate-800 text-slate-200'
+                        }`}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {dayObj.day}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800 text-[9px] text-slate-500">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-rose-600/30 border border-rose-600 inline-block" />
+                  <span>休業日</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -2323,7 +2458,7 @@ export default function AdminPage() {
                               isSelected
                                 ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
                                 : dayObj.isClosed
-                                  ? 'bg-rose-950/40 text-rose-400/80 hover:bg-rose-900/50'
+                                  ? 'bg-rose-600/30 border border-rose-600 text-rose-200 font-black hover:bg-rose-600/50'
                                   : 'bg-slate-900 hover:bg-slate-800 text-slate-200'
                             }`}
                             style={{ cursor: 'pointer' }}
@@ -2385,7 +2520,7 @@ export default function AdminPage() {
                               isSelected
                                 ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
                                 : dayObj.isClosed
-                                  ? 'bg-rose-950/40 text-rose-400/80 hover:bg-rose-900/50'
+                                  ? 'bg-rose-600/30 border border-rose-600 text-rose-200 font-black hover:bg-rose-600/50'
                                   : 'bg-slate-900 hover:bg-slate-800 text-slate-200'
                             }`}
                             style={{ cursor: 'pointer' }}
@@ -2810,7 +2945,7 @@ export default function AdminPage() {
                           <div className="grid grid-cols-7 gap-1">
                             {generateCalendarDays(currentCalendarMonth).map((dayObj, index) => {
                               if (!dayObj) return <div key={`empty-${index}`} />;
-                              if (dayObj.isClosed) return <div key={dayObj.dateStr} className="h-7 rounded flex items-center justify-center bg-red-950/20 text-red-600/40 text-[10px] line-through cursor-not-allowed font-medium">{dayObj.day}</div>;
+                              if (dayObj.isClosed) return <div key={dayObj.dateStr} title="休業日" className="h-7 rounded flex items-center justify-center bg-rose-600/25 border border-rose-700/60 text-rose-300 text-[10px] line-through cursor-not-allowed font-black">{dayObj.day}</div>;
                               return (
                                 <button 
                                   type="button" 
@@ -3050,6 +3185,7 @@ export default function AdminPage() {
         toggleForcedView={toggleForcedView}
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
+        checkIsClosed={checkIsClosed}
         formatPureDate={formatPureDate}
         getDateTopLabel={getDateTopLabel}
         changeDate={changeDate}
