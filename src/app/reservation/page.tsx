@@ -351,9 +351,10 @@ export default function ReservationPage() {
           email, 
           phone, 
           notes: finalNotes,          // 結合情報付きのnotes
-          totalGuests, 
+          totalGuests,
           // ─── 修正：文字列テーブル名からデータベース用の数値IDに変換して送信 ───
-          table_id: LABEL_TO_DB_ID[selectedGroup.mainTable] || 1 
+          table_id: LABEL_TO_DB_ID[selectedGroup.mainTable] || 1,
+          locale: lang,               // 選択中の言語を確認メールへ反映
         }),
       });
       const data = await res.json();

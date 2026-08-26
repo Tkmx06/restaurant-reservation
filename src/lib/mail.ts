@@ -33,7 +33,7 @@ export async function sendCustomerConfirmation({
 }: BookingEmailProps) {
   const texts = {
     de: {
-      subject: '【ご予約完了】 Japanisches Bistro T-style',
+      subject: 'Reservierungsbestätigung',
       greeting: `Sehr geehrte(r) ${customerName},`,
       intro: 'Wir haben Ihre Reservierung wie folgt erhalten:',
       dateLabel: 'Datum & Uhrzeit',
@@ -45,7 +45,7 @@ export async function sendCustomerConfirmation({
       cancelLink: 'Reservierung stornieren',
     },
     en: {
-      subject: '【ご予約完了】 Japanisches Bistro T-style',
+      subject: 'Reservation Confirmation',
       greeting: `Dear ${customerName},`,
       intro: 'We have received your reservation with the following details:',
       dateLabel: 'Date & Time',
@@ -57,7 +57,7 @@ export async function sendCustomerConfirmation({
       cancelLink: 'Cancel reservation',
     },
     ja: {
-      subject: '【ご予約完了】 Japanisches Bistro T-style',
+      subject: '【ご予約完了】',
       greeting: `${customerName} 様`,
       intro: '以下の内容でご予約を承りました。',
       dateLabel: '日時',
@@ -69,7 +69,7 @@ export async function sendCustomerConfirmation({
       cancelLink: 'ご予約をキャンセルする',
     },
     es: {
-      subject: '【ご予約完了】 Japanisches Bistro T-style',
+      subject: 'Confirmación de reserva',
       greeting: `Estimado/a ${customerName},`,
       intro: 'Hemos recibido su reserva con los siguientes detalles:',
       dateLabel: 'Fecha y hora',
