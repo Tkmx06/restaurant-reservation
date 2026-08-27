@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 
 interface TableStatus {
@@ -141,6 +141,25 @@ const getGuestCountColorClasses = (guests: number | undefined) => {
 
 // 常連様専用に確保し、通常オンライン予約の対象外にしているテーブル（日付ごとに公開設定可能）
 const SPECIAL_TABLES = ['1', '2', '3', '4', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
+
+// フロアマップ内のテーブル形状ごとの縦横比（幅÷高さ）。名前タグをテーブルの真下に置くための計算に使う
+const TABLE_ASPECT_RATIO: Record<TableStatus['type'], number> = {
+  'square-2': 1,
+  'counter-1': 1,
+  'rect-h-4': 2 / 1.1,
+  'rect-v-4': 1 / 2.1,
+};
+// フロアマップ枠自体の縦横比（幅÷高さ）。%指定の top と left/width は基準の軸が違うため、変換に使う
+const FLOOR_MAP_ASPECT_RATIO = 16 / 9.2;
+
+// 予約名タグを、対象テーブルのすぐ下（枠の高さ%基準）に配置するための top 位置を計算
+const getNameTagTopPercent = (t: TableStatus) => {
+  const topPercent = parseFloat(t.top);
+  const widthPercent = parseFloat(t.width);
+  const tableHeightInWidthUnits = widthPercent / TABLE_ASPECT_RATIO[t.type];
+  const tableHeightPercent = tableHeightInWidthUnits * FLOOR_MAP_ASPECT_RATIO;
+  return topPercent + tableHeightPercent + 0.8;
+};
 
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
 const getTodayString = () => {
@@ -2272,22 +2291,13 @@ export default function AdminPage() {
               </button>
             </div>
           )}
-          {/* 人数帯カラー凡例 */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 px-1">
-            {GUEST_COUNT_LEGEND.map((g) => (
-              <div key={g.label} className="flex items-center gap-1">
-                <span className={`w-2.5 h-2.5 rounded-full ${g.swatch}`} />
-                <span className="text-[10px] font-bold text-slate-500">{g.label}</span>
-              </div>
-            ))}
-          </div>
-          <div className="relative w-full mx-auto">
-            <div 
+          <div className="relative w-full">
+            <div
               ref={mapContainerRef}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerCancel}
-              className={`w-full aspect-[16/9.2] rounded-xl border relative p-3 overflow-hidden shadow-inner transition-colors duration-300 touch-none ${
+              className={`w-[83%] aspect-[16/9.2] rounded-xl border relative p-3 overflow-hidden shadow-inner transition-colors duration-300 touch-none ${
                 isSelectedDateClosed 
                   ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400' 
                   : isNightMapMode 
@@ -2449,45 +2459,46 @@ export default function AdminPage() {
                 }
 
                 return (
-                  <div 
-                    key={t.id} 
-                    id={`table-target-${t.id}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleTableClick(t)}
-                    onPointerDown={(e) => handlePointerDown(e, t)}
-                    onPointerCancel={handlePointerCancel}
-                    className={`absolute flex flex-col items-center justify-center shadow-lg border text-center touch-none transition-transform duration-75 overflow-hidden leading-none p-0.5 select-none ${shapeClass} ${radiusClass} ${tableStyle}`}
-                    style={{ 
-                      top: t.top, 
-                      left: t.left, 
-                      width: t.width,
-                      cursor: t.isOccupied ? 'grab' : 'pointer',
-                      transform: isThisTableDragging ? `translate3d(${dragPosition.x}px, ${dragPosition.y}px, 0)` : undefined,
-                      opacity: isThisTableDragging ? 0.85 : undefined,
-                      zIndex: isThisTableDragging ? 100 : undefined,
-                      WebkitUserSelect: 'none',
-                    }}
-                  >
-                    {t.isOccupied && attachedRes ? (
-                      <div className="w-full h-full flex flex-col justify-between items-center py-1 px-0.5 pointer-events-none select-none">
-                        <div className="flex w-full justify-between items-center px-1">
-                          <span className={`text-[9px] font-mono font-black tracking-tighter opacity-95 bg-black/20 px-1 rounded-sm ${isLunchTime(attachedRes.time) ? 'text-orange-300' : 'text-indigo-200'}`}>
+                  <Fragment key={t.id}>
+                    <div
+                      id={`table-target-${t.id}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleTableClick(t)}
+                      onPointerDown={(e) => handlePointerDown(e, t)}
+                      onPointerCancel={handlePointerCancel}
+                      className={`absolute flex flex-col items-center justify-center shadow-lg border text-center touch-none transition-transform duration-75 overflow-hidden leading-none p-0.5 select-none ${shapeClass} ${radiusClass} ${tableStyle}`}
+                      style={{
+                        top: t.top,
+                        left: t.left,
+                        width: t.width,
+                        cursor: t.isOccupied ? 'grab' : 'pointer',
+                        transform: isThisTableDragging ? `translate3d(${dragPosition.x}px, ${dragPosition.y}px, 0)` : undefined,
+                        opacity: isThisTableDragging ? 0.85 : undefined,
+                        zIndex: isThisTableDragging ? 100 : undefined,
+                        WebkitUserSelect: 'none',
+                      }}
+                    >
+                      {t.isOccupied && attachedRes ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-0.5 pointer-events-none select-none">
+                          <span className={`text-[8px] font-mono font-black tracking-tighter opacity-95 ${isLunchTime(attachedRes.time) ? 'text-orange-200' : 'text-indigo-100'}`}>
                             {isLunchTime(attachedRes.time) ? '☀️' : '🌙'}{formatShortTime(attachedRes.time)}
                           </span>
-                          <span className="text-[10px] font-mono font-bold bg-black/30 px-1 rounded-sm text-white scale-90">{t.label}</span>
+                          <span className="text-[11px] font-black tracking-tight">{t.label}</span>
                         </div>
-                        <div className="text-[11px] font-black tracking-tight truncate w-full text-center my-0.5 px-0.5">
-                          {attachedRes.guest_name}
-                        </div>
-                        <div className="text-[10px] font-black text-amber-200 bg-black/40 px-1.5 py-0.5 rounded-full scale-95">
-                          {attachedRes.guests}名
-                        </div>
+                      ) : (
+                        <span className="font-black text-xs tracking-tight pointer-events-none select-none">{t.label}</span>
+                      )}
+                    </div>
+                    {t.isOccupied && attachedRes && !isThisTableDragging && (
+                      <div
+                        className="absolute z-20 bg-slate-900 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md truncate pointer-events-none select-none shadow-md"
+                        style={{ top: `${getNameTagTopPercent(t)}%`, left: t.left, maxWidth: '110px' }}
+                      >
+                        {attachedRes.guest_name}・{attachedRes.guests}名
                       </div>
-                    ) : (
-                      <span className="font-black text-xs tracking-tight pointer-events-none select-none">{t.label}</span>
                     )}
-                  </div>
+                  </Fragment>
                 );
               })}
             </div>
