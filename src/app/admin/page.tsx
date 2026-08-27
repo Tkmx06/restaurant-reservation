@@ -871,11 +871,10 @@ export default function AdminPage() {
   // ─── PC版/モバイル版の手動切り替え ───
   const [forcedView, setForcedView] = useState<'pc' | 'mobile'>('pc');
   useEffect(() => {
+    // 画面幅による自動判定はせず、保存された選択があればそれを使い、なければ常にPC版をデフォルトにする
     const saved = localStorage.getItem('adminForcedView');
     if (saved === 'pc' || saved === 'mobile') {
       setForcedView(saved);
-    } else if (window.innerWidth < 640) {
-      setForcedView('mobile');
     }
   }, []);
   const toggleForcedView = () => {
