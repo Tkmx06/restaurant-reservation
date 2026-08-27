@@ -237,15 +237,19 @@ export default function ReservationPage() {
       .catch((err) => console.error('定休日の取得に失敗:', err));
   }, []);
 
-  // 1b. 常連様専用テーブルのうち、現在オンライン予約に公開されているものを取得
+  // 1b. 常連様専用テーブルのうち、選択中の日付でオンライン予約に公開されているものを取得
   useEffect(() => {
-    fetch('/api/online-booking-settings')
+    if (!date) {
+      setOpenTables([]);
+      return;
+    }
+    fetch(`/api/online-booking-settings?date=${date}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.openTables) setOpenTables(data.openTables);
       })
       .catch((err) => console.error('公開テーブル設定の取得に失敗:', err));
-  }, []);
+  }, [date]);
 
   // 常連様専用テーブルが混ざるグループは、公開されていない限り候補から除外する
   const isGroupOnlineAllowed = (group: { mainTable: string; combinedTables: string[] }) => {

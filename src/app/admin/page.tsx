@@ -139,6 +139,9 @@ const getGuestCountColorClasses = (guests: number | undefined) => {
   return GUEST_COUNT_LEGEND[5].classes;
 };
 
+// 常連様専用に確保し、通常オンライン予約の対象外にしているテーブル（日付ごとに公開設定可能）
+const SPECIAL_TABLES = ['1', '2', '3', '4', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
+
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
 const getTodayString = () => {
   const d = new Date();
@@ -461,7 +464,11 @@ interface MobileAdminViewProps {
   isSelectedDateLunchAllowed: boolean;
   handleGoToToday: () => void;
   setShowBusinessDaysModal: (v: boolean) => void;
-  setShowOnlineTablesModal: (v: boolean) => void;
+  onlineEditMode: boolean;
+  setOnlineEditMode: (v: boolean | ((prev: boolean) => boolean)) => void;
+  onlineOpenTablesToday: string[];
+  onlineTablesSaving: string | null;
+  toggleOnlineTable: (label: string) => void;
   openNewOrderModal: () => void;
   mobileTab: 'list' | 'floor' | 'customers' | 'history';
   setMobileTab: (tab: 'list' | 'floor' | 'customers' | 'history') => void;
@@ -497,7 +504,8 @@ function MobileAdminView(props: MobileAdminViewProps) {
     toggleForcedView,
     selectedDate, setSelectedDate, checkIsClosed, formatPureDate, getDateTopLabel, changeDate,
     currentShift, setCurrentShift, isSelectedDateLunchAllowed,
-    handleGoToToday, setShowBusinessDaysModal, setShowOnlineTablesModal, openNewOrderModal,
+    handleGoToToday, setShowBusinessDaysModal, openNewOrderModal,
+    onlineEditMode, setOnlineEditMode, onlineOpenTablesToday, onlineTablesSaving, toggleOnlineTable,
     mobileTab, setMobileTab,
     displaySideReservations, totalLunchGuests, totalLunchCount, totalDinnerGuests, totalDinnerCount,
     isLunchTime, formatShortTime, getCleanNotes, displayTableIds,
@@ -645,8 +653,12 @@ function MobileAdminView(props: MobileAdminViewProps) {
         </div>
 
         <div className="flex justify-end items-center gap-1.5 mt-2">
-          <button onClick={() => setShowOnlineTablesModal(true)} style={{ cursor: 'pointer' }} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 text-[10px] font-black">
-            🔒 オフライン
+          <button
+            onClick={() => { setOnlineEditMode(v => !v); setMobileTab('floor'); }}
+            style={{ cursor: 'pointer' }}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black ${onlineEditMode ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+          >
+            {onlineEditMode ? '✅ 編集を終了' : '🔒 オフライン'}
           </button>
           <button onClick={toggleForcedView} style={{ cursor: 'pointer' }} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 text-[10px] font-black">
             💻 PC
@@ -702,6 +714,14 @@ function MobileAdminView(props: MobileAdminViewProps) {
 
         {mobileTab === 'floor' && (
           <div className="p-4">
+            {onlineEditMode && (
+              <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-700 text-[10px] text-emerald-300 font-bold flex items-center justify-between gap-2">
+                <span>🔓🔒 {formatPureDate(selectedDate)} の常連様テーブルをタップして切替</span>
+                <button type="button" onClick={() => setOnlineEditMode(false)} className="shrink-0 bg-emerald-600 text-white text-[10px] font-black px-2 py-1 rounded-lg" style={{ cursor: 'pointer' }}>
+                  完了
+                </button>
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4">
               {GUEST_COUNT_LEGEND.map((g) => (
                 <div key={g.label} className="flex items-center gap-1">
@@ -710,7 +730,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
                 </div>
               ))}
             </div>
-            {isSelectedDateClosed ? (
+            {isSelectedDateClosed && !onlineEditMode ? (
               <p className="text-xs text-slate-500 italic text-center py-10">この日は定休日です</p>
             ) : (
               MOBILE_FLOOR_ZONES.map((zoneIds, zi) => (
@@ -718,6 +738,35 @@ function MobileAdminView(props: MobileAdminViewProps) {
                   {zoneIds.map((tid) => {
                     const t = tables.find((tt) => tt.id === tid);
                     if (!t) return null;
+
+                    if (onlineEditMode) {
+                      const isSpecial = SPECIAL_TABLES.includes(t.id);
+                      if (!isSpecial) {
+                        return (
+                          <div key={tid} className="aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5 border bg-slate-900 border-slate-800 opacity-25">
+                            <span className="text-xs font-black text-slate-600">{t.label}</span>
+                          </div>
+                        );
+                      }
+                      const isOpen = onlineOpenTablesToday.includes(t.id);
+                      const isSaving = onlineTablesSaving === t.id;
+                      return (
+                        <div
+                          key={tid}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => !isSaving && toggleOnlineTable(t.id)}
+                          style={{ cursor: isSaving ? 'wait' : 'pointer' }}
+                          className={`aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5 border-2 ${
+                            isOpen ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 border-emerald-700' : 'bg-gradient-to-br from-slate-600 to-slate-800 border-slate-900'
+                          } ${isSaving ? 'opacity-50' : ''}`}
+                        >
+                          <span className="text-sm leading-none">{isOpen ? '🔓' : '🔒'}</span>
+                          <span className="text-xs font-black text-white">{t.label}</span>
+                        </div>
+                      );
+                    }
+
                     const attachedRes = reservations.find((r) => {
                       const matchBasic = r.date === selectedDate && r.status === 'confirmed' && (String(r.table_id).trim() === String(t.id).trim() || r.notes?.includes(`_combined:[${t.id}]`));
                       if (!matchBasic) return false;
@@ -923,34 +972,32 @@ export default function AdminPage() {
   const bdStartFieldRef = useRef<HTMLDivElement>(null);
   const bdEndFieldRef = useRef<HTMLDivElement>(null);
 
-  // ─── 常連様専用テーブルのオンライン予約公開設定 ───
-  const SPECIAL_TABLES = ['1', '2', '3', '4', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
-  const [showOnlineTablesModal, setShowOnlineTablesModal] = useState(false);
-  const [onlineOpenTables, setOnlineOpenTables] = useState<string[]>([]);
+  // ─── 常連様専用テーブルのオンライン予約公開設定（日付ごと） ───
+  const [onlineEditMode, setOnlineEditMode] = useState(false);
+  const [onlineOpenTablesToday, setOnlineOpenTablesToday] = useState<string[]>([]);
   const [onlineTablesSaving, setOnlineTablesSaving] = useState<string | null>(null);
 
-  const fetchOnlineTableSettings = async () => {
+  const fetchOnlineTableSettings = async (dateStr: string) => {
     try {
-      const res = await fetch('/api/admin/online-booking-settings');
+      const res = await fetch(`/api/admin/online-booking-settings?date=${dateStr}`);
       const data = await res.json();
-      const open = (data.settings || []).filter((s: { is_open: boolean }) => s.is_open).map((s: { table_label: string }) => s.table_label);
-      setOnlineOpenTables(open);
+      setOnlineOpenTablesToday(data.openTables || []);
     } catch (err) {
       console.error('公開テーブル設定の取得に失敗:', err);
     }
   };
 
   const toggleOnlineTable = async (label: string) => {
-    const nextOpen = !onlineOpenTables.includes(label);
+    const nextOpen = !onlineOpenTablesToday.includes(label);
     setOnlineTablesSaving(label);
     try {
       const res = await fetch('/api/admin/online-booking-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableLabel: label, isOpen: nextOpen }),
+        body: JSON.stringify({ date: selectedDate, tableLabel: label, isOpen: nextOpen }),
       });
       if (!res.ok) throw new Error('API Error');
-      setOnlineOpenTables(prev => nextOpen ? [...prev, label] : prev.filter(id => id !== label));
+      setOnlineOpenTablesToday(prev => nextOpen ? [...prev, label] : prev.filter(id => id !== label));
     } catch (err) {
       console.error(err);
       alert('テーブルの公開設定の更新に失敗しました。');
@@ -960,8 +1007,8 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    if (showOnlineTablesModal) fetchOnlineTableSettings();
-  }, [showOnlineTablesModal]);
+    if (onlineEditMode) fetchOnlineTableSettings(selectedDate);
+  }, [onlineEditMode, selectedDate]);
 
   const openBdStartCalendar = () => {
     const rect = bdStartFieldRef.current?.getBoundingClientRect();
@@ -1518,6 +1565,10 @@ export default function AdminPage() {
   };
 
   const handleTableClick = async (table: TableStatus) => {
+    if (onlineEditMode) {
+      if (SPECIAL_TABLES.includes(table.id)) toggleOnlineTable(table.id);
+      return;
+    }
     if (draggingTableId || hasMovedSignificantly) return;
     if (isSelectedDateClosed) return;
 
@@ -2070,11 +2121,15 @@ export default function AdminPage() {
           </button>
           <button
             type="button"
-            onClick={() => setShowOnlineTablesModal(true)}
-            className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-slate-800 transition shadow-md"
+            onClick={() => setOnlineEditMode(v => !v)}
+            className={`text-xs font-black px-4 py-1.5 rounded-xl border transition shadow-md ${
+              onlineEditMode
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-700'
+                : 'bg-slate-700 hover:bg-slate-600 text-white border-slate-800'
+            }`}
             style={{ cursor: 'pointer' }}
           >
-            🔒 オフライン
+            {onlineEditMode ? '✅ 編集を終了' : '🔒 オフライン'}
           </button>
           <button
             type="button"
@@ -2209,6 +2264,14 @@ export default function AdminPage() {
       {/* フロアマップ枠 */}
       {activeTab === 'today' && (
         <div className="mb-3 border p-3 rounded-xl shadow-xl relative overflow-hidden transition-colors duration-300 bg-white border-slate-200">
+          {onlineEditMode && (
+            <div className="mb-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-300 text-[11px] text-emerald-800 font-bold flex items-center justify-between gap-2">
+              <span>🔓🔒 {formatPureDate(selectedDate)} の常連様テーブルをタップしてオンライン/オフライン切替（上の日付ナビで日を変更できます）</span>
+              <button type="button" onClick={() => setOnlineEditMode(false)} className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-lg" style={{ cursor: 'pointer' }}>
+                完了
+              </button>
+            </div>
+          )}
           {/* 人数帯カラー凡例 */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 px-1">
             {GUEST_COUNT_LEGEND.map((g) => (
@@ -2330,6 +2393,36 @@ export default function AdminPage() {
                 const radiusClass = isCounter ? 'rounded-full' : 'rounded-xl';
                 const isThisTableDragging = draggingTableId === t.id;
                 const isThisTableHovered = hoveredTableId === t.id;
+
+                if (onlineEditMode) {
+                  const isSpecial = SPECIAL_TABLES.includes(t.id);
+                  if (!isSpecial) {
+                    return (
+                      <div key={t.id} className={`absolute flex flex-col items-center justify-center border text-center text-xs opacity-25 ${shapeClass} ${radiusClass} ${isNightMapMode ? 'bg-slate-800 border-slate-700 text-slate-500' : 'bg-slate-100 border-slate-300 text-slate-400'}`} style={{ top: t.top, left: t.left, width: t.width }}>
+                        <span className="font-bold text-[10px]">{t.label}</span>
+                      </div>
+                    );
+                  }
+                  const isOpen = onlineOpenTablesToday.includes(t.id);
+                  const isSaving = onlineTablesSaving === t.id;
+                  return (
+                    <div
+                      key={t.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleTableClick(t)}
+                      className={`absolute flex flex-col items-center justify-center border-2 text-center transition-all ${shapeClass} ${radiusClass} ${
+                        isOpen
+                          ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white border-emerald-700 ring-4 ring-emerald-300'
+                          : 'bg-gradient-to-br from-slate-600 to-slate-800 text-slate-200 border-slate-900 ring-2 ring-slate-500'
+                      } ${isSaving ? 'opacity-50' : ''}`}
+                      style={{ top: t.top, left: t.left, width: t.width, cursor: isSaving ? 'wait' : 'pointer' }}
+                    >
+                      <span className="text-sm leading-none">{isOpen ? '🔓' : '🔒'}</span>
+                      <span className="font-black text-[10px] mt-0.5">{t.label}</span>
+                    </div>
+                  );
+                }
 
                 if (isSelectedDateClosed) {
                   return <div key={t.id} className={`absolute flex flex-col items-center justify-center bg-slate-200 text-slate-400 border border-slate-300 opacity-30 text-center text-xs ${shapeClass} ${radiusClass}`} style={{ top: t.top, left: t.left, width: t.width }}><span className="font-bold text-[10px]">{t.label}</span></div>;
@@ -2673,57 +2766,6 @@ export default function AdminPage() {
                   ))}
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ======================================================
-          常連様専用テーブルのオンライン予約公開設定モーダル
-      ====================================================== */}
-      {showOnlineTablesModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 text-slate-100">
-          <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 text-white flex justify-between items-center border-b border-slate-700">
-              <h3 className="text-sm font-black tracking-tight">🔒 オフラインテーブルの設定</h3>
-              <button
-                type="button"
-                onClick={() => setShowOnlineTablesModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition"
-                style={{ cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-4 space-y-3 text-xs max-h-[70vh] overflow-y-auto">
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                テーブル {SPECIAL_TABLES.join('・')} は常連様用に、通常「オフライン」（お客様がネットから予約できない状態）にしてあります。
-                ここでタップして「オンライン」に切り替えたテーブルだけ、お客様のネット予約でも使われるようになります。
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {SPECIAL_TABLES.map((label) => {
-                  const isOpen = onlineOpenTables.includes(label);
-                  const isSaving = onlineTablesSaving === label;
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      disabled={isSaving}
-                      onClick={() => toggleOnlineTable(label)}
-                      className={`flex items-center justify-between p-3 rounded-xl border font-black transition ${
-                        isOpen
-                          ? 'bg-emerald-900/40 border-emerald-700 text-emerald-300'
-                          : 'bg-slate-950 border-slate-800 text-slate-400'
-                      } ${isSaving ? 'opacity-50' : ''}`}
-                      style={{ cursor: isSaving ? 'wait' : 'pointer' }}
-                    >
-                      <span>テーブル {label}</span>
-                      <span className="text-[10px]">{isOpen ? 'オンライン' : 'オフライン'}</span>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           </div>
         </div>
@@ -3296,7 +3338,11 @@ export default function AdminPage() {
         isSelectedDateLunchAllowed={isSelectedDateLunchAllowed}
         handleGoToToday={handleGoToToday}
         setShowBusinessDaysModal={setShowBusinessDaysModal}
-        setShowOnlineTablesModal={setShowOnlineTablesModal}
+        onlineEditMode={onlineEditMode}
+        setOnlineEditMode={setOnlineEditMode}
+        onlineOpenTablesToday={onlineOpenTablesToday}
+        onlineTablesSaving={onlineTablesSaving}
+        toggleOnlineTable={toggleOnlineTable}
         openNewOrderModal={openNewOrderModal}
         mobileTab={mobileTabState}
         setMobileTab={setMobileTab}
