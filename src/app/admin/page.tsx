@@ -761,7 +761,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
                             isOpen ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 border-emerald-700' : 'bg-gradient-to-br from-slate-600 to-slate-800 border-slate-900'
                           } ${isSaving ? 'opacity-50' : ''}`}
                         >
-                          <span className="text-sm leading-none">{isOpen ? '🔓' : '🔒'}</span>
+                          {!isOpen && <span className="text-sm leading-none">🔒</span>}
                           <span className="text-xs font-black text-white">{t.label}</span>
                         </div>
                       );
@@ -2418,7 +2418,7 @@ export default function AdminPage() {
                       } ${isSaving ? 'opacity-50' : ''}`}
                       style={{ top: t.top, left: t.left, width: t.width, cursor: isSaving ? 'wait' : 'pointer' }}
                     >
-                      <span className="text-sm leading-none">{isOpen ? '🔓' : '🔒'}</span>
+                      {!isOpen && <span className="text-sm leading-none">🔒</span>}
                       <span className="font-black text-[10px] mt-0.5">{t.label}</span>
                     </div>
                   );
