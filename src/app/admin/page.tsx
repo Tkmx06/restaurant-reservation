@@ -897,7 +897,9 @@ function MobileAdminView(props: MobileAdminViewProps) {
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'today' | 'future' | 'all' | 'customers'>('today');
-  
+  // 「今後の予約一覧」タブ内で、未来／過去のどちらを表示するか（デスクトップの「過去の予約」トグル用）
+  const [futureListMode, setFutureListMode] = useState<'upcoming' | 'past'>('upcoming');
+
   const [selectedDate, setSelectedDate] = useState<string>(() => getTodayString());
   const [reservations, setReservations] = useState<any[]>([]);
   const [tables, setTables] = useState<TableStatus[]>([]);
@@ -1954,7 +1956,11 @@ export default function AdminPage() {
   const displaySideReservations = (currentShift === 'lunch' ? lunchReservations : dinnerReservations)
     .sort((a, b) => a.time.localeCompare(b.time));
 
-  const filteredReservations = reservations.filter(r => activeTab === 'today' ? r.date === selectedDate : activeTab === 'future' ? r.date > selectedDate : true);
+  const filteredReservations = reservations.filter(r => {
+    if (activeTab === 'today') return r.date === selectedDate;
+    if (activeTab === 'future') return futureListMode === 'past' ? r.date < selectedDate : r.date > selectedDate;
+    return true;
+  });
 
   const customerList = (() => {
     const customerMap: { [key: string]: CustomerSummary } = {};
@@ -2093,13 +2099,12 @@ export default function AdminPage() {
           {([
             { key: 'today', label: '配置図・状況' },
             { key: 'future', label: '今後の予約一覧' },
-            { key: 'all', label: 'すべての予約履歴' },
             { key: 'customers', label: '👥 顧客名簿' }
           ] as const).map((tab) => (
             <button
               key={tab.key}
               role="button"
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => { setActiveTab(tab.key); if (tab.key === 'future') setFutureListMode('upcoming'); }}
               className={`text-xs font-black px-3 py-1.5 rounded-lg transition-all`}
               style={{ cursor: 'pointer' }}
             >
@@ -2108,6 +2113,16 @@ export default function AdminPage() {
               </span>
             </button>
           ))}
+          {activeTab === 'future' && (
+            <button
+              type="button"
+              onClick={() => setFutureListMode(m => m === 'past' ? 'upcoming' : 'past')}
+              className={`text-xs font-black px-3 py-1.5 rounded-lg transition-all ${futureListMode === 'past' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+              style={{ cursor: 'pointer' }}
+            >
+              {futureListMode === 'past' ? '🚀 今後の予約に戻す' : '🕰️ 過去の予約'}
+            </button>
+          )}
         </div>
         <div className="flex space-x-1.5">
           <button
@@ -3272,8 +3287,8 @@ export default function AdminPage() {
         <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
           <h2 className="text-xs font-black mb-2 flex items-center justify-between px-1">
             <span>
-              {activeTab === 'today' && '📅 ' + formatPureDate(selectedDate) + ' の使用テーブル一覧'} 
-              {activeTab === 'future' && '🚀 今後の確定予約一覧'} 
+              {activeTab === 'today' && '📅 ' + formatPureDate(selectedDate) + ' の使用テーブル一覧'}
+              {activeTab === 'future' && (futureListMode === 'past' ? '🕰️ 過去の予約一覧' : '🚀 今後の確定予約一覧')}
               {activeTab === 'all' && '🗄️ すべての予約履歴'}
             </span>
             <span className="text-[11px] bg-slate-700 px-2 py-0.5 rounded-full text-white">{filteredReservations.length} 件</span>
