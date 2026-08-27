@@ -150,7 +150,7 @@ const TABLE_ASPECT_RATIO: Record<TableStatus['type'], number> = {
   'rect-v-4': 1 / 2.1,
 };
 // フロアマップ枠自体の縦横比（幅÷高さ）。%指定の top と left/width は基準の軸が違うため、変換に使う
-const FLOOR_MAP_ASPECT_RATIO = 16 / 9.2;
+const FLOOR_MAP_ASPECT_RATIO = 16 / 8.3;
 
 // 予約名タグを、対象テーブルのすぐ下（枠の高さ%基準）に配置するための top 位置を計算
 const getNameTagTopPercent = (t: TableStatus) => {
@@ -1076,10 +1076,10 @@ export default function AdminPage() {
     { id: '22', label: '22', isOccupied: false, type: 'square-2', top: '35%', left: '84.5%', width: '5%' },
     { id: '21', label: '21', isOccupied: false, type: 'rect-v-4', top: '46%', left: '84.5%', width: '5.5%' },
     { id: '11', label: '11', isOccupied: false, type: 'rect-v-4', top: '74.5%', left: '78%',  width: '5.5%' },
-    { id: '15', label: '15', isOccupied: false, type: 'square-2', top: '57%', left: '91%',  width: '5%' },
-    { id: '14', label: '14', isOccupied: false, type: 'square-2', top: '68%', left: '91%',  width: '5%' },
-    { id: '13', label: '13', isOccupied: false, type: 'square-2', top: '79%', left: '91%',  width: '5%' },
-    { id: '12', label: '12', isOccupied: false, type: 'square-2', top: '90%', left: '91%',  width: '5%' },
+    { id: '15', label: '15', isOccupied: false, type: 'square-2', top: '46%', left: '91%',  width: '5%' },
+    { id: '14', label: '14', isOccupied: false, type: 'square-2', top: '57%', left: '91%',  width: '5%' },
+    { id: '13', label: '13', isOccupied: false, type: 'square-2', top: '68%', left: '91%',  width: '5%' },
+    { id: '12', label: '12', isOccupied: false, type: 'square-2', top: '79%', left: '91%',  width: '5%' },
   ];
 
   const lunchTimes = ['11:45', '12:00', '12:15', '12:30', '12:45', '13:00'];
@@ -2297,7 +2297,7 @@ export default function AdminPage() {
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerCancel}
-              className={`w-[83%] aspect-[16/9.2] rounded-xl border relative p-3 overflow-hidden shadow-inner transition-colors duration-300 touch-none ${
+              className={`w-[90%] aspect-[16/8.3] rounded-xl border relative p-3 overflow-hidden shadow-inner transition-colors duration-300 touch-none ${
                 isSelectedDateClosed 
                   ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400' 
                   : isNightMapMode 
