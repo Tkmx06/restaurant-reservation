@@ -19,6 +19,9 @@ const DB_ID_TO_LABEL: Record<number, string> = {
   17: '11', 18: '15', 19: '14', 20: '13', 21: '12',
 };
 
+// 常連様優先のため、管理画面で「公開」に設定されない限りオンライン予約の候補から除外するテーブル
+const SPECIAL_TABLES = ['1', '2', '3', '4', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
+
 // ==========================================
 // 🍽️ ご指定のネット予約専用お席優先順位
 // ==========================================
@@ -34,6 +37,11 @@ const GROUPS_BY_GUESTS: Record<number, any[]> = {
     { label: '67', mainTable: '67', combinedTables: [] },
     { label: '22', mainTable: '22', combinedTables: [] },
     { label: '23', mainTable: '23', combinedTables: [] },
+    // 以下は常連様用に普段は非公開、管理画面で公開した場合のみ候補に入る
+    { label: '1', mainTable: '1', combinedTables: [] },
+    { label: '2', mainTable: '2', combinedTables: [] },
+    { label: '3', mainTable: '3', combinedTables: [] },
+    { label: '4', mainTable: '4', combinedTables: [] },
   ],
   // 2名：優先順位 12、13、14、15、70、66、67、22、23
   2: [
@@ -46,6 +54,11 @@ const GROUPS_BY_GUESTS: Record<number, any[]> = {
     { label: '67', mainTable: '67', combinedTables: [] },
     { label: '22', mainTable: '22', combinedTables: [] },
     { label: '23', mainTable: '23', combinedTables: [] },
+    // 以下は常連様用に普段は非公開、管理画面で公開した場合のみ候補に入る
+    { label: '51', mainTable: '51', combinedTables: [] },
+    { label: '52', mainTable: '52', combinedTables: [] },
+    { label: '53', mainTable: '53', combinedTables: [] },
+    { label: '54', mainTable: '54', combinedTables: [] },
   ],
   // 3名：優先順位 11、12+13、14+15、21、22+23、65、68、66+67
   3: [
@@ -57,6 +70,11 @@ const GROUPS_BY_GUESTS: Record<number, any[]> = {
     { label: '65', mainTable: '65', combinedTables: [] },
     { label: '68', mainTable: '68', combinedTables: [] },
     { label: '66 + 67', mainTable: '66', combinedTables: ['67'] },
+    // 以下は常連様用に普段は非公開、管理画面で公開した場合のみ候補に入る
+    { label: '51', mainTable: '51', combinedTables: [] },
+    { label: '52', mainTable: '52', combinedTables: [] },
+    { label: '53', mainTable: '53', combinedTables: [] },
+    { label: '54', mainTable: '54', combinedTables: [] },
   ],
   // 4名：優先順位 11、12+13、14+15、21、22+23、65、68、66+67
   4: [
@@ -68,6 +86,11 @@ const GROUPS_BY_GUESTS: Record<number, any[]> = {
     { label: '65', mainTable: '65', combinedTables: [] },
     { label: '68', mainTable: '68', combinedTables: [] },
     { label: '66 + 67', mainTable: '66', combinedTables: ['67'] },
+    // 以下は常連様用に普段は非公開、管理画面で公開した場合のみ候補に入る
+    { label: '51', mainTable: '51', combinedTables: [] },
+    { label: '52', mainTable: '52', combinedTables: [] },
+    { label: '53', mainTable: '53', combinedTables: [] },
+    { label: '54', mainTable: '54', combinedTables: [] },
   ],
   // 5名：優先順位 12+13+14、13+14+15、21+22、65+66
   5: [
@@ -188,6 +211,7 @@ export default function ReservationPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [closedDays, setClosedDays] = useState<number[]>([]);
   const [overridesMap, setOverridesMap] = useState<Record<string, boolean>>({});
+  const [openTables, setOpenTables] = useState<string[]>([]);
   
   // 空き席計算用に、既存の全予約情報を管理する
   const [allReservations, setAllReservations] = useState<any[]>([]);
@@ -212,6 +236,22 @@ export default function ReservationPage() {
       })
       .catch((err) => console.error('定休日の取得に失敗:', err));
   }, []);
+
+  // 1b. 常連様専用テーブルのうち、現在オンライン予約に公開されているものを取得
+  useEffect(() => {
+    fetch('/api/online-booking-settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.openTables) setOpenTables(data.openTables);
+      })
+      .catch((err) => console.error('公開テーブル設定の取得に失敗:', err));
+  }, []);
+
+  // 常連様専用テーブルが混ざるグループは、公開されていない限り候補から除外する
+  const isGroupOnlineAllowed = (group: { mainTable: string; combinedTables: string[] }) => {
+    const ids = [group.mainTable, ...group.combinedTables];
+    return ids.every((id) => !SPECIAL_TABLES.includes(id) || openTables.includes(id));
+  };
 
   // 特定日の営業/休業を判定（特別営業日の設定が曜日パターンより優先）
   const isDateClosed = (dateStr: string, dayOfWeek: number) => {
@@ -309,7 +349,7 @@ export default function ReservationPage() {
     // --- テーブルの自動割り当て処理 ---
     const occupiedTableIds = getOccupiedTableIds(allReservations, date, time);
     let selectedGroup = null;
-    const recommendedGroups = GROUPS_BY_GUESTS[totalGuests] || [];
+    const recommendedGroups = (GROUPS_BY_GUESTS[totalGuests] || []).filter(isGroupOnlineAllowed);
 
     // 人数に合う推奨テーブルグループの空きを、優先順位が高い順に1つずつ探索
     for (const group of recommendedGroups) {

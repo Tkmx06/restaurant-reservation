@@ -461,6 +461,7 @@ interface MobileAdminViewProps {
   isSelectedDateLunchAllowed: boolean;
   handleGoToToday: () => void;
   setShowBusinessDaysModal: (v: boolean) => void;
+  setShowOnlineTablesModal: (v: boolean) => void;
   openNewOrderModal: () => void;
   mobileTab: 'list' | 'floor' | 'customers' | 'history';
   setMobileTab: (tab: 'list' | 'floor' | 'customers' | 'history') => void;
@@ -496,7 +497,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
     toggleForcedView,
     selectedDate, setSelectedDate, checkIsClosed, formatPureDate, getDateTopLabel, changeDate,
     currentShift, setCurrentShift, isSelectedDateLunchAllowed,
-    handleGoToToday, setShowBusinessDaysModal, openNewOrderModal,
+    handleGoToToday, setShowBusinessDaysModal, setShowOnlineTablesModal, openNewOrderModal,
     mobileTab, setMobileTab,
     displaySideReservations, totalLunchGuests, totalLunchCount, totalDinnerGuests, totalDinnerCount,
     isLunchTime, formatShortTime, getCleanNotes, displayTableIds,
@@ -643,7 +644,10 @@ function MobileAdminView(props: MobileAdminViewProps) {
           <button onClick={openNewOrderModal} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-emerald-950 text-[11px] font-black flex items-center justify-center gap-1">➕ 新規予約</button>
         </div>
 
-        <div className="flex justify-end mt-2">
+        <div className="flex justify-end items-center gap-1.5 mt-2">
+          <button onClick={() => setShowOnlineTablesModal(true)} style={{ cursor: 'pointer' }} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 text-[10px] font-black">
+            🔒 オフライン
+          </button>
           <button onClick={toggleForcedView} style={{ cursor: 'pointer' }} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 text-[10px] font-black">
             💻 PC
           </button>
@@ -918,6 +922,46 @@ export default function AdminPage() {
   const [bdEndCalendarPos, setBdEndCalendarPos] = useState<{ top: number; left: number } | null>(null);
   const bdStartFieldRef = useRef<HTMLDivElement>(null);
   const bdEndFieldRef = useRef<HTMLDivElement>(null);
+
+  // ─── 常連様専用テーブルのオンライン予約公開設定 ───
+  const SPECIAL_TABLES = ['1', '2', '3', '4', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
+  const [showOnlineTablesModal, setShowOnlineTablesModal] = useState(false);
+  const [onlineOpenTables, setOnlineOpenTables] = useState<string[]>([]);
+  const [onlineTablesSaving, setOnlineTablesSaving] = useState<string | null>(null);
+
+  const fetchOnlineTableSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/online-booking-settings');
+      const data = await res.json();
+      const open = (data.settings || []).filter((s: { is_open: boolean }) => s.is_open).map((s: { table_label: string }) => s.table_label);
+      setOnlineOpenTables(open);
+    } catch (err) {
+      console.error('公開テーブル設定の取得に失敗:', err);
+    }
+  };
+
+  const toggleOnlineTable = async (label: string) => {
+    const nextOpen = !onlineOpenTables.includes(label);
+    setOnlineTablesSaving(label);
+    try {
+      const res = await fetch('/api/admin/online-booking-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableLabel: label, isOpen: nextOpen }),
+      });
+      if (!res.ok) throw new Error('API Error');
+      setOnlineOpenTables(prev => nextOpen ? [...prev, label] : prev.filter(id => id !== label));
+    } catch (err) {
+      console.error(err);
+      alert('テーブルの公開設定の更新に失敗しました。');
+    } finally {
+      setOnlineTablesSaving(null);
+    }
+  };
+
+  useEffect(() => {
+    if (showOnlineTablesModal) fetchOnlineTableSettings();
+  }, [showOnlineTablesModal]);
 
   const openBdStartCalendar = () => {
     const rect = bdStartFieldRef.current?.getBoundingClientRect();
@@ -2026,6 +2070,14 @@ export default function AdminPage() {
           </button>
           <button
             type="button"
+            onClick={() => setShowOnlineTablesModal(true)}
+            className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-slate-800 transition shadow-md"
+            style={{ cursor: 'pointer' }}
+          >
+            🔒 オフライン
+          </button>
+          <button
+            type="button"
             onClick={openNewOrderModal}
             className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-blue-700 transition shadow-md"
             style={{ cursor: 'pointer' }}
@@ -2627,6 +2679,57 @@ export default function AdminPage() {
       )}
 
       {/* ======================================================
+          常連様専用テーブルのオンライン予約公開設定モーダル
+      ====================================================== */}
+      {showOnlineTablesModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 text-slate-100">
+          <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 text-white flex justify-between items-center border-b border-slate-700">
+              <h3 className="text-sm font-black tracking-tight">🔒 オフラインテーブルの設定</h3>
+              <button
+                type="button"
+                onClick={() => setShowOnlineTablesModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition"
+                style={{ cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3 text-xs max-h-[70vh] overflow-y-auto">
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                テーブル {SPECIAL_TABLES.join('・')} は常連様用に、通常「オフライン」（お客様がネットから予約できない状態）にしてあります。
+                ここでタップして「オンライン」に切り替えたテーブルだけ、お客様のネット予約でも使われるようになります。
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {SPECIAL_TABLES.map((label) => {
+                  const isOpen = onlineOpenTables.includes(label);
+                  const isSaving = onlineTablesSaving === label;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => toggleOnlineTable(label)}
+                      className={`flex items-center justify-between p-3 rounded-xl border font-black transition ${
+                        isOpen
+                          ? 'bg-emerald-900/40 border-emerald-700 text-emerald-300'
+                          : 'bg-slate-950 border-slate-800 text-slate-400'
+                      } ${isSaving ? 'opacity-50' : ''}`}
+                      style={{ cursor: isSaving ? 'wait' : 'pointer' }}
+                    >
+                      <span>テーブル {label}</span>
+                      <span className="text-[10px]">{isOpen ? 'オンライン' : 'オフライン'}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================
           顧客情報の編集モーダル
       ====================================================== */}
       {editingCustomer && (
@@ -3193,6 +3296,7 @@ export default function AdminPage() {
         isSelectedDateLunchAllowed={isSelectedDateLunchAllowed}
         handleGoToToday={handleGoToToday}
         setShowBusinessDaysModal={setShowBusinessDaysModal}
+        setShowOnlineTablesModal={setShowOnlineTablesModal}
         openNewOrderModal={openNewOrderModal}
         mobileTab={mobileTabState}
         setMobileTab={setMobileTab}
