@@ -2849,22 +2849,22 @@ export default function AdminPage() {
       ====================================================== */}
       {selectedRes && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 text-slate-100">
-          <form onSubmit={handleUpdateReservation} className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 text-white flex justify-between items-center border-b border-slate-700">
+          <form onSubmit={handleUpdateReservation} className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col">
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 text-white flex justify-between items-center border-b border-slate-700 shrink-0">
               <div>
                 <h3 className="text-sm font-black tracking-tight">⚙️ 予約情報の確認・変更</h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">{selectedRes.date} / {selectedRes.guest_name} 様</p>
               </div>
-              <button 
-                type="button" 
-                onClick={() => { setSelectedRes(null); setEditSelectedGroup(null); }} 
+              <button
+                type="button"
+                onClick={() => { setSelectedRes(null); setEditSelectedGroup(null); }}
                 className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition"
                 style={{ cursor: 'pointer' }}
               >
                 ✕
               </button>
             </div>
-            <div className="p-4 space-y-3.5 text-xs">
+            <div className="p-4 space-y-3.5 text-xs overflow-y-auto overscroll-contain flex-1 min-h-0">
               <div>
                 <label className="text-[10px] text-slate-400 font-bold block mb-1">⏰ 来店予約時刻</label>
                 <select value={editTime} onChange={(e) => setEditTime(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-amber-400 font-mono font-black text-sm cursor-pointer focus:outline-none" style={{ cursor: 'pointer' }}>
@@ -2906,7 +2906,7 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-            <div className="bg-slate-950/60 p-3 px-4 border-t border-slate-800 flex justify-between items-center">
+            <div className="bg-slate-950/60 p-3 px-4 border-t border-slate-800 flex justify-between items-center shrink-0">
               {selectedRes.status === 'confirmed' ? (
                 <button 
                   type="button" 
