@@ -157,6 +157,13 @@ const getWatermarkFontSize = (type: TableStatus['type']) => {
   return '20px'; // rect-v-4
 };
 
+// テーブル形状ごとの座席数（結合テーブルの場合、その卓が担う人数の表示に使う）
+const getTableCapacity = (type: TableStatus['type']) => {
+  if (type === 'counter-1') return 1;
+  if (type === 'square-2') return 2;
+  return 4; // rect-h-4, rect-v-4
+};
+
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
 const getTodayString = () => {
   const d = new Date();
@@ -2490,25 +2497,38 @@ export default function AdminPage() {
                       WebkitUserSelect: 'none',
                     }}
                   >
-                    {t.isOccupied && attachedRes ? (
-                      <div className="relative w-full h-full flex items-center justify-center pointer-events-none select-none">
-                        <span
-                          className="absolute inset-0 flex items-center justify-center font-black text-white/25 leading-none"
-                          style={{ fontSize: getWatermarkFontSize(t.type) }}
-                          aria-hidden="true"
-                        >
-                          {t.label}
-                        </span>
-                        <div className="relative flex flex-col items-center gap-px px-px">
-                          <span className={`text-[7px] font-mono font-black tracking-tighter whitespace-nowrap ${isLunchTime(attachedRes.time) ? 'text-orange-100' : 'text-indigo-50'}`}>
-                            {isLunchTime(attachedRes.time) ? '☀️' : '🌙'}{formatShortTime(attachedRes.time)}
+                    {t.isOccupied && attachedRes ? (() => {
+                      const isCombinedRes = !!attachedRes.notes?.includes('_combined:[');
+                      const dotCount = isCombinedRes ? getTableCapacity(t.type) : attachedRes.guests;
+                      return (
+                        <div className="relative w-full h-full flex items-center justify-center pointer-events-none select-none">
+                          <span
+                            className="absolute inset-0 flex items-center justify-center font-black text-white/25 leading-none"
+                            style={{ fontSize: getWatermarkFontSize(t.type) }}
+                            aria-hidden="true"
+                          >
+                            {t.label}
                           </span>
-                          <span className="text-[9px] font-black tracking-tight truncate max-w-full text-white">
-                            {shortenGuestName(attachedRes.guest_name)}
-                          </span>
+                          <div className="relative flex flex-col items-center gap-px px-px">
+                            {dotCount <= 4 ? (
+                              <div className="flex items-center gap-0.5">
+                                {Array.from({ length: dotCount }).map((_, i) => (
+                                  <span key={i} className="w-1 h-1 rounded-full bg-white/90" />
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-[6px] font-black bg-black/25 text-white rounded-full px-1 leading-tight">{dotCount}名</span>
+                            )}
+                            <span className="text-[11px] font-mono font-black tracking-tighter whitespace-nowrap text-white">
+                              {formatShortTime(attachedRes.time)}
+                            </span>
+                            <span className="text-[9px] font-black tracking-tight truncate max-w-full text-white">
+                              {shortenGuestName(attachedRes.guest_name)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
+                      );
+                    })() : (
                       <span className="font-black text-xs tracking-tight pointer-events-none select-none">{t.label}</span>
                     )}
                   </div>
