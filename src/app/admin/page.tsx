@@ -142,6 +142,13 @@ const getGuestCountColorClasses = (guests: number | undefined) => {
 // 常連様専用に確保し、通常オンライン予約の対象外にしているテーブル（日付ごとに公開設定可能）
 const SPECIAL_TABLES = ['1', '2', '3', '4', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
 
+// テーブル形状ごとの座席数（結合テーブルの場合、その卓が担う人数の表示に使う）
+const getTableCapacity = (type: TableStatus['type']) => {
+  if (type === 'counter-1') return 1;
+  if (type === 'square-2') return 2;
+  return 4; // rect-h-4, rect-v-4
+};
+
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
 const getTodayString = () => {
   const d = new Date();
@@ -2475,22 +2482,25 @@ export default function AdminPage() {
                       WebkitUserSelect: 'none',
                     }}
                   >
-                    {t.isOccupied && attachedRes ? (
-                      <div className="w-full h-full flex flex-col justify-between items-center py-1 px-0.5 pointer-events-none select-none">
-                        <div className="flex w-full justify-between items-center px-1">
-                          <span className={`text-[9px] font-mono font-black tracking-tighter opacity-95 bg-black/20 px-1 rounded-sm ${isLunchTime(attachedRes.time) ? 'text-orange-300' : 'text-indigo-200'}`}>
-                            {isLunchTime(attachedRes.time) ? '☀️' : '🌙'}{formatShortTime(attachedRes.time)}
+                    {t.isOccupied && attachedRes ? (() => {
+                      const isCombinedRes = !!attachedRes.notes?.includes('_combined:[');
+                      const guestCountForTable = isCombinedRes ? getTableCapacity(t.type) : attachedRes.guests;
+                      return (
+                        <div className="relative w-full h-full pointer-events-none select-none">
+                          <span className="absolute top-0 left-0.5 text-[7px] font-mono font-bold text-white/90 leading-none whitespace-nowrap">
+                            {formatShortTime(attachedRes.time)}
                           </span>
-                          <span className="text-[10px] font-mono font-bold bg-black/30 px-1 rounded-sm text-white scale-90">{t.label}</span>
+                          <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-black/30 text-white text-[7px] font-black flex items-center justify-center leading-none">
+                            {guestCountForTable}
+                          </span>
+                          <div className="absolute inset-x-0.5 top-3.5 bottom-0.5 flex items-center justify-center">
+                            <span className="text-[8px] font-black text-white text-center leading-tight line-clamp-2 break-words">
+                              {attachedRes.guest_name}
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-[11px] font-black tracking-tight truncate w-full text-center my-0.5 px-0.5">
-                          {attachedRes.guest_name}
-                        </div>
-                        <div className="text-[10px] font-black text-amber-200 bg-black/40 px-1.5 py-0.5 rounded-full scale-95">
-                          {attachedRes.guests}名
-                        </div>
-                      </div>
-                    ) : (
+                      );
+                    })() : (
                       <span className="font-black text-xs tracking-tight pointer-events-none select-none">{t.label}</span>
                     )}
                   </div>
