@@ -1049,27 +1049,27 @@ export default function AdminPage() {
   const [hasMovedSignificantly, setHasMovedSignificantly] = useState(false);
 
   const initialTables: TableStatus[] = [
-    { id: '51', label: '51', isOccupied: false, type: 'rect-h-4', top: '4%', left: '17%',   width: '9.4%' },
-    { id: '52', label: '52', isOccupied: false, type: 'rect-h-4', top: '4%', left: '27.4%', width: '9.4%' },
-    { id: '53', label: '53', isOccupied: false, type: 'rect-h-4', top: '4%', left: '37.8%', width: '9.4%' },
-    { id: '54', label: '54', isOccupied: false, type: 'rect-h-4', top: '4%', left: '48.2%', width: '9.4%' },
-    { id: '68', label: '68', isOccupied: false, type: 'rect-h-4', top: '4%', left: '58.6%', width: '9.4%' },
-    { id: '67', label: '67', isOccupied: false, type: 'rect-h-4', top: '4%', left: '69%',   width: '9.4%' },
-    { id: '66', label: '66', isOccupied: false, type: 'rect-h-4', top: '4%', left: '79.4%', width: '9.4%' },
-    { id: '65', label: '65', isOccupied: false, type: 'rect-h-4', top: '4%', left: '89.8%', width: '9.4%' },
-    { id: '1', label: '1', isOccupied: false, type: 'rect-h-4', top: '16%',   left: '69%', width: '9.4%' },
-    { id: '2', label: '2', isOccupied: false, type: 'rect-h-4', top: '27.1%', left: '69%', width: '9.4%' },
-    { id: '3', label: '3', isOccupied: false, type: 'rect-h-4', top: '38.2%', left: '69%', width: '9.4%' },
-    { id: '4', label: '4', isOccupied: false, type: 'rect-h-4', top: '49.3%', left: '69%', width: '9.4%' },
-    { id: '23', label: '23', isOccupied: false, type: 'rect-h-4', top: '16%',   left: '79.4%', width: '9.4%' },
-    { id: '22', label: '22', isOccupied: false, type: 'rect-h-4', top: '27.1%', left: '79.4%', width: '9.4%' },
-    { id: '21', label: '21', isOccupied: false, type: 'rect-h-4', top: '38.2%', left: '79.4%', width: '9.4%' },
-    { id: '11', label: '11', isOccupied: false, type: 'rect-h-4', top: '49.3%', left: '79.4%', width: '9.4%' },
-    { id: '70', label: '70', isOccupied: false, type: 'rect-h-4', top: '16%',   left: '89.8%', width: '9.4%' },
-    { id: '15', label: '15', isOccupied: false, type: 'rect-h-4', top: '27.1%', left: '89.8%', width: '9.4%' },
-    { id: '14', label: '14', isOccupied: false, type: 'rect-h-4', top: '38.2%', left: '89.8%', width: '9.4%' },
-    { id: '13', label: '13', isOccupied: false, type: 'rect-h-4', top: '49.3%', left: '89.8%', width: '9.4%' },
-    { id: '12', label: '12', isOccupied: false, type: 'rect-h-4', top: '60.4%', left: '89.8%', width: '9.4%' },
+    { id: '51', label: '51', isOccupied: false, type: 'rect-h-4', top: '4%',   left: '48%',  width: '9.5%' },
+    { id: '52', label: '52', isOccupied: false, type: 'rect-h-4', top: '4%',   left: '58.5%', width: '9.5%' },
+    { id: '53', label: '53', isOccupied: false, type: 'rect-h-4', top: '14%',  left: '48%',  width: '9.5%' },
+    { id: '54', label: '54', isOccupied: false, type: 'rect-h-4', top: '14%',  left: '58.5%', width: '9.5%' },
+    { id: '68', label: '68', isOccupied: false, type: 'rect-v-4', top: '4%',  left: '71%',  width: '5.5%' },
+    { id: '67', label: '67', isOccupied: false, type: 'square-2', top: '4%',  left: '78%',  width: '5%' },
+    { id: '66', label: '66', isOccupied: false, type: 'square-2', top: '4%',  left: '84%',  width: '5%' },
+    { id: '65', label: '65', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '89.5%', width: '9%' },
+    { id: '1', label: '1', isOccupied: false, type: 'counter-1', top: '24%', left: '78.5%', width: '3.5%' },
+    { id: '2', label: '2', isOccupied: false, type: 'counter-1', top: '29.5%', left: '78.5%', width: '3.5%' },
+    { id: '3', label: '3', isOccupied: false, type: 'counter-1', top: '35%', left: '78.5%', width: '3.5%' },
+    { id: '4', label: '4', isOccupied: false, type: 'counter-1', top: '40.5%', left: '78.5%', width: '3.5%' },
+    { id: '23', label: '23', isOccupied: false, type: 'square-2', top: '24%', left: '84.5%', width: '5%' },
+    { id: '70', label: '70', isOccupied: false, type: 'square-2', top: '24%', left: '91%',  width: '5%' },
+    { id: '22', label: '22', isOccupied: false, type: 'square-2', top: '35%', left: '84.5%', width: '5%' },
+    { id: '21', label: '21', isOccupied: false, type: 'rect-v-4', top: '46%', left: '84.5%', width: '5.5%' },
+    { id: '11', label: '11', isOccupied: false, type: 'rect-v-4', top: '74.5%', left: '78%',  width: '5.5%' },
+    { id: '15', label: '15', isOccupied: false, type: 'square-2', top: '57%', left: '91%',  width: '5%' },
+    { id: '14', label: '14', isOccupied: false, type: 'square-2', top: '68%', left: '91%',  width: '5%' },
+    { id: '13', label: '13', isOccupied: false, type: 'square-2', top: '79%', left: '91%',  width: '5%' },
+    { id: '12', label: '12', isOccupied: false, type: 'square-2', top: '90%', left: '91%',  width: '5%' },
   ];
 
   const lunchTimes = ['11:45', '12:00', '12:15', '12:30', '12:45', '13:00'];
@@ -2294,53 +2294,78 @@ export default function AdminPage() {
               </button>
             </div>
           )}
-          <div className="relative w-full">
+          {/* 人数帯カラー凡例 */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 px-1">
+            {GUEST_COUNT_LEGEND.map((g) => (
+              <div key={g.label} className="flex items-center gap-1">
+                <span className={`w-2.5 h-2.5 rounded-full ${g.swatch}`} />
+                <span className="text-[10px] font-bold text-slate-500">{g.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="relative w-full mx-auto">
             <div
               ref={mapContainerRef}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerCancel}
-              className={`w-[96%] aspect-[16/7.8] rounded-xl border relative p-3 overflow-hidden shadow-inner transition-colors duration-300 touch-none ${
-                isSelectedDateClosed 
-                  ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400' 
-                  : isNightMapMode 
-                    ? 'bg-slate-950 border-slate-800 text-slate-100' 
+              className={`w-full aspect-[16/9.2] rounded-xl border relative p-3 overflow-hidden shadow-inner transition-colors duration-300 touch-none ${
+                isSelectedDateClosed
+                  ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400'
+                  : isNightMapMode
+                    ? 'bg-slate-950 border-slate-800 text-slate-100'
                     : 'bg-slate-100/90 border-slate-200 text-slate-800'
               }`}
             >
-              
-              {/* 昼夜ボタン（件数表示つき） */}
-              <div className="absolute flex items-stretch gap-1" style={{ top: '2.5%', left: '2%', width: '13%', height: '10%' }}>
-                <button
-                  type="button"
-                  disabled={!isSelectedDateLunchAllowed}
-                  onClick={() => setCurrentShift('lunch')}
-                  className={`flex-1 rounded-lg p-1 transition-all flex flex-col items-center justify-center gap-px shadow-sm ${
-                    !isSelectedDateLunchAllowed
-                      ? 'opacity-30 cursor-not-allowed bg-slate-200 text-slate-400'
-                      : currentShift === 'lunch'
-                        ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-955 shadow-md'
-                        : `${isNightMapMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200 border border-slate-300'} text-slate-600 hover:text-slate-900`
-                  }`}
-                  style={{ cursor: isSelectedDateLunchAllowed ? 'pointer' : 'not-allowed' }}
-                  title={!isSelectedDateLunchAllowed ? "昼営業は月・木・金のみです" : ""}
-                >
-                  <span className="text-[9px] font-black leading-none">☀️ 昼</span>
-                  <span className="text-[8px] font-mono font-black leading-none">{totalLunchCount}件 {totalLunchGuests}名</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrentShift('dinner')}
-                  className={`flex-1 rounded-lg p-1 transition-all flex flex-col items-center justify-center gap-px shadow-sm ${
-                    currentShift === 'dinner'
-                      ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-md'
-                      : `${isNightMapMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200 border border-slate-300'} text-slate-600 hover:text-slate-900`
-                  }`}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <span className="text-[9px] font-black leading-none">🌙 夜</span>
-                  <span className="text-[8px] font-mono font-black leading-none">{totalDinnerCount}件 {totalDinnerGuests}名</span>
-                </button>
+
+              {/* 昼夜ボタンと総計 */}
+              <div className="absolute flex flex-col justify-center" style={{ top: '2.5%', left: '2%', width: '43%', height: '18%' }}>
+                <div className="flex items-center space-x-2 w-full">
+                  <div className={`flex rounded-lg p-0.5 shadow-inner shrink-0 ${isNightMapMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200 border border-slate-300'}`}>
+                    <button
+                      type="button"
+                      disabled={!isSelectedDateLunchAllowed}
+                      onClick={() => setCurrentShift('lunch')}
+                      className={`text-[10px] font-black px-3 py-1 rounded-md transition-all flex items-center space-x-1 ${
+                        !isSelectedDateLunchAllowed
+                          ? 'opacity-30 cursor-not-allowed text-slate-400'
+                          : currentShift === 'lunch'
+                            ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-955 shadow-md'
+                            : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                      style={{ cursor: isSelectedDateLunchAllowed ? 'pointer' : 'not-allowed' }}
+                      title={!isSelectedDateLunchAllowed ? "昼営業は月・木・金のみです" : ""}
+                    >
+                      <span>☀️ 昼</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentShift('dinner')}
+                      className={`text-[10px] font-black px-3 py-1 rounded-md transition-all flex items-center space-x-1 ${
+                        currentShift === 'dinner' ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <span>🌙 夜</span>
+                    </button>
+                  </div>
+
+                  <div className={`flex items-center space-x-2 border rounded-lg p-1 px-2 shadow-sm flex-1 justify-around ${isNightMapMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-300'}`}>
+                    <div className="text-center">
+                      <span className="text-[8px] text-slate-500 font-bold block leading-none">昼総計</span>
+                      <span className={`text-[11px] font-mono font-black ${currentShift === 'lunch' ? 'text-orange-400' : 'text-slate-400'}`}>
+                        {totalLunchGuests}名 / {totalLunchCount}件
+                      </span>
+                    </div>
+                    <div className={`w-[1px] h-3 ${isNightMapMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+                    <div className="text-center">
+                      <span className="text-[8px] text-slate-500 font-bold block leading-none">夜総計</span>
+                      <span className={`text-[11px] font-mono font-black ${currentShift === 'dinner' ? 'text-indigo-400' : 'text-slate-400'}`}>
+                        {totalDinnerGuests}名 / {totalDinnerCount}件
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* 左側予約リストエリア */}
@@ -2382,12 +2407,6 @@ export default function AdminPage() {
                   )}
                 </div>
               </div>
-
-              {/* 54と68の間の壁 */}
-              <div
-                className={`absolute pointer-events-none ${isNightMapMode ? 'bg-slate-600' : 'bg-slate-400'}`}
-                style={{ top: '1%', bottom: '1%', left: '58.1%', width: '2px' }}
-              />
 
               {/* テーブルレイアウト */}
               {tables.map((t) => {
