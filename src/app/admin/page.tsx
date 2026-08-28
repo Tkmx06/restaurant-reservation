@@ -1057,19 +1057,19 @@ export default function AdminPage() {
     { id: '67', label: '67', isOccupied: false, type: 'rect-h-4', top: '4%', left: '69%',   width: '9.4%' },
     { id: '66', label: '66', isOccupied: false, type: 'rect-h-4', top: '4%', left: '79.4%', width: '9.4%' },
     { id: '65', label: '65', isOccupied: false, type: 'rect-h-4', top: '4%', left: '89.8%', width: '9.4%' },
-    { id: '1', label: '1', isOccupied: false, type: 'counter-1', top: '24%', left: '78.5%', width: '3.5%' },
-    { id: '2', label: '2', isOccupied: false, type: 'counter-1', top: '32%', left: '78.5%', width: '3.5%' },
-    { id: '3', label: '3', isOccupied: false, type: 'counter-1', top: '40%', left: '78.5%', width: '3.5%' },
-    { id: '4', label: '4', isOccupied: false, type: 'counter-1', top: '48%', left: '78.5%', width: '3.5%' },
-    { id: '22', label: '22', isOccupied: false, type: 'square-2', top: '35.8%', left: '68%',   width: '7.5%' },
-    { id: '21', label: '21', isOccupied: false, type: 'rect-h-4', top: '35.8%', left: '83%',   width: '13.6%' },
-    { id: '23', label: '23', isOccupied: false, type: 'square-2', top: '51.7%', left: '68%',   width: '7.5%' },
-    { id: '70', label: '70', isOccupied: false, type: 'square-2', top: '51.7%', left: '83%',   width: '7.5%' },
-    { id: '15', label: '15', isOccupied: false, type: 'square-2', top: '51.7%', left: '91.5%', width: '7.5%' },
-    { id: '11', label: '11', isOccupied: false, type: 'rect-h-4', top: '67.6%', left: '68%',   width: '13.6%' },
-    { id: '14', label: '14', isOccupied: false, type: 'square-2', top: '67.6%', left: '82.6%', width: '7.5%' },
-    { id: '13', label: '13', isOccupied: false, type: 'square-2', top: '83.5%', left: '68%',   width: '7.5%' },
-    { id: '12', label: '12', isOccupied: false, type: 'square-2', top: '83.5%', left: '76.5%', width: '7.5%' },
+    { id: '1', label: '1', isOccupied: false, type: 'rect-h-4', top: '16%',   left: '69%', width: '9.4%' },
+    { id: '2', label: '2', isOccupied: false, type: 'rect-h-4', top: '27.1%', left: '69%', width: '9.4%' },
+    { id: '3', label: '3', isOccupied: false, type: 'rect-h-4', top: '38.2%', left: '69%', width: '9.4%' },
+    { id: '4', label: '4', isOccupied: false, type: 'rect-h-4', top: '49.3%', left: '69%', width: '9.4%' },
+    { id: '23', label: '23', isOccupied: false, type: 'rect-h-4', top: '16%',   left: '79.4%', width: '9.4%' },
+    { id: '22', label: '22', isOccupied: false, type: 'rect-h-4', top: '27.1%', left: '79.4%', width: '9.4%' },
+    { id: '21', label: '21', isOccupied: false, type: 'rect-h-4', top: '38.2%', left: '79.4%', width: '9.4%' },
+    { id: '11', label: '11', isOccupied: false, type: 'rect-h-4', top: '49.3%', left: '79.4%', width: '9.4%' },
+    { id: '70', label: '70', isOccupied: false, type: 'rect-h-4', top: '16%',   left: '89.8%', width: '9.4%' },
+    { id: '15', label: '15', isOccupied: false, type: 'rect-h-4', top: '27.1%', left: '89.8%', width: '9.4%' },
+    { id: '14', label: '14', isOccupied: false, type: 'rect-h-4', top: '38.2%', left: '89.8%', width: '9.4%' },
+    { id: '13', label: '13', isOccupied: false, type: 'rect-h-4', top: '49.3%', left: '89.8%', width: '9.4%' },
+    { id: '12', label: '12', isOccupied: false, type: 'rect-h-4', top: '60.4%', left: '89.8%', width: '9.4%' },
   ];
 
   const lunchTimes = ['11:45', '12:00', '12:15', '12:30', '12:45', '13:00'];
@@ -2396,6 +2396,12 @@ export default function AdminPage() {
                   )}
                 </div>
               </div>
+
+              {/* 54と68の間の壁 */}
+              <div
+                className={`absolute pointer-events-none ${isNightMapMode ? 'bg-slate-600' : 'bg-slate-400'}`}
+                style={{ top: '1%', bottom: '1%', left: '58.1%', width: '2px' }}
+              />
 
               {/* テーブルレイアウト */}
               {tables.map((t) => {
