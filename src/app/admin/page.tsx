@@ -142,13 +142,6 @@ const getGuestCountColorClasses = (guests: number | undefined) => {
 // 常連様専用に確保し、通常オンライン予約の対象外にしているテーブル（日付ごとに公開設定可能）
 const SPECIAL_TABLES = ['1', '2', '3', '4', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
 
-// フロアマップのテーブル内に収めるため、お客様名を短く切り詰める
-// （姓・名を区別せず入力されているため、厳密な「姓のみ」抽出はできず先頭数文字で代用）
-const shortenGuestName = (name: string) => {
-  if (!name) return '';
-  return name.length > 4 ? `${name.slice(0, 4)}…` : name;
-};
-
 // テーブル形状ごとに、背景に敷く番号「透かし」の文字サイズを調整
 const getWatermarkFontSize = (type: TableStatus['type']) => {
   if (type === 'counter-1') return '13px';
@@ -2509,15 +2502,15 @@ export default function AdminPage() {
                           >
                             {t.label}
                           </span>
-                          <div className="relative flex flex-col items-center gap-px px-px">
-                            <span className="text-[10px] font-black bg-black/25 text-white rounded-full px-1.5 leading-tight whitespace-nowrap">
+                          <div className="relative flex flex-col items-center justify-center gap-px px-px w-full h-full">
+                            <span className="text-[13px] font-black leading-none text-white">
                               {guestCountForTable}名
                             </span>
-                            <span className="text-[11px] font-mono font-black tracking-tighter whitespace-nowrap text-white">
+                            <span className="text-[7px] font-mono font-bold leading-none text-white/85 whitespace-nowrap">
                               {formatShortTime(attachedRes.time)}
                             </span>
-                            <span className="text-[9px] font-black tracking-tight truncate max-w-full text-white">
-                              {shortenGuestName(attachedRes.guest_name)}
+                            <span className="text-[7px] font-black leading-tight text-white text-center line-clamp-2 break-words max-w-full">
+                              {attachedRes.guest_name}
                             </span>
                           </div>
                         </div>
