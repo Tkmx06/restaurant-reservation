@@ -2499,7 +2499,7 @@ export default function AdminPage() {
                   >
                     {t.isOccupied && attachedRes ? (() => {
                       const isCombinedRes = !!attachedRes.notes?.includes('_combined:[');
-                      const dotCount = isCombinedRes ? getTableCapacity(t.type) : attachedRes.guests;
+                      const guestCountForTable = isCombinedRes ? getTableCapacity(t.type) : attachedRes.guests;
                       return (
                         <div className="relative w-full h-full flex items-center justify-center pointer-events-none select-none">
                           <span
@@ -2510,15 +2510,9 @@ export default function AdminPage() {
                             {t.label}
                           </span>
                           <div className="relative flex flex-col items-center gap-px px-px">
-                            {dotCount <= 4 ? (
-                              <div className="flex items-center gap-0.5">
-                                {Array.from({ length: dotCount }).map((_, i) => (
-                                  <span key={i} className="w-1 h-1 rounded-full bg-white/90" />
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-[6px] font-black bg-black/25 text-white rounded-full px-1 leading-tight">{dotCount}名</span>
-                            )}
+                            <span className="text-[10px] font-black bg-black/25 text-white rounded-full px-1.5 leading-tight whitespace-nowrap">
+                              {guestCountForTable}名
+                            </span>
                             <span className="text-[11px] font-mono font-black tracking-tighter whitespace-nowrap text-white">
                               {formatShortTime(attachedRes.time)}
                             </span>
