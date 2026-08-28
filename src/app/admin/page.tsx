@@ -149,6 +149,14 @@ const shortenGuestName = (name: string) => {
   return name.length > 4 ? `${name.slice(0, 4)}…` : name;
 };
 
+// テーブル形状ごとに、背景に敷く番号「透かし」の文字サイズを調整
+const getWatermarkFontSize = (type: TableStatus['type']) => {
+  if (type === 'counter-1') return '13px';
+  if (type === 'square-2') return '18px';
+  if (type === 'rect-h-4') return '26px';
+  return '20px'; // rect-v-4
+};
+
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
 const getTodayString = () => {
   const d = new Date();
@@ -2483,13 +2491,22 @@ export default function AdminPage() {
                     }}
                   >
                     {t.isOccupied && attachedRes ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-px pointer-events-none select-none px-px">
-                        <span className={`text-[7px] font-mono font-black tracking-tighter opacity-95 whitespace-nowrap ${isLunchTime(attachedRes.time) ? 'text-orange-200' : 'text-indigo-100'}`}>
-                          {isLunchTime(attachedRes.time) ? '☀️' : '🌙'}{formatShortTime(attachedRes.time)}・{attachedRes.guests}名
+                      <div className="relative w-full h-full flex items-center justify-center pointer-events-none select-none">
+                        <span
+                          className="absolute inset-0 flex items-center justify-center font-black text-white/25 leading-none"
+                          style={{ fontSize: getWatermarkFontSize(t.type) }}
+                          aria-hidden="true"
+                        >
+                          {t.label}
                         </span>
-                        <span className="text-[9px] font-black tracking-tight truncate max-w-full">
-                          {t.label} {shortenGuestName(attachedRes.guest_name)}
-                        </span>
+                        <div className="relative flex flex-col items-center gap-px px-px">
+                          <span className={`text-[7px] font-mono font-black tracking-tighter whitespace-nowrap ${isLunchTime(attachedRes.time) ? 'text-orange-100' : 'text-indigo-50'}`}>
+                            {isLunchTime(attachedRes.time) ? '☀️' : '🌙'}{formatShortTime(attachedRes.time)}
+                          </span>
+                          <span className="text-[9px] font-black tracking-tight truncate max-w-full text-white">
+                            {shortenGuestName(attachedRes.guest_name)}
+                          </span>
+                        </div>
                       </div>
                     ) : (
                       <span className="font-black text-xs tracking-tight pointer-events-none select-none">{t.label}</span>
