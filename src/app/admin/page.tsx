@@ -904,7 +904,17 @@ export default function AdminPage() {
   const [reservations, setReservations] = useState<any[]>([]);
   const [tables, setTables] = useState<TableStatus[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
+  // ─── フロアマップ配置編集モード（テーブルのドラッグ移動・リサイズ） ───
+  type LayoutEntry = { top: number; left: number; width: number; type: TableStatus['type'] };
+  const [layoutOverrides, setLayoutOverrides] = useState<Record<string, LayoutEntry>>({});
+  const [layoutEditMode, setLayoutEditMode] = useState(false);
+  const [editLayout, setEditLayout] = useState<Record<string, LayoutEntry>>({});
+  const [layoutDragId, setLayoutDragId] = useState<string | null>(null);
+  const [layoutDragMode, setLayoutDragMode] = useState<'move' | 'resize' | null>(null);
+  const [layoutSaving, setLayoutSaving] = useState(false);
+  const layoutDragStartRef = useRef<{ clientX: number; clientY: number; top: number; left: number; width: number } | null>(null);
+
   const [currentShift, setCurrentShift] = useState<'dinner' | 'lunch'>('dinner');
 
   const [selectedRes, setSelectedRes] = useState<any | null>(null);
@@ -1237,7 +1247,13 @@ export default function AdminPage() {
       return !isLunchTime(r.time);
     });
 
-    const updatedTables = initialTables.map(t => {
+    const baseTables = initialTables.map(t => {
+      const ov = layoutOverrides[t.id];
+      if (!ov) return t;
+      return { ...t, top: `${ov.top}%`, left: `${ov.left}%`, width: `${ov.width}%`, type: ov.type };
+    });
+
+    const updatedTables = baseTables.map(t => {
       const isOccupied = targetReservations.some((r: any) => {
         const tableIdStr = String(r.table_id).trim();
         const notesStr = String(r.notes || '');
@@ -1246,7 +1262,21 @@ export default function AdminPage() {
       return { ...t, isOccupied };
     });
     setTables(updatedTables);
-  }, [reservations, selectedDate, currentShift]);
+  }, [reservations, selectedDate, currentShift, layoutOverrides]);
+
+  // フロアマップ配置（手動編集した位置・大きさ）をDBから取得
+  useEffect(() => {
+    fetch('/api/admin/table-layout')
+      .then(res => res.json())
+      .then(data => {
+        const map: Record<string, LayoutEntry> = {};
+        (data.layout || []).forEach((row: any) => {
+          map[row.table_label] = { top: Number(row.top), left: Number(row.left), width: Number(row.width), type: row.type };
+        });
+        setLayoutOverrides(map);
+      })
+      .catch(err => console.error('配置の取得に失敗:', err));
+  }, []);
 
   const getOccupiedTableIds = (dateStr: string, timeStr: string, excludeResId?: string) => {
     const targetMin = timeToMinutes(timeStr);
@@ -1571,6 +1601,93 @@ export default function AdminPage() {
       }
     } catch (err) {}
     resetDragState();
+  };
+
+  // ─── フロアマップ配置編集（ドラッグで移動・リサイズ） ───
+  const enterLayoutEditMode = () => {
+    const draft: Record<string, LayoutEntry> = {};
+    tables.forEach(t => {
+      draft[t.id] = { top: parseFloat(t.top), left: parseFloat(t.left), width: parseFloat(t.width), type: t.type };
+    });
+    setEditLayout(draft);
+    setLayoutEditMode(true);
+  };
+
+  const handleLayoutPointerDown = (e: React.PointerEvent, tableId: string, mode: 'move' | 'resize') => {
+    e.stopPropagation();
+    try {
+      if (e.currentTarget && typeof e.currentTarget.setPointerCapture === 'function') {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }
+    } catch (err) {}
+    const current = editLayout[tableId];
+    if (!current) return;
+    setLayoutDragId(tableId);
+    setLayoutDragMode(mode);
+    layoutDragStartRef.current = { clientX: e.clientX, clientY: e.clientY, top: current.top, left: current.left, width: current.width };
+  };
+
+  const handleLayoutPointerMove = (e: React.PointerEvent) => {
+    if (!layoutDragId || !layoutDragMode || !layoutDragStartRef.current || !mapContainerRef.current) return;
+    const rect = mapContainerRef.current.getBoundingClientRect();
+    const start = layoutDragStartRef.current;
+    const deltaXPercent = ((e.clientX - start.clientX) / rect.width) * 100;
+    const deltaYPercent = ((e.clientY - start.clientY) / rect.height) * 100;
+
+    setEditLayout(prev => {
+      const cur = prev[layoutDragId];
+      if (!cur) return prev;
+      if (layoutDragMode === 'move') {
+        return {
+          ...prev,
+          [layoutDragId]: {
+            ...cur,
+            top: Math.max(0, Math.min(100, start.top + deltaYPercent)),
+            left: Math.max(0, Math.min(100, start.left + deltaXPercent)),
+          },
+        };
+      }
+      const newWidth = Math.max(2, Math.min(50, start.width + deltaXPercent));
+      return { ...prev, [layoutDragId]: { ...cur, width: newWidth } };
+    });
+  };
+
+  const handleLayoutPointerUp = (e: React.PointerEvent) => {
+    try {
+      if (e.currentTarget && typeof e.currentTarget.releasePointerCapture === 'function') {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch (err) {}
+    setLayoutDragId(null);
+    setLayoutDragMode(null);
+    layoutDragStartRef.current = null;
+  };
+
+  const handleSaveLayout = async () => {
+    setLayoutSaving(true);
+    try {
+      const payload = Object.entries(editLayout).map(([table_label, v]) => ({
+        table_label, top: v.top, left: v.left, width: v.width, type: v.type,
+      }));
+      const res = await fetch('/api/admin/table-layout', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tables: payload }),
+      });
+      if (!res.ok) throw new Error('API Error');
+      setLayoutOverrides(editLayout);
+      setLayoutEditMode(false);
+    } catch (err) {
+      console.error(err);
+      alert('配置の保存に失敗しました。');
+    } finally {
+      setLayoutSaving(false);
+    }
+  };
+
+  const handleCancelLayoutEdit = () => {
+    setLayoutEditMode(false);
+    setEditLayout({});
   };
 
   const handleTableClick = async (table: TableStatus) => {
@@ -2155,6 +2272,18 @@ export default function AdminPage() {
           </button>
           <button
             type="button"
+            onClick={() => (layoutEditMode ? handleCancelLayoutEdit() : enterLayoutEditMode())}
+            className={`text-xs font-black px-4 py-1.5 rounded-xl border transition shadow-md ${
+              layoutEditMode
+                ? 'bg-amber-600 hover:bg-amber-500 text-white border-amber-700'
+                : 'bg-slate-700 hover:bg-slate-600 text-white border-slate-800'
+            }`}
+            style={{ cursor: 'pointer' }}
+          >
+            {layoutEditMode ? '✕ 配置編集を中止' : '📐 配置編集'}
+          </button>
+          <button
+            type="button"
             onClick={openNewOrderModal}
             className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-blue-700 transition shadow-md"
             style={{ cursor: 'pointer' }}
@@ -2294,12 +2423,25 @@ export default function AdminPage() {
               </button>
             </div>
           )}
+          {layoutEditMode && (
+            <div className="mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-300 text-[11px] text-amber-900 font-bold flex items-center justify-between gap-2">
+              <span>📐 テーブルをドラッグで移動、右下の丸をドラッグでサイズ変更できます</span>
+              <div className="flex gap-1.5 shrink-0">
+                <button type="button" onClick={handleCancelLayoutEdit} className="bg-slate-500 hover:bg-slate-400 text-white text-[10px] font-black px-2.5 py-1 rounded-lg" style={{ cursor: 'pointer' }}>
+                  キャンセル
+                </button>
+                <button type="button" disabled={layoutSaving} onClick={handleSaveLayout} className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-[10px] font-black px-2.5 py-1 rounded-lg" style={{ cursor: layoutSaving ? 'wait' : 'pointer' }}>
+                  {layoutSaving ? '保存中…' : '💾 保存'}
+                </button>
+              </div>
+            </div>
+          )}
           <div className="relative w-full">
             <div
               ref={mapContainerRef}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerCancel}
+              onPointerMove={(e) => { handlePointerMove(e); handleLayoutPointerMove(e); }}
+              onPointerUp={(e) => { handlePointerUp(e); handleLayoutPointerUp(e); }}
+              onPointerCancel={(e) => { handlePointerCancel(e); handleLayoutPointerUp(e); }}
               className={`w-[96%] aspect-[16/7.8] rounded-xl border relative p-3 overflow-hidden shadow-inner transition-colors duration-300 touch-none ${
                 isSelectedDateClosed 
                   ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400' 
@@ -2309,52 +2451,38 @@ export default function AdminPage() {
               }`}
             >
               
-              {/* 昼夜ボタンと総計（縦並び） */}
-              <div className="absolute flex items-stretch gap-1" style={{ top: '2.5%', left: '2%', width: '13%', height: '21%' }}>
-                <div className={`flex flex-col gap-0.5 rounded-lg p-0.5 shadow-inner shrink-0 ${isNightMapMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200 border border-slate-300'}`}>
-                  <button
-                    type="button"
-                    disabled={!isSelectedDateLunchAllowed}
-                    onClick={() => setCurrentShift('lunch')}
-                    className={`text-[9px] font-black px-2 py-0.5 rounded-md transition-all flex items-center justify-center gap-0.5 ${
-                      !isSelectedDateLunchAllowed
-                        ? 'opacity-30 cursor-not-allowed text-slate-400'
-                        : currentShift === 'lunch'
-                          ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-955 shadow-md'
-                          : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                    style={{ cursor: isSelectedDateLunchAllowed ? 'pointer' : 'not-allowed' }}
-                    title={!isSelectedDateLunchAllowed ? "昼営業は月・木・金のみです" : ""}
-                  >
-                    <span>☀️ 昼</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentShift('dinner')}
-                    className={`text-[9px] font-black px-2 py-0.5 rounded-md transition-all flex items-center justify-center gap-0.5 ${
-                      currentShift === 'dinner' ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <span>🌙 夜</span>
-                  </button>
-                </div>
-
-                <div className={`flex flex-col justify-center gap-0.5 border rounded-lg p-1 shadow-sm flex-1 ${isNightMapMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-300'}`}>
-                  <div className="text-center">
-                    <span className="text-[7px] text-slate-500 font-bold block leading-none">昼総計</span>
-                    <span className={`text-[9px] font-mono font-black leading-tight block ${currentShift === 'lunch' ? 'text-orange-400' : 'text-slate-400'}`}>
-                      {totalLunchGuests}名/{totalLunchCount}件
-                    </span>
-                  </div>
-                  <div className={`h-[1px] w-full ${isNightMapMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
-                  <div className="text-center">
-                    <span className="text-[7px] text-slate-500 font-bold block leading-none">夜総計</span>
-                    <span className={`text-[9px] font-mono font-black leading-tight block ${currentShift === 'dinner' ? 'text-indigo-400' : 'text-slate-400'}`}>
-                      {totalDinnerGuests}名/{totalDinnerCount}件
-                    </span>
-                  </div>
-                </div>
+              {/* 昼夜ボタン（件数表示つき） */}
+              <div className="absolute flex items-stretch gap-1" style={{ top: '2.5%', left: '2%', width: '13%', height: '10%' }}>
+                <button
+                  type="button"
+                  disabled={!isSelectedDateLunchAllowed}
+                  onClick={() => setCurrentShift('lunch')}
+                  className={`flex-1 rounded-lg p-1 transition-all flex flex-col items-center justify-center gap-px shadow-sm ${
+                    !isSelectedDateLunchAllowed
+                      ? 'opacity-30 cursor-not-allowed bg-slate-200 text-slate-400'
+                      : currentShift === 'lunch'
+                        ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-955 shadow-md'
+                        : `${isNightMapMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200 border border-slate-300'} text-slate-600 hover:text-slate-900`
+                  }`}
+                  style={{ cursor: isSelectedDateLunchAllowed ? 'pointer' : 'not-allowed' }}
+                  title={!isSelectedDateLunchAllowed ? "昼営業は月・木・金のみです" : ""}
+                >
+                  <span className="text-[9px] font-black leading-none">☀️ 昼</span>
+                  <span className="text-[8px] font-mono font-black leading-none">{totalLunchCount}件 {totalLunchGuests}名</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentShift('dinner')}
+                  className={`flex-1 rounded-lg p-1 transition-all flex flex-col items-center justify-center gap-px shadow-sm ${
+                    currentShift === 'dinner'
+                      ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-md'
+                      : `${isNightMapMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200 border border-slate-300'} text-slate-600 hover:text-slate-900`
+                  }`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span className="text-[9px] font-black leading-none">🌙 夜</span>
+                  <span className="text-[8px] font-mono font-black leading-none">{totalDinnerCount}件 {totalDinnerGuests}名</span>
+                </button>
               </div>
 
               {/* 左側予約リストエリア */}
@@ -2410,6 +2538,31 @@ export default function AdminPage() {
                 const radiusClass = isCounter ? 'rounded-full' : 'rounded-xl';
                 const isThisTableDragging = draggingTableId === t.id;
                 const isThisTableHovered = hoveredTableId === t.id;
+
+                if (layoutEditMode) {
+                  const entry = editLayout[t.id];
+                  if (!entry) return null;
+                  const editShapeClass = entry.type === 'square-2' || entry.type === 'counter-1' ? 'aspect-square' : entry.type === 'rect-h-4' ? 'aspect-[2/1.1]' : 'aspect-[1/2.1]';
+                  const editRadiusClass = entry.type === 'counter-1' ? 'rounded-full' : 'rounded-xl';
+                  const isBeingDragged = layoutDragId === t.id;
+                  return (
+                    <div
+                      key={t.id}
+                      onPointerDown={(e) => handleLayoutPointerDown(e, t.id, 'move')}
+                      className={`absolute flex items-center justify-center border-2 border-dashed text-center touch-none select-none ${editShapeClass} ${editRadiusClass} ${
+                        isBeingDragged ? 'bg-amber-400/70 border-amber-600 z-50' : 'bg-blue-400/40 border-blue-500 hover:bg-blue-400/60'
+                      }`}
+                      style={{ top: `${entry.top}%`, left: `${entry.left}%`, width: `${entry.width}%`, cursor: 'move' }}
+                    >
+                      <span className="font-black text-[10px] text-slate-900 pointer-events-none">{t.label}</span>
+                      <div
+                        onPointerDown={(e) => handleLayoutPointerDown(e, t.id, 'resize')}
+                        className="absolute -bottom-1.5 -right-1.5 w-4 h-4 rounded-full bg-white border-2 border-blue-600 shadow touch-none"
+                        style={{ cursor: 'nwse-resize' }}
+                      />
+                    </div>
+                  );
+                }
 
                 if (onlineEditMode) {
                   const isSpecial = SPECIAL_TABLES.includes(t.id);
