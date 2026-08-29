@@ -2546,8 +2546,7 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              {/* 左側予約リストエリア（全画面表示中は日付スライダーに置き換えるため非表示） */}
-              {!isMapFullscreen && (
+              {/* 左側予約リストエリア（全画面表示中も表示） */}
               <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-[#12141C]/40 border-[#2A2E3D]/60' : 'bg-white/80 border-[#E7E5DD]/80'}`} style={{ top: '15%', left: '2%', width: '72.5%', height: '62%' }}>
                 <div className={`flex items-center text-[10px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-[#8A8FA3] border-[#2A2E3D]' : 'text-slate-600 border-[#E7E5DD]'}`}>
                   <span className="w-[9%] shrink-0">時間</span>
@@ -2585,7 +2584,6 @@ export default function AdminPage() {
                   )}
                 </div>
               </div>
-              )}
 
               {/* テーブルレイアウト */}
               {(() => {
