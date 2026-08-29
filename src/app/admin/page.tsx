@@ -167,8 +167,8 @@ const getNameTagTopPercent = (t: TableStatus) => {
 
 // ─── 隣接テーブルが同じ色にならないようにする、2色の交互配色 ───
 const ADJACENT_COLOR_PAIR = [
-  'from-sky-500 to-sky-600 border-sky-700 ring-sky-300/30',
-  'from-rose-500 to-rose-600 border-rose-700 ring-rose-300/30',
+  'from-[#4C8E7C] to-[#3F7D6B] border-[#2E5D50] ring-[#A8CFC4]/30',
+  'from-[#C56A52] to-[#B5563F] border-[#8B4028] ring-[#E8BCA9]/30',
 ];
 
 const getTableRect = (t: TableStatus) => {
@@ -712,14 +712,14 @@ function MobileAdminView(props: MobileAdminViewProps) {
               disabled={!isSelectedDateLunchAllowed}
               onClick={() => setCurrentShift('lunch')}
               style={{ cursor: isSelectedDateLunchAllowed ? 'pointer' : 'not-allowed' }}
-              className={`flex-1 text-center py-2 rounded-lg text-xs font-black transition ${!isSelectedDateLunchAllowed ? 'opacity-30 text-slate-500' : currentShift === 'lunch' ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-950' : 'text-slate-400'}`}
+              className={`flex-1 text-center py-2 rounded-lg text-xs font-black transition ${!isSelectedDateLunchAllowed ? 'opacity-30 text-slate-500' : currentShift === 'lunch' ? 'bg-gradient-to-b from-[#E6A05E] to-[#C9803E] text-[#2A1B0E]' : 'text-slate-400'}`}
             >
               ☀️ 昼
             </button>
             <button
               onClick={() => setCurrentShift('dinner')}
               style={{ cursor: 'pointer' }}
-              className={`flex-1 text-center py-2 rounded-lg text-xs font-black transition ${currentShift === 'dinner' ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white' : 'text-slate-400'}`}
+              className={`flex-1 text-center py-2 rounded-lg text-xs font-black transition ${currentShift === 'dinner' ? 'bg-gradient-to-b from-[#7376E0] to-[#5457C9] text-white' : 'text-slate-400'}`}
             >
               🌙 夜
             </button>
@@ -2350,8 +2350,8 @@ export default function AdminPage() {
               isSelectedDateClosed
                 ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400'
                 : isNightMapMode
-                  ? 'bg-slate-500 border-slate-400 text-slate-100'
-                  : 'bg-slate-300/90 border-slate-400 text-slate-800'
+                  ? 'bg-[#6E6B60] border-[#57544A] text-[#EDEAE0]'
+                  : 'bg-[#D9D5C7]/90 border-[#B8B3A0] text-[#232320]'
             }`}
             style={{ aspectRatio: '16/7.27' }}
           >
@@ -2366,7 +2366,7 @@ export default function AdminPage() {
 
               {/* 昼夜ボタンとその下に総計 */}
               <div className="absolute flex flex-col gap-1" style={{ top: '2.5%', left: '2%', width: '22%', height: '12%' }}>
-                <div className={`flex items-center gap-1 w-full rounded-lg p-0.5 shadow-inner ${isNightMapMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200 border border-slate-300'}`}>
+                <div className={`flex items-center gap-1 w-full rounded-lg p-0.5 shadow-inner ${isNightMapMode ? 'bg-[#1B1E29] border border-[#2A2E3D]' : 'bg-[#EDEBE3] border border-[#E7E5DD]'}`}>
                   <button
                     type="button"
                     disabled={!isSelectedDateLunchAllowed}
@@ -2375,7 +2375,7 @@ export default function AdminPage() {
                       !isSelectedDateLunchAllowed
                         ? 'opacity-30 cursor-not-allowed text-slate-400'
                         : currentShift === 'lunch'
-                          ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-955 shadow-md'
+                          ? 'bg-gradient-to-b from-[#E6A05E] to-[#C9803E] text-[#2A1B0E] shadow-md'
                           : 'text-slate-600 hover:text-slate-900'
                     }`}
                     style={{ cursor: isSelectedDateLunchAllowed ? 'pointer' : 'not-allowed' }}
@@ -2387,7 +2387,7 @@ export default function AdminPage() {
                     type="button"
                     onClick={() => setCurrentShift('dinner')}
                     className={`flex-1 text-[10px] font-black px-2 py-1 rounded-md transition-all flex items-center justify-center space-x-1 ${
-                      currentShift === 'dinner' ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
+                      currentShift === 'dinner' ? 'bg-gradient-to-b from-[#7376E0] to-[#5457C9] text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
                     }`}
                     style={{ cursor: 'pointer' }}
                   >
@@ -2396,10 +2396,10 @@ export default function AdminPage() {
                 </div>
 
                 <div className="flex items-center gap-1 w-full">
-                  <span className={`flex-1 text-center text-[10px] font-mono font-black ${currentShift === 'lunch' ? 'text-orange-400' : 'text-slate-400'}`}>
+                  <span className={`flex-1 text-center text-[10px] font-mono font-black ${currentShift === 'lunch' ? 'text-[#C9803E]' : 'text-slate-400'}`}>
                     {totalLunchGuests}名/{totalLunchCount}件
                   </span>
-                  <span className={`flex-1 text-center text-[10px] font-mono font-black ${currentShift === 'dinner' ? 'text-indigo-400' : 'text-slate-400'}`}>
+                  <span className={`flex-1 text-center text-[10px] font-mono font-black ${currentShift === 'dinner' ? 'text-[#7376E0]' : 'text-slate-400'}`}>
                     {totalDinnerGuests}名/{totalDinnerCount}件
                   </span>
                 </div>
@@ -2430,8 +2430,8 @@ export default function AdminPage() {
               </div>
 
               {/* 左側予約リストエリア */}
-              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-slate-950/40 border-slate-900/60' : 'bg-white/80 border-slate-300/80'}`} style={{ top: '15%', left: '2%', width: '72.5%', height: '62%' }}>
-                <div className={`flex items-center text-[10px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-slate-400 border-slate-800' : 'text-slate-600 border-slate-200'}`}>
+              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-[#12141C]/40 border-[#2A2E3D]/60' : 'bg-white/80 border-[#E7E5DD]/80'}`} style={{ top: '15%', left: '2%', width: '72.5%', height: '62%' }}>
+                <div className={`flex items-center text-[10px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-[#8A8FA3] border-[#2A2E3D]' : 'text-slate-600 border-[#E7E5DD]'}`}>
                   <span className="w-[9%] shrink-0">時間</span>
                   <span className="w-[10%] shrink-0 text-center">人数</span>
                   <span className="w-[32%] shrink-0 px-1 truncate">お名前</span>
@@ -2451,15 +2451,15 @@ export default function AdminPage() {
                           role="button"
                           tabIndex={0}
                           onClick={() => { setSelectedRes(r); setEditTime(formatShortTime(r.time)); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); }} 
-                          className={`border h-8 px-1 rounded-md flex items-center transition-all text-[11px] font-black ${isNightMapMode ? 'bg-slate-950/40 hover:bg-blue-600/20 border-slate-900/60 hover:border-blue-500/40' : 'bg-slate-50 hover:bg-blue-50 border-slate-200 hover:border-blue-300'}`}
+                          className={`border h-8 px-1 rounded-md flex items-center transition-all text-[11px] font-black ${isNightMapMode ? 'bg-[#12141C]/40 hover:bg-blue-600/20 border-[#2A2E3D]/60 hover:border-blue-500/40' : 'bg-[#F5F4F0] hover:bg-blue-50 border-[#E7E5DD] hover:border-blue-300'}`}
                           style={{ cursor: 'pointer' }}
                         >
-                          <span className={`w-[9%] shrink-0 font-mono flex items-center ${isLunch ? 'text-orange-500' : 'text-indigo-400'}`}>
+                          <span className={`w-[9%] shrink-0 font-mono flex items-center ${isLunch ? 'text-[#C9803E]' : 'text-[#7376E0]'}`}>
                             {formatShortTime(r.time)}
                           </span>
                           <span className={`w-[10%] shrink-0 text-center font-mono ${isNightMapMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{r.guests}名</span>
                           <span className={`w-[32%] shrink-0 px-1 truncate ${isNightMapMode ? 'text-slate-200' : 'text-slate-800'}`}>{r.guest_name}</span>
-                          <span className={`w-[10%] shrink-0 text-center font-mono rounded text-[10px] py-0.5 px-0.5 truncate ${isNightMapMode ? 'bg-slate-800/80 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>{displayTableIds(r)}</span>
+                          <span className={`w-[10%] shrink-0 text-center font-mono rounded text-[10px] py-0.5 px-0.5 truncate ${isNightMapMode ? 'bg-[#2A2E3D]/80 text-[#C7C9D6]' : 'bg-[#EDEBE3] text-[#4A4842]'}`}>{displayTableIds(r)}</span>
                           <span className={`flex-1 px-1 truncate text-left text-[11px] ${isNightMapMode ? 'text-amber-400/90' : 'text-amber-700'}`}>{cleanNote || ''}</span>
                         </div>
                       );
@@ -2482,7 +2482,7 @@ export default function AdminPage() {
                   const isSpecial = SPECIAL_TABLES.includes(t.id);
                   if (!isSpecial) {
                     return (
-                      <div key={t.id} className={`absolute flex flex-col items-center justify-center border text-center text-xs opacity-25 ${shapeClass} ${radiusClass} ${isNightMapMode ? 'bg-slate-800 border-slate-700 text-slate-500' : 'bg-slate-100 border-slate-300 text-slate-400'}`} style={{ top: t.top, left: t.left, width: t.width }}>
+                      <div key={t.id} className={`absolute flex flex-col items-center justify-center border text-center text-xs opacity-25 ${shapeClass} ${radiusClass} ${isNightMapMode ? 'bg-[#1B1E29] border-[#2A2E3D] text-[#6B6F80]' : 'bg-[#EDEBE3] border-[#E7E5DD] text-[#B0AC9E]'}`} style={{ top: t.top, left: t.left, width: t.width }}>
                         <span className="font-bold text-[10px]">{t.label}</span>
                       </div>
                     );
@@ -2519,8 +2519,8 @@ export default function AdminPage() {
                 });
 
                 let tableStyle = isNightMapMode
-                  ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
-                  : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-100';
+                  ? 'bg-[#1B1E29] text-[#E8E7E2] border-[#2A2E3D] hover:bg-[#242838]'
+                  : 'bg-white text-[#232320] border-[#E7E5DD] hover:bg-[#F5F4F0]';
 
                 if (t.isOccupied) {
                   if (isThisTableDragging && isCombineMode) {
@@ -2571,7 +2571,7 @@ export default function AdminPage() {
                     </div>
                     {t.isOccupied && attachedRes && !isThisTableDragging && (
                       <div
-                        className="absolute z-30 bg-slate-900/90 text-white text-[7px] font-bold px-1 py-px rounded truncate pointer-events-none select-none shadow"
+                        className="absolute z-30 bg-[#1B1E29]/90 text-white text-[7px] font-bold px-1 py-px rounded truncate pointer-events-none select-none shadow"
                         style={{ top: `${getNameTagTopPercent(t)}%`, left: t.left, maxWidth: '90px' }}
                       >
                         {attachedRes.guest_name}
@@ -3212,7 +3212,7 @@ export default function AdminPage() {
                     <label className="text-[10px] text-slate-400 font-bold block mb-1">⏰ 来店時刻の選択</label>
                     <div className="grid grid-cols-2 gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800">
                       <div className="space-y-1">
-                        <div className="text-center font-black text-[10px] text-orange-400 pb-1 border-b border-slate-800/60 mb-1">☀️ 昼の部</div>
+                        <div className="text-center font-black text-[10px] text-[#E6A05E] pb-1 border-b border-slate-800/60 mb-1">☀️ 昼の部</div>
                         {!isLunchDay(newOrderDate) ? (
                           <div className="text-[10px] text-slate-600 italic text-center pt-6">昼の営業なし</div>
                         ) : (
@@ -3226,7 +3226,7 @@ export default function AdminPage() {
                                   onClick={() => { setNewOrderTime(t); setNewOrderSelectedGroup(null); setNewOrderFreeTableIds([]); }}
                                   className={`py-1.5 rounded-md font-mono text-[11px] font-bold border transition-all ${
                                     isSelected 
-                                      ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-955 font-black border-orange-300 shadow-md' 
+                                      ? 'bg-gradient-to-b from-[#E6A05E] to-[#C9803E] text-[#2A1B0E] font-black border-[#D07C3C] shadow-md'
                                       : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
                                   }`}
                                   style={{ cursor: 'pointer' }}
@@ -3240,7 +3240,7 @@ export default function AdminPage() {
                       </div>
 
                       <div className="space-y-1 border-l border-slate-800/80 pl-2">
-                        <div className="text-center font-black text-[10px] text-indigo-400 pb-1 border-b border-slate-800/60 mb-1">🌙 夜の部</div>
+                        <div className="text-center font-black text-[10px] text-[#7376E0] pb-1 border-b border-slate-800/60 mb-1">🌙 夜の部</div>
                         <div className="grid grid-cols-2 gap-1">
                           {dinnerTimes.map(t => {
                             const isSelected = newOrderTime === t;
@@ -3251,7 +3251,7 @@ export default function AdminPage() {
                                 onClick={() => { setNewOrderTime(t); setNewOrderSelectedGroup(null); setNewOrderFreeTableIds([]); }}
                                 className={`py-1.5 rounded-md font-mono text-[11px] font-bold border transition-all ${
                                   isSelected 
-                                    ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white font-black border-indigo-400 shadow-md' 
+                                    ? 'bg-gradient-to-b from-[#7376E0] to-[#5457C9] text-white font-black border-[#7376E0] shadow-md'
                                     : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
                                 }`}
                                 style={{ cursor: 'pointer' }}
