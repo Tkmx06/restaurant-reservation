@@ -2320,15 +2320,6 @@ export default function AdminPage() {
               </button>
             </div>
           )}
-          {/* 人数帯カラー凡例 */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 px-1">
-            {GUEST_COUNT_LEGEND.map((g) => (
-              <div key={g.label} className="flex items-center gap-1">
-                <span className={`w-2.5 h-2.5 rounded-full ${g.swatch}`} />
-                <span className="text-[10px] font-bold text-slate-500">{g.label}</span>
-              </div>
-            ))}
-          </div>
           <div className="relative w-full mx-auto">
             <div
               ref={mapContainerRef}
@@ -2397,7 +2388,7 @@ export default function AdminPage() {
               {/* 左側予約リストエリア */}
               <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-slate-950/40 border-slate-900/60' : 'bg-white/80 border-slate-300/80'}`} style={{ top: '24%', left: '2%', width: '72.5%', height: '74%' }}>
                 <div className={`flex items-center text-[10px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-slate-400 border-slate-800' : 'text-slate-600 border-slate-200'}`}>
-                  <span className="w-[12%] shrink-0">時間</span>
+                  <span className="w-[9%] shrink-0">時間</span>
                   <span className="w-[10%] shrink-0 text-center">人数</span>
                   <span className="w-[32%] shrink-0 px-1 truncate">お名前</span>
                   <span className="w-[18%] shrink-0 text-center">テーブル</span>
@@ -2419,7 +2410,7 @@ export default function AdminPage() {
                           className={`border h-8 px-1 rounded-md flex items-center transition-all text-[11px] font-black ${isNightMapMode ? 'bg-slate-950/40 hover:bg-blue-600/20 border-slate-900/60 hover:border-blue-500/40' : 'bg-slate-50 hover:bg-blue-50 border-slate-200 hover:border-blue-300'}`}
                           style={{ cursor: 'pointer' }}
                         >
-                          <span className={`w-[12%] shrink-0 font-mono flex items-center gap-0.5 ${isLunch ? 'text-orange-500' : 'text-indigo-400'}`}>
+                          <span className={`w-[9%] shrink-0 font-mono flex items-center gap-0.5 ${isLunch ? 'text-orange-500' : 'text-indigo-400'}`}>
                             <span>{isLunch ? '☀️' : '🌙'}</span>
                             {formatShortTime(r.time)}
                           </span>
