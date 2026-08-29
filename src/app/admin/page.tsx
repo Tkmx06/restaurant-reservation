@@ -1135,7 +1135,7 @@ export default function AdminPage() {
     { id: '70', label: '70', isOccupied: false, type: 'square-2', top: '14.9%', left: '95%',  width: '5%' },
     { id: '22', label: '22', isOccupied: false, type: 'square-2', top: '35%', left: '88.5%', width: '5%' },
     { id: '21', label: '21', isOccupied: false, type: 'rect-h-4', top: '46%',   left: '84.5%',  width: '9%' },
-    { id: '11', label: '11', isOccupied: false, type: 'rect-h-4', top: '56.9%', left: '82.5%', width: '9%' },
+    { id: '11', label: '11', isOccupied: false, type: 'rect-h-4', top: '68%', left: '84.5%', width: '9%' },
     { id: '15', label: '15', isOccupied: false, type: 'square-2', top: '35%', left: '95%',  width: '5%' },
     { id: '14', label: '14', isOccupied: false, type: 'square-2', top: '46%', left: '95%',  width: '5%' },
     { id: '13', label: '13', isOccupied: false, type: 'square-2', top: '57%', left: '95%',  width: '5%' },
@@ -2364,73 +2364,68 @@ export default function AdminPage() {
               </button>
             </div>
           )}
-          <div className="relative w-full mx-auto">
+          <div
+            className={`relative w-full mx-auto rounded-xl border overflow-hidden shadow-inner transition-colors duration-300 ${
+              isSelectedDateClosed
+                ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400'
+                : isNightMapMode
+                  ? 'bg-slate-950 border-slate-800 text-slate-100'
+                  : 'bg-slate-100/90 border-slate-200 text-slate-800'
+            }`}
+            style={{ aspectRatio: '16/7.27' }}
+          >
             <div
               ref={mapContainerRef}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerCancel}
-              className={`w-full aspect-[16/9.2] rounded-xl border relative p-3 overflow-hidden shadow-inner transition-colors duration-300 touch-none ${
-                isSelectedDateClosed
-                  ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400'
-                  : isNightMapMode
-                    ? 'bg-slate-950 border-slate-800 text-slate-100'
-                    : 'bg-slate-100/90 border-slate-200 text-slate-800'
-              }`}
+              className="absolute top-0 left-0 w-full p-3 touch-none"
+              style={{ height: '126.6%' }}
             >
 
-              {/* 昼夜ボタンと総計 */}
-              <div className="absolute flex flex-col justify-center" style={{ top: '2.5%', left: '2%', width: '43%', height: '18%' }}>
-                <div className="flex items-center space-x-2 w-full">
-                  <div className={`flex rounded-lg p-0.5 shadow-inner shrink-0 ${isNightMapMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200 border border-slate-300'}`}>
-                    <button
-                      type="button"
-                      disabled={!isSelectedDateLunchAllowed}
-                      onClick={() => setCurrentShift('lunch')}
-                      className={`text-[10px] font-black px-3 py-1 rounded-md transition-all flex items-center space-x-1 ${
-                        !isSelectedDateLunchAllowed
-                          ? 'opacity-30 cursor-not-allowed text-slate-400'
-                          : currentShift === 'lunch'
-                            ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-955 shadow-md'
-                            : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                      style={{ cursor: isSelectedDateLunchAllowed ? 'pointer' : 'not-allowed' }}
-                      title={!isSelectedDateLunchAllowed ? "昼営業は月・木・金のみです" : ""}
-                    >
-                      <span>☀️ 昼</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentShift('dinner')}
-                      className={`text-[10px] font-black px-3 py-1 rounded-md transition-all flex items-center space-x-1 ${
-                        currentShift === 'dinner' ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <span>🌙 夜</span>
-                    </button>
-                  </div>
+              {/* 昼夜ボタンとその下に総計 */}
+              <div className="absolute flex flex-col gap-1" style={{ top: '2.5%', left: '2%', width: '22%', height: '18%' }}>
+                <div className={`flex items-center gap-1 w-full rounded-lg p-0.5 shadow-inner ${isNightMapMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200 border border-slate-300'}`}>
+                  <button
+                    type="button"
+                    disabled={!isSelectedDateLunchAllowed}
+                    onClick={() => setCurrentShift('lunch')}
+                    className={`flex-1 text-[10px] font-black px-2 py-1 rounded-md transition-all flex items-center justify-center space-x-1 ${
+                      !isSelectedDateLunchAllowed
+                        ? 'opacity-30 cursor-not-allowed text-slate-400'
+                        : currentShift === 'lunch'
+                          ? 'bg-gradient-to-b from-orange-400 to-orange-500 text-slate-955 shadow-md'
+                          : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    style={{ cursor: isSelectedDateLunchAllowed ? 'pointer' : 'not-allowed' }}
+                    title={!isSelectedDateLunchAllowed ? "昼営業は月・木・金のみです" : ""}
+                  >
+                    <span>☀️ 昼</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentShift('dinner')}
+                    className={`flex-1 text-[10px] font-black px-2 py-1 rounded-md transition-all flex items-center justify-center space-x-1 ${
+                      currentShift === 'dinner' ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <span>🌙 夜</span>
+                  </button>
+                </div>
 
-                  <div className={`flex items-center space-x-2 border rounded-lg p-1 px-2 shadow-sm flex-1 justify-around ${isNightMapMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-300'}`}>
-                    <div className="text-center">
-                      <span className="text-[8px] text-slate-500 font-bold block leading-none">昼総計</span>
-                      <span className={`text-[11px] font-mono font-black ${currentShift === 'lunch' ? 'text-orange-400' : 'text-slate-400'}`}>
-                        {totalLunchGuests}名 / {totalLunchCount}件
-                      </span>
-                    </div>
-                    <div className={`w-[1px] h-3 ${isNightMapMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
-                    <div className="text-center">
-                      <span className="text-[8px] text-slate-500 font-bold block leading-none">夜総計</span>
-                      <span className={`text-[11px] font-mono font-black ${currentShift === 'dinner' ? 'text-indigo-400' : 'text-slate-400'}`}>
-                        {totalDinnerGuests}名 / {totalDinnerCount}件
-                      </span>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-1 w-full">
+                  <span className={`flex-1 text-center text-[10px] font-mono font-black ${currentShift === 'lunch' ? 'text-orange-400' : 'text-slate-400'}`}>
+                    {totalLunchGuests}名/{totalLunchCount}件
+                  </span>
+                  <span className={`flex-1 text-center text-[10px] font-mono font-black ${currentShift === 'dinner' ? 'text-indigo-400' : 'text-slate-400'}`}>
+                    {totalDinnerGuests}名/{totalDinnerCount}件
+                  </span>
                 </div>
               </div>
 
               {/* 左側予約リストエリア */}
-              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-slate-950/40 border-slate-900/60' : 'bg-white/80 border-slate-300/80'}`} style={{ top: '24%', left: '2%', width: '72.5%', height: '74%' }}>
+              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-slate-950/40 border-slate-900/60' : 'bg-white/80 border-slate-300/80'}`} style={{ top: '24%', left: '2%', width: '72.5%', height: '53%' }}>
                 <div className={`flex items-center text-[10px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-slate-400 border-slate-800' : 'text-slate-600 border-slate-200'}`}>
                   <span className="w-[9%] shrink-0">時間</span>
                   <span className="w-[10%] shrink-0 text-center">人数</span>
@@ -2469,10 +2464,10 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* 52と68の間の壁 */}
+              {/* 52と68の間の壁（予約リストの備考の線あたりまで） */}
               <div
                 className={`absolute pointer-events-none ${isNightMapMode ? 'bg-slate-600' : 'bg-slate-400'}`}
-                style={{ top: '1%', bottom: '1%', left: '68.25%', width: '2px' }}
+                style={{ top: '1%', height: '27%', left: '68.25%', width: '2px' }}
               />
 
               {/* テーブルレイアウト */}
