@@ -1121,10 +1121,10 @@ export default function AdminPage() {
   const [hasMovedSignificantly, setHasMovedSignificantly] = useState(false);
 
   const initialTables: TableStatus[] = [
-    { id: '51', label: '51', isOccupied: false, type: 'rect-h-4', top: '4%',    left: '48%',  width: '9%' },
-    { id: '52', label: '52', isOccupied: false, type: 'rect-h-4', top: '4%',    left: '58.5%', width: '9%' },
-    { id: '53', label: '53', isOccupied: false, type: 'rect-h-4', top: '15.4%', left: '48%',  width: '9%' },
-    { id: '54', label: '54', isOccupied: false, type: 'rect-h-4', top: '15.4%', left: '58.5%', width: '9%' },
+    { id: '51', label: '51', isOccupied: false, type: 'rect-h-4', top: '4%', left: '48%',  width: '4.5%' },
+    { id: '52', label: '52', isOccupied: false, type: 'rect-h-4', top: '4%', left: '53%',  width: '4.5%' },
+    { id: '53', label: '53', isOccupied: false, type: 'rect-h-4', top: '4%', left: '58%',  width: '4.5%' },
+    { id: '54', label: '54', isOccupied: false, type: 'rect-h-4', top: '4%', left: '63%',  width: '4.5%' },
     { id: '68', label: '68', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '69%',  width: '9%' },
     { id: '67', label: '67', isOccupied: false, type: 'square-2', top: '4%',  left: '79%',  width: '5%' },
     { id: '66', label: '66', isOccupied: false, type: 'square-2', top: '4%',  left: '85%',  width: '5%' },
@@ -2369,8 +2369,8 @@ export default function AdminPage() {
               isSelectedDateClosed
                 ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400'
                 : isNightMapMode
-                  ? 'bg-slate-950 border-slate-800 text-slate-100'
-                  : 'bg-slate-100/90 border-slate-200 text-slate-800'
+                  ? 'bg-slate-600 border-slate-500 text-slate-100'
+                  : 'bg-slate-300/90 border-slate-400 text-slate-800'
             }`}
             style={{ aspectRatio: '16/7.27' }}
           >
