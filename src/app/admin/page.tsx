@@ -140,9 +140,10 @@ const getGuestCountColorClasses = (guests: number | undefined) => {
 const SPECIAL_TABLES = ['1', '2', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
 
 // テーブル形状ごとの座席数（結合テーブルの場合、その卓が担う人数の表示に使う）
-const getTableCapacity = (type: TableStatus['type']) => {
-  if (type === 'counter-1') return 4; // 1・2は最大4名まで対応（廃止した3・4の分を統合）
-  if (type === 'square-2') return 2;
+const getTableCapacity = (t: TableStatus) => {
+  if (t.type === 'counter-1') return 4; // 1・2は最大4名まで対応（廃止した3・4の分を統合）
+  if (['51', '52', '53', '54'].includes(t.id)) return 4; // 見た目は66と同じ正方形だが実際は4名卓
+  if (t.type === 'square-2') return 2;
   return 4; // rect-h-4, rect-v-4
 };
 
@@ -1121,10 +1122,10 @@ export default function AdminPage() {
   const [hasMovedSignificantly, setHasMovedSignificantly] = useState(false);
 
   const initialTables: TableStatus[] = [
-    { id: '51', label: '51', isOccupied: false, type: 'rect-h-4', top: '4%', left: '44%', width: '5%' },
-    { id: '52', label: '52', isOccupied: false, type: 'rect-h-4', top: '4%', left: '50%', width: '5%' },
-    { id: '53', label: '53', isOccupied: false, type: 'rect-h-4', top: '4%', left: '56%', width: '5%' },
-    { id: '54', label: '54', isOccupied: false, type: 'rect-h-4', top: '4%', left: '62%', width: '5%' },
+    { id: '51', label: '51', isOccupied: false, type: 'square-2', top: '4%', left: '44%', width: '5%' },
+    { id: '52', label: '52', isOccupied: false, type: 'square-2', top: '4%', left: '50%', width: '5%' },
+    { id: '53', label: '53', isOccupied: false, type: 'square-2', top: '4%', left: '56%', width: '5%' },
+    { id: '54', label: '54', isOccupied: false, type: 'square-2', top: '4%', left: '62%', width: '5%' },
     { id: '68', label: '68', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '69%',  width: '9%' },
     { id: '67', label: '67', isOccupied: false, type: 'square-2', top: '4%',  left: '79%',  width: '5%' },
     { id: '66', label: '66', isOccupied: false, type: 'square-2', top: '4%',  left: '85%',  width: '5%' },
@@ -2364,7 +2365,7 @@ export default function AdminPage() {
             >
 
               {/* 昼夜ボタンとその下に総計 */}
-              <div className="absolute flex flex-col gap-1" style={{ top: '2.5%', left: '2%', width: '22%', height: '18%' }}>
+              <div className="absolute flex flex-col gap-1" style={{ top: '2.5%', left: '2%', width: '22%', height: '12%' }}>
                 <div className={`flex items-center gap-1 w-full rounded-lg p-0.5 shadow-inner ${isNightMapMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200 border border-slate-300'}`}>
                   <button
                     type="button"
@@ -2429,7 +2430,7 @@ export default function AdminPage() {
               </div>
 
               {/* 左側予約リストエリア */}
-              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-slate-950/40 border-slate-900/60' : 'bg-white/80 border-slate-300/80'}`} style={{ top: '21%', left: '2%', width: '72.5%', height: '56%' }}>
+              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-slate-950/40 border-slate-900/60' : 'bg-white/80 border-slate-300/80'}`} style={{ top: '15%', left: '2%', width: '72.5%', height: '62%' }}>
                 <div className={`flex items-center text-[10px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-slate-400 border-slate-800' : 'text-slate-600 border-slate-200'}`}>
                   <span className="w-[9%] shrink-0">時間</span>
                   <span className="w-[10%] shrink-0 text-center">人数</span>
@@ -2532,7 +2533,7 @@ export default function AdminPage() {
                 }
 
                 const isCombinedRes = !!attachedRes?.notes?.includes('_combined:[');
-                const guestCountForTable = attachedRes ? (isCombinedRes ? getTableCapacity(t.type) : attachedRes.guests) : 0;
+                const guestCountForTable = attachedRes ? (isCombinedRes ? getTableCapacity(t) : attachedRes.guests) : 0;
 
                 return (
                   <Fragment key={t.id}>
