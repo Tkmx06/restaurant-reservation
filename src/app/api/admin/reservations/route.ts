@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractCompanyDomain } from '@/lib/companyName';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,6 +56,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '必須項目（名前、日付、時間、テーブル）が不足しています' }, { status: 400 });
     }
 
+    const { domain, companyName } = extractCompanyDomain(email || '');
+
     // データベースの空欄不可エラー（NOT NULL制約）を防ぐための補正処理 [1]
     const { data, error } = await supabase
       .from('reservations')
@@ -69,6 +72,8 @@ export async function POST(req: Request) {
           status: 'confirmed',
           email: email || 'customer@example.com',
           phone: phone || '-', // 電話番号が空欄の場合はハイフンを自動補完 [1]
+          company_domain: domain,
+          company_name: companyName,
           visit_count: 1
         }
       ])

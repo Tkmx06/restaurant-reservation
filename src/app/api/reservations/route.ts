@@ -1,13 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendCustomerConfirmation, sendStaffNotification } from '@/lib/mail';
+import { extractCompanyDomain } from '@/lib/companyName';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
-
-const PERSONAL_DOMAINS = ['gmail.com', 'yahoo.com', 'yahoo.co.jp', 'hotmail.com', 'outlook.com', 'icloud.com', 'web.de', 'gmx.de', 't-online.de'];
 
 // ─── 画面のテーブル名からデータベースの数値IDへの変換表（二重予約チェック用） ───
 const LABEL_TO_DB_ID: Record<string, number> = {
@@ -39,17 +38,6 @@ const extractCombinedDbIds = (notes: string | null | undefined): number[] => {
     .map((m) => LABEL_TO_DB_ID[m.replace('_combined:[', '').replace(']', '').trim()])
     .filter((id): id is number => !!id);
 };
-
-function extractCompanyDomain(email: string): { domain: string | null; companyName: string | null } {
-  const domain = email.split('@')[1]?.toLowerCase();
-  if (!domain || PERSONAL_DOMAINS.includes(domain)) {
-    return { domain: null, companyName: null };
-  }
-  const parts = domain.split('.');
-  const name = parts[0];
-  const companyName = name.charAt(0).toUpperCase() + name.slice(1);
-  return { domain, companyName };
-}
 
 export async function POST(req: NextRequest) {
   try {
