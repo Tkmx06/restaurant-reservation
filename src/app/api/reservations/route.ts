@@ -15,6 +15,14 @@ const LABEL_TO_DB_ID: Record<string, number> = {
   '1': 9, '2': 10, '3': 11, '4': 12, '23': 13, '70': 14, '22': 15, '21': 16,
   '11': 17, '15': 18, '14': 19, '13': 20, '12': 21,
 };
+const DB_ID_TO_LABEL: Record<number, string> = Object.fromEntries(
+  Object.entries(LABEL_TO_DB_ID).map(([label, id]) => [id, label])
+);
+
+// 常連様専用に確保していて、日付ごとにオンライン予約を開放した場合のみ受け付けるテーブル
+const SPECIAL_TABLES = ['1', '2', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
+
+const MAX_REASONABLE_GUESTS = 40; // これを超える人数は通常あり得ないため弾く
 
 const SESSION_DURATION_MIN = 120; // 1組あたり2時間滞在とみなして重複判定
 
@@ -51,6 +59,45 @@ export async function POST(req: NextRequest) {
     // 1. 必須項目チェック
     if (!date || !time || !name || !email || !phone || !totalGuests || !table_id) {
       return NextResponse.json({ error: '必須項目が入力されていません。' }, { status: 400 });
+    }
+
+    // 1b. 人数の妥当性チェック
+    const guestsNum = Number(totalGuests);
+    if (!Number.isInteger(guestsNum) || guestsNum <= 0 || guestsNum > MAX_REASONABLE_GUESTS) {
+      return NextResponse.json({ error: 'ご人数の指定が正しくありません。' }, { status: 400 });
+    }
+
+    // 1c. テーブルIDの妥当性チェック
+    const requestedLabel = DB_ID_TO_LABEL[Number(table_id)];
+    if (!requestedLabel) {
+      return NextResponse.json({ error: 'テーブル情報が正しくありません。' }, { status: 400 });
+    }
+
+    // 1d. 常連様専用テーブルは、その日オンライン予約に開放されている場合のみ受け付ける
+    const combinedLabelsForCheck = (notes?.match(/_combined:\[(.*?)\]/g) || [])
+      .map((m: string) => m.replace('_combined:[', '').replace(']', '').trim());
+    const involvedSpecialLabels = [requestedLabel, ...combinedLabelsForCheck].filter((label) => SPECIAL_TABLES.includes(label));
+
+    if (involvedSpecialLabels.length > 0) {
+      const { data: openRows, error: openError } = await supabase
+        .from('online_table_overrides')
+        .select('table_label')
+        .eq('date', date)
+        .eq('is_open', true)
+        .in('table_label', involvedSpecialLabels);
+
+      if (openError) {
+        console.error('オンライン公開設定の確認に失敗しました:', openError);
+      }
+
+      const openLabels = new Set((openRows || []).map((r) => r.table_label));
+      const blockedLabel = involvedSpecialLabels.find((label) => !openLabels.has(label));
+      if (blockedLabel) {
+        return NextResponse.json(
+          { error: '大変申し訳ございません、ご指定の時間帯は満席となりました。別のお時間かお日にちをお試しください。' },
+          { status: 409 }
+        );
+      }
     }
 
     // 2. 定休日チェック（特定日の営業/休業設定があればそちらを優先）

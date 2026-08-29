@@ -26,9 +26,12 @@ export async function PATCH(req: NextRequest, ctx: RouteContext<'/api/admin/rese
       .update(updateData)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) {
+      return NextResponse.json({ error: '対象の予約が見つかりませんでした。' }, { status: 404 });
+    }
     return NextResponse.json({ success: true, reservation: data });
   } catch (err: any) {
     console.error(err);
