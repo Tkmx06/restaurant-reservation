@@ -2269,7 +2269,7 @@ export default function AdminPage() {
               style={{ cursor: 'pointer' }}
             >
               {calendarInfo && (
-                <span className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${calendarInfo.type === 'holiday' ? 'bg-rose-500' : 'bg-violet-500'}`} />
+                <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ring-1 ring-white ${calendarInfo.type === 'holiday' ? 'bg-rose-500' : 'bg-violet-500'}`} />
               )}
               {topLabel ? <span className="text-[9px] tracking-tight font-black leading-none">{topLabel}</span> : <span className="text-[9px] h-3 block"></span>}
               <span className="text-xs font-mono font-bold mt-0.5">{formatPureDate(dateStr)}</span>
@@ -3386,7 +3386,17 @@ export default function AdminPage() {
 
                   <div>
                     <label className="text-[10px] text-slate-400 font-bold block mb-1">👤 お客様お名前</label>
-                    <input type="text" placeholder="お名前を入力" value={newOrderName} onChange={(e) => setNewOrderName(e.target.value)} className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-bold placeholder-slate-600" />
+                    <div className="flex gap-1.5">
+                      <input type="text" placeholder="お名前を入力" value={newOrderName} onChange={(e) => setNewOrderName(e.target.value)} className="flex-1 p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-bold placeholder-slate-600" />
+                      <button
+                        type="button"
+                        onClick={() => setNewOrderName('ウォークイン')}
+                        style={{ cursor: 'pointer' }}
+                        className="shrink-0 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-100 text-[11px] font-black"
+                      >
+                        🚶 ウォークイン
+                      </button>
+                    </div>
                   </div>
 
                   {/* テーブル選択（グループ対応） */}
