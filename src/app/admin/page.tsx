@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { createPortal } from 'react-dom';
+import { getCalendarInfoForDate } from '@/lib/calendarEvents';
 
 interface TableStatus {
   id: string;      
@@ -2258,13 +2259,18 @@ export default function AdminPage() {
           const isCurrentLoopSelected = dateStr === selectedDate;
           const isLoopClosed = checkIsClosed(dateStr);
           const topLabel = getDateTopLabel(dateStr);
+          const calendarInfo = getCalendarInfoForDate(dateStr);
           return (
             <button
               key={dateStr}
               onClick={() => setSelectedDate(dateStr)}
-              className={`px-2 py-1 text-xs font-bold rounded-lg transition-all flex flex-col items-center min-w-[85px] h-10 justify-center ${isCurrentLoopSelected ? isLoopClosed ? 'bg-white text-slate-900 ring-2 ring-slate-300' : 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 ring-2 ring-emerald-300' : isLoopClosed ? 'bg-slate-300/40 text-slate-400 opacity-40' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}`}
+              title={calendarInfo?.label}
+              className={`relative px-2 py-1 text-xs font-bold rounded-lg transition-all flex flex-col items-center min-w-[85px] h-10 justify-center ${isCurrentLoopSelected ? isLoopClosed ? 'bg-white text-slate-900 ring-2 ring-slate-300' : 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 ring-2 ring-emerald-300' : isLoopClosed ? 'bg-slate-300/40 text-slate-400 opacity-40' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}`}
               style={{ cursor: 'pointer' }}
             >
+              {calendarInfo && (
+                <span className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${calendarInfo.type === 'holiday' ? 'bg-rose-500' : 'bg-violet-500'}`} />
+              )}
               {topLabel ? <span className="text-[9px] tracking-tight font-black leading-none">{topLabel}</span> : <span className="text-[9px] h-3 block"></span>}
               <span className="text-xs font-mono font-bold mt-0.5">{formatPureDate(dateStr)}</span>
             </button>
@@ -2317,13 +2323,14 @@ export default function AdminPage() {
                 {generateCalendarDays(mainCalendarMonth).map((dayObj, index) => {
                   if (!dayObj) return <div key={`empty-${index}`} />;
                   const isSelected = dayObj.dateStr === selectedDate;
+                  const calendarInfo = getCalendarInfoForDate(dayObj.dateStr);
                   return (
                     <button
                       type="button"
                       key={dayObj.dateStr}
                       onClick={() => { setSelectedDate(dayObj.dateStr); setShowMainCalendarPopup(false); }}
-                      title={dayObj.isClosed ? '休業日' : '営業日'}
-                      className={`h-7 rounded text-[10px] font-bold transition flex items-center justify-center ${
+                      title={[dayObj.isClosed ? '休業日' : '営業日', calendarInfo?.label].filter(Boolean).join(' / ')}
+                      className={`relative h-7 rounded text-[10px] font-bold transition flex items-center justify-center ${
                         isSelected
                           ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
                           : dayObj.isClosed
@@ -2332,14 +2339,18 @@ export default function AdminPage() {
                       }`}
                       style={{ cursor: 'pointer' }}
                     >
+                      {calendarInfo && (
+                        <span className={`absolute top-0.5 right-0.5 w-1 h-1 rounded-full ${calendarInfo.type === 'holiday' ? 'bg-rose-400' : 'bg-violet-400'}`} />
+                      )}
                       {dayObj.day}
                     </button>
                   );
                 })}
               </div>
-              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800 text-[9px] text-slate-500">
-                <span className="w-2.5 h-2.5 rounded-sm bg-slate-800 border border-slate-700 inline-block" />
-                <span>休業日</span>
+              <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-800 text-[9px] text-slate-500">
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-slate-800 border border-slate-700 inline-block" />休業日</span>
+                <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block" />祝日（独）</span>
+                <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-violet-400 inline-block" />見本市</span>
               </div>
             </div>
           </>
