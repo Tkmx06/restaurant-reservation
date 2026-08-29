@@ -2580,7 +2580,9 @@ export default function AdminPage() {
               {/* テーブルレイアウト */}
               {(() => {
                 const adjacencyColorMap = getAdjacencyColorMap(tables.filter((t) => t.isOccupied));
-                return tables.map((t) => {
+                return (
+                <>
+                {tables.map((t) => {
                 const isCounter = t.type === 'counter-1';
                 const shapeClass = t.type === 'square-2' || t.type === 'counter-1' ? 'aspect-square' : t.type === 'rect-h-4' ? 'aspect-[2/1.1]' : 'aspect-[1/2.1]';
                 const radiusClass = isCounter ? 'rounded-full' : 'rounded-xl';
@@ -2642,6 +2644,7 @@ export default function AdminPage() {
                 }
 
                 const guestCountForTable = attachedRes ? attachedRes.guests : 0;
+                const isSecondaryOfCombo = !!attachedRes?.notes?.includes('_combined:[') && String(attachedRes.table_id).trim() !== String(t.id).trim();
 
                 return (
                   <Fragment key={t.id}>
@@ -2677,7 +2680,7 @@ export default function AdminPage() {
                         <span className="font-black text-xs tracking-tight pointer-events-none select-none">{t.label}</span>
                       )}
                     </div>
-                    {t.isOccupied && attachedRes && !isThisTableDragging && (
+                    {t.isOccupied && attachedRes && !isThisTableDragging && !isSecondaryOfCombo && (
                       <div
                         className="absolute z-30 bg-[#1B1E29]/90 text-white text-[7px] font-bold px-1 py-px rounded truncate pointer-events-none select-none shadow"
                         style={{ top: `${getNameTagTopPercent(t)}%`, left: t.left, maxWidth: '90px' }}
@@ -2687,7 +2690,41 @@ export default function AdminPage() {
                     )}
                   </Fragment>
                 );
-                });
+                })}
+                {!onlineEditMode && !isSelectedDateClosed && tables.map((t) => {
+                  const r = reservations.find((res) => {
+                    const matchBasic = res.date === selectedDate && res.status === 'confirmed' && String(res.table_id).trim() === String(t.id).trim();
+                    if (!matchBasic) return false;
+                    return currentShift === 'lunch' ? isLunchTime(res.time) : !isLunchTime(res.time);
+                  });
+                  if (!r || !r.notes?.includes('_combined:[') || draggingTableId === t.id) return null;
+
+                  const matches = r.notes.match(/_combined:\[(.*?)\]/g) || [];
+                  const memberIds = [t.id, ...matches.map((m: string) => m.replace('_combined:[', '').replace(']', '').trim())];
+                  const memberTables = memberIds.map((id) => tables.find((x) => x.id === id)).filter((x): x is TableStatus => !!x);
+                  if (memberTables.length < 2) return null;
+                  if (memberTables.some((mt) => draggingTableId === mt.id)) return null;
+
+                  const rects = memberTables.map(getTableRect);
+                  const top = Math.min(...rects.map((x) => x.top));
+                  const left = Math.min(...rects.map((x) => x.left));
+                  const right = Math.max(...rects.map((x) => x.right));
+                  const bottom = Math.max(...rects.map((x) => x.bottom));
+                  const colorClasses = ADJACENT_COLOR_PAIR[adjacencyColorMap[t.id] ?? 0];
+
+                  return (
+                    <div
+                      key={`combo-${t.id}`}
+                      className={`absolute rounded-xl bg-gradient-to-br ${colorClasses} ring-1 pointer-events-none flex flex-col items-center justify-center leading-none shadow-lg`}
+                      style={{ top: `${top}%`, left: `${left}%`, width: `${right - left}%`, height: `${bottom - top}%` }}
+                    >
+                      <span className="font-mono font-black text-white leading-none" style={{ fontSize: '11px' }}>{formatShortTime(r.time)}</span>
+                      <span className="font-black text-white leading-none mt-0.5" style={{ fontSize: '15px' }}>{r.guests}</span>
+                    </div>
+                  );
+                })}
+                </>
+                );
               })()}
             </div>
           </div>
