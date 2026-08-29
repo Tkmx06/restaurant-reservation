@@ -1121,10 +1121,10 @@ export default function AdminPage() {
   const [hasMovedSignificantly, setHasMovedSignificantly] = useState(false);
 
   const initialTables: TableStatus[] = [
-    { id: '51', label: '51', isOccupied: false, type: 'rect-h-4', top: '4%', left: '48%',  width: '4.5%' },
-    { id: '52', label: '52', isOccupied: false, type: 'rect-h-4', top: '4%', left: '53%',  width: '4.5%' },
-    { id: '53', label: '53', isOccupied: false, type: 'rect-h-4', top: '4%', left: '58%',  width: '4.5%' },
-    { id: '54', label: '54', isOccupied: false, type: 'rect-h-4', top: '4%', left: '63%',  width: '4.5%' },
+    { id: '51', label: '51', isOccupied: false, type: 'rect-h-4', top: '4%', left: '44%', width: '5%' },
+    { id: '52', label: '52', isOccupied: false, type: 'rect-h-4', top: '4%', left: '50%', width: '5%' },
+    { id: '53', label: '53', isOccupied: false, type: 'rect-h-4', top: '4%', left: '56%', width: '5%' },
+    { id: '54', label: '54', isOccupied: false, type: 'rect-h-4', top: '4%', left: '62%', width: '5%' },
     { id: '68', label: '68', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '69%',  width: '9%' },
     { id: '67', label: '67', isOccupied: false, type: 'square-2', top: '4%',  left: '79%',  width: '5%' },
     { id: '66', label: '66', isOccupied: false, type: 'square-2', top: '4%',  left: '85%',  width: '5%' },
@@ -2197,31 +2197,11 @@ export default function AdminPage() {
         <div className="flex space-x-1.5">
           <button
             type="button"
-            onClick={handleGoToToday}
-            className="bg-white hover:bg-slate-100 text-slate-700 text-xs font-black px-4 py-1.5 rounded-xl border border-slate-300 transition shadow-md"
-            style={{ cursor: 'pointer' }}
-          >
-            🏠 今日
-          </button>
-          <button
-            type="button"
             onClick={() => setShowBusinessDaysModal(true)}
             className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-slate-800 transition shadow-md"
             style={{ cursor: 'pointer' }}
           >
             📅 営業日の変更
-          </button>
-          <button
-            type="button"
-            onClick={() => setOnlineEditMode(v => !v)}
-            className={`text-xs font-black px-4 py-1.5 rounded-xl border transition shadow-md ${
-              onlineEditMode
-                ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-700'
-                : 'bg-slate-700 hover:bg-slate-600 text-white border-slate-800'
-            }`}
-            style={{ cursor: 'pointer' }}
-          >
-            {onlineEditMode ? '✅ 編集を終了' : '🔒 オフライン'}
           </button>
           <button
             type="button"
@@ -2369,7 +2349,7 @@ export default function AdminPage() {
               isSelectedDateClosed
                 ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400'
                 : isNightMapMode
-                  ? 'bg-slate-600 border-slate-500 text-slate-100'
+                  ? 'bg-slate-500 border-slate-400 text-slate-100'
                   : 'bg-slate-300/90 border-slate-400 text-slate-800'
             }`}
             style={{ aspectRatio: '16/7.27' }}
@@ -2424,8 +2404,32 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* 今日ボタンとオフラインボタン（51の左） */}
+              <div className="absolute flex gap-1" style={{ top: '2.5%', left: '26%', width: '17%', height: '9%' }}>
+                <button
+                  type="button"
+                  onClick={handleGoToToday}
+                  className="flex-1 bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-black rounded-lg border border-slate-300 transition shadow-md flex items-center justify-center"
+                  style={{ cursor: 'pointer' }}
+                >
+                  🏠 今日
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOnlineEditMode(v => !v)}
+                  className={`flex-1 text-[10px] font-black rounded-lg border transition shadow-md flex items-center justify-center ${
+                    onlineEditMode
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-700'
+                      : 'bg-slate-700 hover:bg-slate-600 text-white border-slate-800'
+                  }`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {onlineEditMode ? '✅ 終了' : '🔒 オフライン'}
+                </button>
+              </div>
+
               {/* 左側予約リストエリア */}
-              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-slate-950/40 border-slate-900/60' : 'bg-white/80 border-slate-300/80'}`} style={{ top: '24%', left: '2%', width: '72.5%', height: '53%' }}>
+              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-slate-950/40 border-slate-900/60' : 'bg-white/80 border-slate-300/80'}`} style={{ top: '21%', left: '2%', width: '72.5%', height: '56%' }}>
                 <div className={`flex items-center text-[10px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-slate-400 border-slate-800' : 'text-slate-600 border-slate-200'}`}>
                   <span className="w-[9%] shrink-0">時間</span>
                   <span className="w-[10%] shrink-0 text-center">人数</span>
@@ -2449,8 +2453,7 @@ export default function AdminPage() {
                           className={`border h-8 px-1 rounded-md flex items-center transition-all text-[11px] font-black ${isNightMapMode ? 'bg-slate-950/40 hover:bg-blue-600/20 border-slate-900/60 hover:border-blue-500/40' : 'bg-slate-50 hover:bg-blue-50 border-slate-200 hover:border-blue-300'}`}
                           style={{ cursor: 'pointer' }}
                         >
-                          <span className={`w-[9%] shrink-0 font-mono flex items-center gap-0.5 ${isLunch ? 'text-orange-500' : 'text-indigo-400'}`}>
-                            <span>{isLunch ? '☀️' : '🌙'}</span>
+                          <span className={`w-[9%] shrink-0 font-mono flex items-center ${isLunch ? 'text-orange-500' : 'text-indigo-400'}`}>
                             {formatShortTime(r.time)}
                           </span>
                           <span className={`w-[10%] shrink-0 text-center font-mono ${isNightMapMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{r.guests}名</span>
@@ -2463,12 +2466,6 @@ export default function AdminPage() {
                   )}
                 </div>
               </div>
-
-              {/* 52と68の間の壁（予約リストの備考の線あたりまで） */}
-              <div
-                className={`absolute pointer-events-none ${isNightMapMode ? 'bg-slate-600' : 'bg-slate-400'}`}
-                style={{ top: '1%', height: '27%', left: '68.25%', width: '2px' }}
-              />
 
               {/* テーブルレイアウト */}
               {(() => {
