@@ -2504,11 +2504,11 @@ export default function AdminPage() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-1 w-full">
-                  <span className={`flex-1 text-center text-[13px] font-mono font-black ${currentShift === 'lunch' ? 'text-[#C9803E]' : 'text-slate-400'}`}>
+                <div className={`flex items-center gap-1 w-full rounded-lg p-1 shadow-inner ${isNightMapMode ? 'bg-[#1B1E29] border border-[#2A2E3D]' : 'bg-[#EDEBE3] border border-[#E7E5DD]'}`}>
+                  <span className={`flex-1 text-center text-[13px] font-mono font-black ${currentShift === 'lunch' ? 'text-[#A85A1E]' : 'text-slate-400'}`}>
                     {totalLunchGuests}名/{totalLunchCount}件
                   </span>
-                  <span className={`flex-1 text-center text-[13px] font-mono font-black ${currentShift === 'dinner' ? 'text-[#7376E0]' : 'text-slate-400'}`}>
+                  <span className={`flex-1 text-center text-[13px] font-mono font-black ${currentShift === 'dinner' ? 'text-[#9698F0]' : 'text-slate-500'}`}>
                     {totalDinnerGuests}名/{totalDinnerCount}件
                   </span>
                 </div>
