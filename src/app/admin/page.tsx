@@ -2391,7 +2391,7 @@ export default function AdminPage() {
                   <span className="w-[9%] shrink-0">時間</span>
                   <span className="w-[10%] shrink-0 text-center">人数</span>
                   <span className="w-[32%] shrink-0 px-1 truncate">お名前</span>
-                  <span className="w-[18%] shrink-0 text-center">テーブル</span>
+                  <span className="w-[10%] shrink-0 text-center">テーブル</span>
                   <span className="flex-1 px-1 text-slate-500">備考</span>
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-0.5 pr-0.5 scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -2416,7 +2416,7 @@ export default function AdminPage() {
                           </span>
                           <span className={`w-[10%] shrink-0 text-center font-mono ${isNightMapMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{r.guests}名</span>
                           <span className={`w-[32%] shrink-0 px-1 truncate ${isNightMapMode ? 'text-slate-200' : 'text-slate-800'}`}>{r.guest_name}</span>
-                          <span className={`w-[18%] shrink-0 text-center font-mono rounded text-[10px] py-0.5 px-0.5 truncate ${isNightMapMode ? 'bg-slate-800/80 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>{displayTableIds(r)}</span>
+                          <span className={`w-[10%] shrink-0 text-center font-mono rounded text-[10px] py-0.5 px-0.5 truncate ${isNightMapMode ? 'bg-slate-800/80 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>{displayTableIds(r)}</span>
                           <span className={`flex-1 px-1 truncate text-left text-[11px] ${isNightMapMode ? 'text-amber-400/90' : 'text-amber-700'}`}>{cleanNote || ''}</span>
                         </div>
                       );
