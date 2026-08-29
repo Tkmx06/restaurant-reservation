@@ -1115,19 +1115,20 @@ export default function AdminPage() {
   const floorMapSectionRef = useRef<HTMLDivElement>(null);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
 
+  // 自前のCSS全画面表示を必ず即時に適用する（iPhone/iPadのSafariはdiv/documentへの
+  // Fullscreen APIに対応していないことが多く、それ待ちだと何も起きないため）。
+  // ネイティブのFullscreen APIは対応端末でアドレスバーも隠せる「おまけ」として試すだけ。
   const enterMapFullscreen = async () => {
-    const el = floorMapSectionRef.current;
-    if (!el) return;
+    setIsMapFullscreen(true);
     try {
-      if (el.requestFullscreen) {
-        await el.requestFullscreen();
-      } else if ((el as any).webkitRequestFullscreen) {
-        (el as any).webkitRequestFullscreen();
-      } else {
-        setIsMapFullscreen(true); // Fullscreen API 非対応端末は疑似全画面表示にフォールバック
+      const root = document.documentElement;
+      if (root.requestFullscreen) {
+        await root.requestFullscreen();
+      } else if ((root as any).webkitRequestFullscreen) {
+        (root as any).webkitRequestFullscreen();
       }
     } catch {
-      setIsMapFullscreen(true);
+      // Fullscreen API非対応端末はCSSでの疑似全画面のみで動作する
     }
     try {
       if ('wakeLock' in navigator) await (navigator as any).wakeLock.request('screen');
@@ -1137,18 +1138,20 @@ export default function AdminPage() {
   };
 
   const exitMapFullscreen = () => {
+    setIsMapFullscreen(false);
     if (document.fullscreenElement) {
       document.exitFullscreen?.();
     } else if ((document as any).webkitFullscreenElement) {
       (document as any).webkitExitFullscreen?.();
     }
-    setIsMapFullscreen(false);
   };
 
   useEffect(() => {
+    // ネイティブ全画面が「外部から」（OS操作など）終了した場合だけ追従する。
+    // 開始側はenterMapFullscreenが即時にstateを立てるのでここでは上書きしない。
     const handleFsChange = () => {
       const fsEl = document.fullscreenElement || (document as any).webkitFullscreenElement;
-      setIsMapFullscreen(!!fsEl);
+      if (!fsEl) setIsMapFullscreen(false);
     };
     document.addEventListener('fullscreenchange', handleFsChange);
     document.addEventListener('webkitfullscreenchange', handleFsChange);
@@ -2237,6 +2240,8 @@ export default function AdminPage() {
 
       {/* ===== PC・タブレット向けレイアウト（sm以上でのみ表示、手動切り替え可） ===== */}
       <div className={desktopVisibilityClass}>
+      {!isMapFullscreen && (
+      <>
       {/* 👑 トップヘッダーメニュー */}
       <div className="flex justify-between items-center mb-2 border-b pb-2 px-1 border-slate-200">
         <div className="flex space-x-1.5">
@@ -2406,6 +2411,8 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+      </>
+      )}
 
       {/* フロアマップ枠 */}
       {activeTab === 'today' && (
@@ -2413,21 +2420,22 @@ export default function AdminPage() {
           ref={floorMapSectionRef}
           className={`relative transition-colors duration-300 bg-white ${
             isMapFullscreen
-              ? 'fixed inset-0 z-[999] p-3 pt-12 flex flex-col justify-center overflow-auto'
+              ? 'fixed inset-0 z-[40] p-3 pt-8 flex flex-col justify-center overflow-auto'
               : 'mb-3 border p-3 rounded-xl shadow-xl overflow-hidden border-slate-200'
           }`}
         >
           <button
             type="button"
             onClick={isMapFullscreen ? exitMapFullscreen : enterMapFullscreen}
+            title={isMapFullscreen ? '全画面を終了' : '全画面表示'}
             style={{ cursor: 'pointer' }}
-            className={`absolute z-[1000] flex items-center gap-1 rounded-lg font-black shadow-md transition ${
+            className={`absolute z-[45] leading-none transition ${
               isMapFullscreen
-                ? 'top-3 right-3 px-3 py-2 text-xs bg-slate-800 hover:bg-slate-700 text-white'
-                : 'top-2.5 right-2.5 px-2 py-1.5 text-[10px] bg-slate-800/80 hover:bg-slate-800 text-white'
+                ? 'top-2 right-2 text-lg text-slate-500 hover:text-slate-800'
+                : 'top-2 right-2 text-base text-slate-400 hover:text-slate-700'
             }`}
           >
-            {isMapFullscreen ? '✕ 全画面を終了' : '⛶ 全画面表示'}
+            {isMapFullscreen ? '✕' : '⛶'}
           </button>
           {onlineEditMode && (
             <div className="mb-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-300 text-[11px] text-emerald-800 font-bold flex items-center justify-between gap-2">
