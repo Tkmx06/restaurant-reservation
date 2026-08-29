@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 
 interface TableStatus {
@@ -147,6 +147,32 @@ const getTableCapacity = (type: TableStatus['type']) => {
   if (type === 'counter-1') return 1;
   if (type === 'square-2') return 2;
   return 4; // rect-h-4, rect-v-4
+};
+
+// テーブル形状ごとの縦横比（幅÷高さ）と、フロアマップ枠自体の縦横比。
+// 名前タグをテーブルのすぐ下に置くための位置計算に使う（top と left/width は基準の軸が違うため変換が必要）
+const TABLE_ASPECT_RATIO: Record<TableStatus['type'], number> = {
+  'square-2': 1,
+  'counter-1': 1,
+  'rect-h-4': 2 / 1.1,
+  'rect-v-4': 1 / 2.1,
+};
+const FLOOR_MAP_ASPECT_RATIO = 16 / 9.2;
+
+const getNameTagTopPercent = (t: TableStatus) => {
+  const topPercent = parseFloat(t.top);
+  const widthPercent = parseFloat(t.width);
+  const heightInWidthUnits = widthPercent / TABLE_ASPECT_RATIO[t.type];
+  const heightPercent = heightInWidthUnits * FLOOR_MAP_ASPECT_RATIO;
+  return topPercent + heightPercent + 0.3;
+};
+
+// テーブル形状ごとに、主役として大きく見せる番号の文字サイズを調整
+const getPrimaryNumberFontSize = (type: TableStatus['type']) => {
+  if (type === 'counter-1') return '11px';
+  if (type === 'square-2') return '15px';
+  if (type === 'rect-h-4') return '20px';
+  return '16px'; // rect-v-4
 };
 
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
@@ -2470,49 +2496,52 @@ export default function AdminPage() {
                   tableStyle = isCombineMode ? 'bg-amber-300 text-slate-955 ring-4 ring-amber-400 scale-105 z-40' : 'bg-blue-500 text-white ring-4 ring-blue-300 scale-105 z-40';
                 }
 
+                const isCombinedRes = !!attachedRes?.notes?.includes('_combined:[');
+                const guestCountForTable = attachedRes ? (isCombinedRes ? getTableCapacity(t.type) : attachedRes.guests) : 0;
+
                 return (
-                  <div
-                    key={t.id}
-                    id={`table-target-${t.id}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleTableClick(t)}
-                    onPointerDown={(e) => handlePointerDown(e, t)}
-                    onPointerCancel={handlePointerCancel}
-                    className={`absolute flex flex-col items-center justify-center shadow-lg border text-center touch-none transition-transform duration-75 overflow-hidden leading-none p-0.5 select-none ${shapeClass} ${radiusClass} ${tableStyle}`}
-                    style={{
-                      top: t.top,
-                      left: t.left,
-                      width: t.width,
-                      cursor: t.isOccupied ? 'grab' : 'pointer',
-                      transform: isThisTableDragging ? `translate3d(${dragPosition.x}px, ${dragPosition.y}px, 0)` : undefined,
-                      opacity: isThisTableDragging ? 0.85 : undefined,
-                      zIndex: isThisTableDragging ? 100 : undefined,
-                      WebkitUserSelect: 'none',
-                    }}
-                  >
-                    {t.isOccupied && attachedRes ? (() => {
-                      const isCombinedRes = !!attachedRes.notes?.includes('_combined:[');
-                      const guestCountForTable = isCombinedRes ? getTableCapacity(t.type) : attachedRes.guests;
-                      return (
-                        <div className="relative w-full h-full pointer-events-none select-none">
-                          <span className="absolute top-0 left-0.5 text-[7px] font-mono font-bold text-white/90 leading-none whitespace-nowrap">
+                  <Fragment key={t.id}>
+                    <div
+                      id={`table-target-${t.id}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleTableClick(t)}
+                      onPointerDown={(e) => handlePointerDown(e, t)}
+                      onPointerCancel={handlePointerCancel}
+                      className={`absolute flex flex-col items-center justify-center shadow-lg border text-center touch-none transition-transform duration-75 overflow-hidden leading-none p-0.5 select-none ${shapeClass} ${radiusClass} ${tableStyle}`}
+                      style={{
+                        top: t.top,
+                        left: t.left,
+                        width: t.width,
+                        cursor: t.isOccupied ? 'grab' : 'pointer',
+                        transform: isThisTableDragging ? `translate3d(${dragPosition.x}px, ${dragPosition.y}px, 0)` : undefined,
+                        opacity: isThisTableDragging ? 0.85 : undefined,
+                        zIndex: isThisTableDragging ? 100 : undefined,
+                        WebkitUserSelect: 'none',
+                      }}
+                    >
+                      {t.isOccupied && attachedRes ? (
+                        <div className="relative w-full h-full flex items-center justify-center pointer-events-none select-none">
+                          <span className="absolute top-0.5 left-0.5 text-[6px] font-mono font-bold text-white/90 leading-none whitespace-nowrap bg-black/20 px-0.5 rounded-sm">
                             {formatShortTime(attachedRes.time)}
                           </span>
-                          <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-black/30 text-white text-[7px] font-black flex items-center justify-center leading-none">
-                            {guestCountForTable}
+                          <span className="font-black text-white leading-none" style={{ fontSize: getPrimaryNumberFontSize(t.type) }}>
+                            {t.label}
                           </span>
-                          <div className="absolute inset-x-0.5 top-3.5 bottom-0.5 flex items-center justify-center">
-                            <span className="text-[8px] font-black text-white text-center leading-tight line-clamp-2 break-words">
-                              {attachedRes.guest_name}
-                            </span>
-                          </div>
                         </div>
-                      );
-                    })() : (
-                      <span className="font-black text-xs tracking-tight pointer-events-none select-none">{t.label}</span>
+                      ) : (
+                        <span className="font-black text-xs tracking-tight pointer-events-none select-none">{t.label}</span>
+                      )}
+                    </div>
+                    {t.isOccupied && attachedRes && !isThisTableDragging && (
+                      <div
+                        className="absolute z-30 bg-slate-900/90 text-white text-[7px] font-bold px-1 py-px rounded truncate pointer-events-none select-none shadow"
+                        style={{ top: `${getNameTagTopPercent(t)}%`, left: t.left, maxWidth: '90px' }}
+                      >
+                        {guestCountForTable}名 {attachedRes.guest_name}
+                      </div>
                     )}
-                  </div>
+                  </Fragment>
                 );
               })}
             </div>
