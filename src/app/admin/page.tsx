@@ -3390,7 +3390,11 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredReservations.sort((a,b) => a.time.localeCompare(b.time)).map((r) => {
+                {[...filteredReservations].sort((a, b) => {
+                  if (a.status === 'cancelled' && b.status !== 'cancelled') return 1;
+                  if (a.status !== 'cancelled' && b.status === 'cancelled') return -1;
+                  return a.time.localeCompare(b.time);
+                }).map((r) => {
                   const cleanNote = getCleanNotes(r.notes);
                   return (
                     <tr 
