@@ -2235,6 +2235,119 @@ export default function AdminPage() {
   const isNightMapMode = currentShift === 'dinner';
   const isSelectedDateLunchAllowed = isLunchDay(selectedDate);
 
+  // 全画面表示中もここを使い回して日付切替スライダーを表示する（通常時は操作ヘッダーバーとして表示）
+  const dateNavBar = (
+    <div className="flex items-center space-x-1.5 p-1.5 rounded-xl border shadow-inner w-full mb-3 justify-between bg-slate-200/60 border-slate-300">
+      <button
+        onClick={() => changeDate(-1)}
+        className="w-9 h-9 rounded-lg font-bold text-sm shrink-0 shadow-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
+        style={{ cursor: 'pointer' }}
+      >
+        &lt;
+      </button>
+      <div
+        ref={scrollRef}
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeaveOrUp}
+        onMouseUp={handleMouseLeaveOrUp}
+        onMouseMove={handleMouseMove}
+        className="flex flex-1 justify-around items-center overflow-x-auto mx-1 gap-1.5 scrollbar-none select-none py-0.5 touch-pan-x"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        {weeklyDates.map((dateStr) => {
+          const isCurrentLoopSelected = dateStr === selectedDate;
+          const isLoopClosed = checkIsClosed(dateStr);
+          const topLabel = getDateTopLabel(dateStr);
+          return (
+            <button
+              key={dateStr}
+              onClick={() => setSelectedDate(dateStr)}
+              className={`px-2 py-1 text-xs font-bold rounded-lg transition-all flex flex-col items-center min-w-[85px] h-10 justify-center ${isCurrentLoopSelected ? isLoopClosed ? 'bg-white text-slate-900 ring-2 ring-slate-300' : 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 ring-2 ring-emerald-300' : isLoopClosed ? 'bg-slate-300/40 text-slate-400 opacity-40' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}`}
+              style={{ cursor: 'pointer' }}
+            >
+              {topLabel ? <span className="text-[9px] tracking-tight font-black leading-none">{topLabel}</span> : <span className="text-[9px] h-3 block"></span>}
+              <span className="text-xs font-mono font-bold mt-0.5">{formatPureDate(dateStr)}</span>
+            </button>
+          );
+        })}
+      </div>
+      <button
+        onClick={() => changeDate(1)}
+        className="w-9 h-9 rounded-lg font-bold text-sm shrink-0 shadow-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
+        style={{ cursor: 'pointer' }}
+      >
+        &gt;
+      </button>
+      <div className="relative flex items-center justify-center w-9 h-9 shrink-0">
+        <button
+          type="button"
+          onClick={() => { setMainCalendarMonth(new Date(selectedDate + 'T00:00:00')); setShowMainCalendarPopup(!showMainCalendarPopup); }}
+          style={{ cursor: 'pointer' }}
+          className="w-9 h-9 rounded-lg bg-blue-600 text-white font-bold border border-blue-700 shadow-md flex items-center justify-center text-sm"
+        >
+          📅
+        </button>
+        {showMainCalendarPopup && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setShowMainCalendarPopup(false)} />
+            <div className="absolute right-0 top-11 bg-slate-950 border border-slate-700 p-3 rounded-xl shadow-2xl z-50 w-72 text-slate-100">
+              <div className="flex justify-between items-center mb-2">
+                <button
+                  type="button"
+                  className="text-slate-400 hover:text-white px-1 text-xs font-bold"
+                  onClick={() => { const d = new Date(mainCalendarMonth); d.setMonth(d.getMonth() - 1); setMainCalendarMonth(d); }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  &lt;
+                </button>
+                <span className="font-black text-xs text-amber-400">{mainCalendarMonth.getFullYear()}年 {mainCalendarMonth.getMonth() + 1}月</span>
+                <button
+                  type="button"
+                  className="text-slate-400 hover:text-white px-1 text-xs font-bold"
+                  onClick={() => { const d = new Date(mainCalendarMonth); d.setMonth(d.getMonth() + 1); setMainCalendarMonth(d); }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  &gt;
+                </button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
+                <span>月</span><span className="text-rose-500/80">火</span><span className="text-rose-500/80">水</span><span>木</span><span>金</span><span>土</span><span>日</span>
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {generateCalendarDays(mainCalendarMonth).map((dayObj, index) => {
+                  if (!dayObj) return <div key={`empty-${index}`} />;
+                  const isSelected = dayObj.dateStr === selectedDate;
+                  return (
+                    <button
+                      type="button"
+                      key={dayObj.dateStr}
+                      onClick={() => { setSelectedDate(dayObj.dateStr); setShowMainCalendarPopup(false); }}
+                      title={dayObj.isClosed ? '休業日' : '営業日'}
+                      className={`h-7 rounded text-[10px] font-bold transition flex items-center justify-center ${
+                        isSelected
+                          ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
+                          : dayObj.isClosed
+                            ? 'bg-slate-900/70 text-slate-600 line-through hover:bg-slate-800/70'
+                            : 'bg-slate-900 hover:bg-slate-800 text-slate-200'
+                      }`}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {dayObj.day}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800 text-[9px] text-slate-500">
+                <span className="w-2.5 h-2.5 rounded-sm bg-slate-800 border border-slate-700 inline-block" />
+                <span>休業日</span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="p-2 min-h-screen font-sans transition-colors duration-300 bg-slate-50 text-slate-900">
 
@@ -2302,115 +2415,7 @@ export default function AdminPage() {
       </div>
 
       {/* 操作ヘッダーバー */}
-      <div className="flex items-center space-x-1.5 p-1.5 rounded-xl border shadow-inner w-full mb-3 justify-between bg-slate-200/60 border-slate-300">
-        <button 
-          onClick={() => changeDate(-1)} 
-          className="w-9 h-9 rounded-lg font-bold text-sm shrink-0 shadow-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
-          style={{ cursor: 'pointer' }}
-        >
-          &lt;
-        </button>
-        <div 
-          ref={scrollRef} 
-          onMouseDown={handleMouseDown} 
-          onMouseLeave={handleMouseLeaveOrUp} 
-          onMouseUp={handleMouseLeaveOrUp} 
-          onMouseMove={handleMouseMove} 
-          className="flex flex-1 justify-around items-center overflow-x-auto mx-1 gap-1.5 scrollbar-none select-none py-0.5 touch-pan-x"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          {weeklyDates.map((dateStr) => {
-            const isCurrentLoopSelected = dateStr === selectedDate;
-            const isLoopClosed = checkIsClosed(dateStr);
-            const topLabel = getDateTopLabel(dateStr);
-            return (
-              <button 
-                key={dateStr} 
-                onClick={() => setSelectedDate(dateStr)} 
-                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all flex flex-col items-center min-w-[85px] h-10 justify-center ${isCurrentLoopSelected ? isLoopClosed ? 'bg-white text-slate-900 ring-2 ring-slate-300' : 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 ring-2 ring-emerald-300' : isLoopClosed ? 'bg-slate-300/40 text-slate-400 opacity-40' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}`}
-                style={{ cursor: 'pointer' }}
-              >
-                {topLabel ? <span className="text-[9px] tracking-tight font-black leading-none">{topLabel}</span> : <span className="text-[9px] h-3 block"></span>}
-                <span className="text-xs font-mono font-bold mt-0.5">{formatPureDate(dateStr)}</span>
-              </button>
-            );
-          })}
-        </div>
-        <button 
-          onClick={() => changeDate(1)} 
-          className="w-9 h-9 rounded-lg font-bold text-sm shrink-0 shadow-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
-          style={{ cursor: 'pointer' }}
-        >
-          &gt;
-        </button>
-        <div className="relative flex items-center justify-center w-9 h-9 shrink-0">
-          <button
-            type="button"
-            onClick={() => { setMainCalendarMonth(new Date(selectedDate + 'T00:00:00')); setShowMainCalendarPopup(!showMainCalendarPopup); }}
-            style={{ cursor: 'pointer' }}
-            className="w-9 h-9 rounded-lg bg-blue-600 text-white font-bold border border-blue-700 shadow-md flex items-center justify-center text-sm"
-          >
-            📅
-          </button>
-          {showMainCalendarPopup && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowMainCalendarPopup(false)} />
-              <div className="absolute right-0 top-11 bg-slate-950 border border-slate-700 p-3 rounded-xl shadow-2xl z-50 w-72 text-slate-100">
-                <div className="flex justify-between items-center mb-2">
-                  <button
-                    type="button"
-                    className="text-slate-400 hover:text-white px-1 text-xs font-bold"
-                    onClick={() => { const d = new Date(mainCalendarMonth); d.setMonth(d.getMonth() - 1); setMainCalendarMonth(d); }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    &lt;
-                  </button>
-                  <span className="font-black text-xs text-amber-400">{mainCalendarMonth.getFullYear()}年 {mainCalendarMonth.getMonth() + 1}月</span>
-                  <button
-                    type="button"
-                    className="text-slate-400 hover:text-white px-1 text-xs font-bold"
-                    onClick={() => { const d = new Date(mainCalendarMonth); d.setMonth(d.getMonth() + 1); setMainCalendarMonth(d); }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    &gt;
-                  </button>
-                </div>
-                <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
-                  <span>月</span><span className="text-rose-500/80">火</span><span className="text-rose-500/80">水</span><span>木</span><span>金</span><span>土</span><span>日</span>
-                </div>
-                <div className="grid grid-cols-7 gap-1">
-                  {generateCalendarDays(mainCalendarMonth).map((dayObj, index) => {
-                    if (!dayObj) return <div key={`empty-${index}`} />;
-                    const isSelected = dayObj.dateStr === selectedDate;
-                    return (
-                      <button
-                        type="button"
-                        key={dayObj.dateStr}
-                        onClick={() => { setSelectedDate(dayObj.dateStr); setShowMainCalendarPopup(false); }}
-                        title={dayObj.isClosed ? '休業日' : '営業日'}
-                        className={`h-7 rounded text-[10px] font-bold transition flex items-center justify-center ${
-                          isSelected
-                            ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
-                            : dayObj.isClosed
-                              ? 'bg-slate-900/70 text-slate-600 line-through hover:bg-slate-800/70'
-                              : 'bg-slate-900 hover:bg-slate-800 text-slate-200'
-                        }`}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {dayObj.day}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800 text-[9px] text-slate-500">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-slate-800 border border-slate-700 inline-block" />
-                  <span>休業日</span>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      {dateNavBar}
       </>
       )}
 
@@ -2437,6 +2442,7 @@ export default function AdminPage() {
           >
             {isMapFullscreen ? '✕' : '⛶'}
           </button>
+          {isMapFullscreen && dateNavBar}
           {onlineEditMode && (
             <div className="mb-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-300 text-[11px] text-emerald-800 font-bold flex items-center justify-between gap-2">
               <span>🔓🔒 {formatPureDate(selectedDate)} の常連様テーブルをタップしてオンライン/オフライン切替（上の日付ナビで日を変更できます）</span>
@@ -2529,7 +2535,8 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              {/* 左側予約リストエリア */}
+              {/* 左側予約リストエリア（全画面表示中は日付スライダーに置き換えるため非表示） */}
+              {!isMapFullscreen && (
               <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-[#12141C]/40 border-[#2A2E3D]/60' : 'bg-white/80 border-[#E7E5DD]/80'}`} style={{ top: '15%', left: '2%', width: '72.5%', height: '62%' }}>
                 <div className={`flex items-center text-[10px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-[#8A8FA3] border-[#2A2E3D]' : 'text-slate-600 border-[#E7E5DD]'}`}>
                   <span className="w-[9%] shrink-0">時間</span>
@@ -2567,6 +2574,7 @@ export default function AdminPage() {
                   )}
                 </div>
               </div>
+              )}
 
               {/* テーブルレイアウト */}
               {(() => {
