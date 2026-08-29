@@ -164,6 +164,49 @@ const getNameTagTopPercent = (t: TableStatus) => {
   return topPercent + heightPercent + 0.3;
 };
 
+// ─── 隣接テーブルが同じ色にならないようにする、2色の交互配色 ───
+const ADJACENT_COLOR_PAIR = [
+  'from-sky-500 to-sky-600 border-sky-700 ring-sky-300/30',
+  'from-rose-500 to-rose-600 border-rose-700 ring-rose-300/30',
+];
+
+const getTableRect = (t: TableStatus) => {
+  const top = parseFloat(t.top);
+  const left = parseFloat(t.left);
+  const width = parseFloat(t.width);
+  const height = (width / TABLE_ASPECT_RATIO[t.type]) * FLOOR_MAP_ASPECT_RATIO;
+  return { top, left, right: left + width, bottom: top + height };
+};
+
+// 隙間がこの%以内なら「隣接している」とみなす
+const ADJACENCY_GAP_THRESHOLD = 4;
+
+const areTablesAdjacent = (a: TableStatus, b: TableStatus) => {
+  const ra = getTableRect(a);
+  const rb = getTableRect(b);
+  const verticalOverlap = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top) > 0;
+  const horizontalOverlap = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left) > 0;
+  const horizontalGap = Math.max(ra.left - rb.right, rb.left - ra.right);
+  const verticalGap = Math.max(ra.top - rb.bottom, rb.top - ra.bottom);
+  if (verticalOverlap && horizontalGap <= ADJACENCY_GAP_THRESHOLD) return true;
+  if (horizontalOverlap && verticalGap <= ADJACENCY_GAP_THRESHOLD) return true;
+  return false;
+};
+
+// 予約が入っているテーブルに、隣同士で被らないよう2色を割り当てる
+const getAdjacencyColorMap = (occupiedTables: TableStatus[]) => {
+  const colorMap: Record<string, number> = {};
+  occupiedTables.forEach((t) => {
+    const neighborColors = new Set(
+      occupiedTables
+        .filter((o) => o.id !== t.id && colorMap[o.id] !== undefined && areTablesAdjacent(t, o))
+        .map((o) => colorMap[o.id])
+    );
+    colorMap[t.id] = neighborColors.has(0) ? 1 : 0;
+  });
+  return colorMap;
+};
+
 // テーブル形状ごとに、主役として大きく見せる人数の文字サイズを調整
 const getPrimaryNumberFontSize = (type: TableStatus['type']) => {
   if (type === 'counter-1') return '11px';
@@ -2433,7 +2476,9 @@ export default function AdminPage() {
               />
 
               {/* テーブルレイアウト */}
-              {tables.map((t) => {
+              {(() => {
+                const adjacencyColorMap = getAdjacencyColorMap(tables.filter((t) => t.isOccupied));
+                return tables.map((t) => {
                 const isCounter = t.type === 'counter-1';
                 const shapeClass = t.type === 'square-2' || t.type === 'counter-1' ? 'aspect-square' : t.type === 'rect-h-4' ? 'aspect-[2/1.1]' : 'aspect-[1/2.1]';
                 const radiusClass = isCounter ? 'rounded-full' : 'rounded-xl';
@@ -2488,7 +2533,7 @@ export default function AdminPage() {
                   if (isThisTableDragging && isCombineMode) {
                     tableStyle = 'bg-gradient-to-br from-amber-400 to-amber-600 text-white border-amber-700 ring-4 ring-amber-300 animate-pulse z-50';
                   } else {
-                    tableStyle = `bg-gradient-to-br ${getGuestCountColorClasses(attachedRes?.guests)} text-white ring-1`;
+                    tableStyle = `bg-gradient-to-br ${ADJACENT_COLOR_PAIR[adjacencyColorMap[t.id] ?? 0]} text-white ring-1`;
                   }
                 } else if (isThisTableHovered) {
                   tableStyle = isCombineMode ? 'bg-amber-300 text-slate-955 ring-4 ring-amber-400 scale-105 z-40' : 'bg-blue-500 text-white ring-4 ring-blue-300 scale-105 z-40';
@@ -2541,7 +2586,8 @@ export default function AdminPage() {
                     )}
                   </Fragment>
                 );
-              })}
+                });
+              })()}
             </div>
           </div>
         </div>
