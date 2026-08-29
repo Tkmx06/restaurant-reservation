@@ -1112,6 +1112,52 @@ export default function AdminPage() {
   const scrollLeft = useRef(0);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const floorMapSectionRef = useRef<HTMLDivElement>(null);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+
+  const enterMapFullscreen = async () => {
+    const el = floorMapSectionRef.current;
+    if (!el) return;
+    try {
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+      } else if ((el as any).webkitRequestFullscreen) {
+        (el as any).webkitRequestFullscreen();
+      } else {
+        setIsMapFullscreen(true); // Fullscreen API 非対応端末は疑似全画面表示にフォールバック
+      }
+    } catch {
+      setIsMapFullscreen(true);
+    }
+    try {
+      if ('wakeLock' in navigator) await (navigator as any).wakeLock.request('screen');
+    } catch {
+      // 対応していない場合は無視
+    }
+  };
+
+  const exitMapFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.();
+    } else if ((document as any).webkitFullscreenElement) {
+      (document as any).webkitExitFullscreen?.();
+    }
+    setIsMapFullscreen(false);
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      const fsEl = document.fullscreenElement || (document as any).webkitFullscreenElement;
+      setIsMapFullscreen(!!fsEl);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
+  }, []);
+
   const [draggingTableId, setDraggingTableId] = useState<string | null>(null);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
   const [hoveredTableId, setHoveredTableId] = useState<string | null>(null);
@@ -1163,6 +1209,33 @@ export default function AdminPage() {
       setCurrentShift('dinner');
     }
   }, [selectedDate, currentShift]);
+
+  // ─── 営業中にタブレットの画面が自動で暗転・スリープしないようにする（対応端末のみ） ───
+  useEffect(() => {
+    let wakeLock: any = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+        }
+      } catch {
+        // 対応していない端末・許可が下りない場合は何もしない（通常の画面ロック動作にフォールバック）
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      wakeLock?.release?.();
+    };
+  }, []);
 
   const formatShortTime = (timeStr: string) => {
     if (!timeStr) return '';
@@ -2336,7 +2409,26 @@ export default function AdminPage() {
 
       {/* フロアマップ枠 */}
       {activeTab === 'today' && (
-        <div className="mb-3 border p-3 rounded-xl shadow-xl relative overflow-hidden transition-colors duration-300 bg-white border-slate-200">
+        <div
+          ref={floorMapSectionRef}
+          className={`relative transition-colors duration-300 bg-white ${
+            isMapFullscreen
+              ? 'fixed inset-0 z-[999] p-3 pt-12 flex flex-col justify-center overflow-auto'
+              : 'mb-3 border p-3 rounded-xl shadow-xl overflow-hidden border-slate-200'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={isMapFullscreen ? exitMapFullscreen : enterMapFullscreen}
+            style={{ cursor: 'pointer' }}
+            className={`absolute z-[1000] flex items-center gap-1 rounded-lg font-black shadow-md transition ${
+              isMapFullscreen
+                ? 'top-3 right-3 px-3 py-2 text-xs bg-slate-800 hover:bg-slate-700 text-white'
+                : 'top-2.5 right-2.5 px-2 py-1.5 text-[10px] bg-slate-800/80 hover:bg-slate-800 text-white'
+            }`}
+          >
+            {isMapFullscreen ? '✕ 全画面を終了' : '⛶ 全画面表示'}
+          </button>
           {onlineEditMode && (
             <div className="mb-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-300 text-[11px] text-emerald-800 font-bold flex items-center justify-between gap-2">
               <span>🔓🔒 {formatPureDate(selectedDate)} の常連様テーブルをタップしてオンライン/オフライン切替（上の日付ナビで日を変更できます）</span>
