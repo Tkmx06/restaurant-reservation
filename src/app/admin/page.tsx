@@ -140,14 +140,6 @@ const getGuestCountColorClasses = (guests: number | undefined) => {
 // 常連様専用に確保し、通常オンライン予約の対象外にしているテーブル（日付ごとに公開設定可能）
 const SPECIAL_TABLES = ['1', '2', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
 
-// テーブル形状ごとの座席数（結合テーブルの場合、その卓が担う人数の表示に使う）
-const getTableCapacity = (t: TableStatus) => {
-  if (t.type === 'counter-1') return 4; // 1・2は最大4名まで対応（廃止した3・4の分を統合）
-  if (['51', '52', '53', '54'].includes(t.id)) return 4; // 見た目は66と同じ正方形だが実際は4名卓
-  if (t.type === 'square-2') return 2;
-  return 4; // rect-h-4, rect-v-4
-};
-
 // テーブル形状ごとの縦横比（幅÷高さ）と、フロアマップ枠自体の縦横比。
 // 名前タグをテーブルのすぐ下に置くための位置計算に使う（top と left/width は基準の軸が違うため変換が必要）
 const TABLE_ASPECT_RATIO: Record<TableStatus['type'], number> = {
@@ -2649,8 +2641,7 @@ export default function AdminPage() {
                   tableStyle = isCombineMode ? 'bg-amber-300 text-slate-955 ring-4 ring-amber-400 scale-105 z-40' : 'bg-blue-500 text-white ring-4 ring-blue-300 scale-105 z-40';
                 }
 
-                const isCombinedRes = !!attachedRes?.notes?.includes('_combined:[');
-                const guestCountForTable = attachedRes ? (isCombinedRes ? getTableCapacity(t) : attachedRes.guests) : 0;
+                const guestCountForTable = attachedRes ? attachedRes.guests : 0;
 
                 return (
                   <Fragment key={t.id}>
