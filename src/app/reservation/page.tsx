@@ -435,8 +435,8 @@ export default function ReservationPage() {
   if (submitted) {
     return (
       <div style={{ minHeight: '100vh', background: '#F9FAFB', color: '#1F2937', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px 16px', fontFamily: 'sans-serif', position: 'relative' }}>
-        <LangSwitcher />
-        <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, padding: 40, textAlign: 'center', maxWidth: 420, boxShadow: '0 4px 16px rgba(0,0,0,0.05)' }}>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, padding: 40, textAlign: 'center', maxWidth: 420, boxShadow: '0 4px 16px rgba(0,0,0,0.05)', position: 'relative' }}>
+          <LangSwitcher />
           <div style={{ fontSize: 48, marginBottom: 16, color: '#10B981' }}>✓</div>
           <div style={{ color: '#10B981', fontSize: 20, fontWeight: 600, marginBottom: 8 }}>{t.completedTitle}</div>
           <div style={{ color: '#4B5563', fontSize: 14, lineHeight: 1.7 }}>
@@ -451,9 +451,9 @@ export default function ReservationPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F9FAFB', color: '#1F2937', display: 'flex', justifyContent: 'center', padding: '40px 16px', fontFamily: 'sans-serif', position: 'relative' }}>
-      <LangSwitcher />
-      <div style={{ background: '#FFFFFF', borderRadius: 12, padding: 32, maxWidth: 480, width: '100%', border: '1px solid #E5E7EB', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-        
+      <div style={{ background: '#FFFFFF', borderRadius: 12, padding: 32, maxWidth: 480, width: '100%', border: '1px solid #E5E7EB', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', position: 'relative' }}>
+        <LangSwitcher />
+
         {/* 📷 ヘッダーロゴ画像の配置 */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
           <img 
