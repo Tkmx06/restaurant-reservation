@@ -2505,10 +2505,10 @@ export default function AdminPage() {
                 </div>
 
                 <div className="flex items-center gap-1 w-full">
-                  <span className={`flex-1 text-center text-[10px] font-mono font-black ${currentShift === 'lunch' ? 'text-[#C9803E]' : 'text-slate-400'}`}>
+                  <span className={`flex-1 text-center text-[13px] font-mono font-black ${currentShift === 'lunch' ? 'text-[#C9803E]' : 'text-slate-400'}`}>
                     {totalLunchGuests}名/{totalLunchCount}件
                   </span>
-                  <span className={`flex-1 text-center text-[10px] font-mono font-black ${currentShift === 'dinner' ? 'text-[#7376E0]' : 'text-slate-400'}`}>
+                  <span className={`flex-1 text-center text-[13px] font-mono font-black ${currentShift === 'dinner' ? 'text-[#7376E0]' : 'text-slate-400'}`}>
                     {totalDinnerGuests}名/{totalDinnerCount}件
                   </span>
                 </div>
