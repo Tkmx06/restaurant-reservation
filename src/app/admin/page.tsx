@@ -32,16 +32,17 @@ interface TableGroup {
 }
 
 // ─── データベースの数値IDから画面のテーブル名への逆変換表 ───
+// ⚠️ テーブル3・4は廃止済み（1・2に統合）。DB上の旧ID(11,12)は使用しない
 const DB_ID_TO_LABEL: Record<number, string> = {
   1: '51', 2: '52', 3: '53', 4: '54', 5: '68', 6: '67', 7: '66', 8: '65',
-  9: '1', 10: '2', 11: '3', 12: '4', 13: '23', 14: '70', 15: '22', 16: '21',
+  9: '1', 10: '2', 13: '23', 14: '70', 15: '22', 16: '21',
   17: '11', 18: '15', 19: '14', 20: '13', 21: '12',
 };
 
 // ─── 画面のテーブル名からデータベースの数値IDへの変換表 ───
 const LABEL_TO_DB_ID: Record<string, number> = {
   '51': 1, '52': 2, '53': 3, '54': 4, '68': 5, '67': 6, '66': 7, '65': 8,
-  '1': 9, '2': 10, '3': 11, '4': 12, '23': 13, '70': 14, '22': 15, '21': 16,
+  '1': 9, '2': 10, '23': 13, '70': 14, '22': 15, '21': 16,
   '11': 17, '15': 18, '14': 19, '13': 20, '12': 21,
 };
 
@@ -76,7 +77,6 @@ const GROUPS_BY_GUESTS: Record<number, TableGroup[]> = {
     { label: '14 + 15', mainTable: '14', combinedTables: ['15'], description: '右カウンター下2席' },
     { label: '21', mainTable: '21', combinedTables: [], description: '右奥縦テーブル' },
     { label: '22 + 23', mainTable: '22', combinedTables: ['23'], description: '右奥2テーブル' },
-    { label: '1 + 2 + 3 + 4', mainTable: '1', combinedTables: ['2', '3', '4'], description: 'カウンター席4連' },
   ],
   3: [
     { label: '11', mainTable: '11', combinedTables: [], description: '左下エリア' },
@@ -87,7 +87,6 @@ const GROUPS_BY_GUESTS: Record<number, TableGroup[]> = {
     { label: '14 + 15', mainTable: '14', combinedTables: ['15'], description: '右カウンター下2席' },
     { label: '21', mainTable: '21', combinedTables: [], description: '右奥縦テーブル' },
     { label: '22 + 23', mainTable: '22', combinedTables: ['23'], description: '右奥2テーブル' },
-    { label: '1 + 2 + 3 + 4', mainTable: '1', combinedTables: ['2', '3', '4'], description: 'カウンター席4連' },
   ],
   2: [
     { label: '12', mainTable: '12', combinedTables: [], description: '右カウンター①' },
@@ -103,8 +102,6 @@ const GROUPS_BY_GUESTS: Record<number, TableGroup[]> = {
   1: [
     { label: '1', mainTable: '1', combinedTables: [], description: 'カウンター①' },
     { label: '2', mainTable: '2', combinedTables: [], description: 'カウンター②' },
-    { label: '3', mainTable: '3', combinedTables: [], description: 'カウンター③' },
-    { label: '4', mainTable: '4', combinedTables: [], description: 'カウンター④' },
     { label: '12', mainTable: '12', combinedTables: [], description: '右カウンター①' },
     { label: '13', mainTable: '13', combinedTables: [], description: '右カウンター②' },
     { label: '14', mainTable: '14', combinedTables: [], description: '右カウンター③' },
@@ -140,11 +137,11 @@ const getGuestCountColorClasses = (guests: number | undefined) => {
 };
 
 // 常連様専用に確保し、通常オンライン予約の対象外にしているテーブル（日付ごとに公開設定可能）
-const SPECIAL_TABLES = ['1', '2', '3', '4', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
+const SPECIAL_TABLES = ['1', '2', '21', '22', '23', '51', '52', '53', '54', '68', '70'];
 
 // テーブル形状ごとの座席数（結合テーブルの場合、その卓が担う人数の表示に使う）
 const getTableCapacity = (type: TableStatus['type']) => {
-  if (type === 'counter-1') return 1;
+  if (type === 'counter-1') return 4; // 1・2は最大4名まで対応（廃止した3・4の分を統合）
   if (type === 'square-2') return 2;
   return 4; // rect-h-4, rect-v-4
 };
@@ -167,12 +164,20 @@ const getNameTagTopPercent = (t: TableStatus) => {
   return topPercent + heightPercent + 0.3;
 };
 
-// テーブル形状ごとに、主役として大きく見せる番号の文字サイズを調整
+// テーブル形状ごとに、主役として大きく見せる人数の文字サイズを調整
 const getPrimaryNumberFontSize = (type: TableStatus['type']) => {
   if (type === 'counter-1') return '11px';
   if (type === 'square-2') return '15px';
   if (type === 'rect-h-4') return '20px';
   return '16px'; // rect-v-4
+};
+
+// テーブル形状ごとに、幅いっぱいに見せる時間の文字サイズを調整
+const getTimeFontSize = (type: TableStatus['type']) => {
+  if (type === 'counter-1') return '9px';
+  if (type === 'square-2') return '11px';
+  if (type === 'rect-h-4') return '15px';
+  return '12px'; // rect-v-4
 };
 
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
@@ -198,8 +203,6 @@ const miniMapTables = [
   { id: '65', type: 'rect-h-4', top: 4,    left: (89.5 - OL)*S+1, w: 9   *S, h: 5.5 },
   { id: '1',  type: 'counter',  top: 24,   left: (78.5 - OL)*S+1, w: 3.5 *S, h: 3.5 },
   { id: '2',  type: 'counter',  top: 29.5, left: (78.5 - OL)*S+1, w: 3.5 *S, h: 3.5 },
-  { id: '3',  type: 'counter',  top: 35,   left: (78.5 - OL)*S+1, w: 3.5 *S, h: 3.5 },
-  { id: '4',  type: 'counter',  top: 40.5, left: (78.5 - OL)*S+1, w: 3.5 *S, h: 3.5 },
   { id: '23', type: 'square-2', top: 24,   left: (84.5 - OL)*S+1, w: 5   *S, h: 5.5 },
   { id: '70', type: 'square-2', top: 24,   left: (91   - OL)*S+1, w: 5   *S, h: 5.5 },
   { id: '22', type: 'square-2', top: 35,   left: (84.5 - OL)*S+1, w: 5   *S, h: 5.5 },
@@ -212,7 +215,7 @@ const miniMapTables = [
 ];
 
 const sortedTableIds = [
-  '11', '12', '13', '14', '15', '21', '22', '23', '70', '65', '66', '67', '68', '1', '2', '3', '4', '51', '52', '53', '54'
+  '11', '12', '13', '14', '15', '21', '22', '23', '70', '65', '66', '67', '68', '1', '2', '51', '52', '53', '54'
 ];
 
 // 時間文字列を分に変換する
@@ -479,7 +482,7 @@ const MOBILE_FLOOR_ZONES: string[][] = [
   ['65', '66', '67', '68'],
   ['11', '12', '13', '14', '15'],
   ['21', '22', '23', '70'],
-  ['1', '2', '3', '4'],
+  ['1', '2'],
   ['51', '52', '53', '54'],
 ];
 
@@ -1080,18 +1083,16 @@ export default function AdminPage() {
     { id: '53', label: '53', isOccupied: false, type: 'rect-h-4', top: '14%',  left: '48%',  width: '9.5%' },
     { id: '54', label: '54', isOccupied: false, type: 'rect-h-4', top: '14%',  left: '58.5%', width: '9.5%' },
     { id: '68', label: '68', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '69%',  width: '9%' },
-    { id: '67', label: '67', isOccupied: false, type: 'square-2', top: '4%',  left: '78%',  width: '5%' },
+    { id: '67', label: '67', isOccupied: false, type: 'square-2', top: '4%',  left: '79%',  width: '5%' },
     { id: '66', label: '66', isOccupied: false, type: 'square-2', top: '4%',  left: '84%',  width: '5%' },
     { id: '65', label: '65', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '89.5%', width: '9%' },
-    { id: '1', label: '1', isOccupied: false, type: 'counter-1', top: '24%', left: '78.5%', width: '3.5%' },
-    { id: '2', label: '2', isOccupied: false, type: 'counter-1', top: '35%', left: '78.5%', width: '3.5%' },
-    { id: '3', label: '3', isOccupied: false, type: 'counter-1', top: '45%', left: '78.5%', width: '3.5%' },
-    { id: '4', label: '4', isOccupied: false, type: 'counter-1', top: '52%', left: '78.5%', width: '3.5%' },
+    { id: '1', label: '1', isOccupied: false, type: 'counter-1', top: '24%', left: '78.5%', width: '5%' },
+    { id: '2', label: '2', isOccupied: false, type: 'counter-1', top: '35%', left: '78.5%', width: '5%' },
     { id: '23', label: '23', isOccupied: false, type: 'square-2', top: '24%', left: '84.5%', width: '5%' },
     { id: '70', label: '70', isOccupied: false, type: 'square-2', top: '24%', left: '91%',  width: '5%' },
     { id: '22', label: '22', isOccupied: false, type: 'square-2', top: '35%', left: '84.5%', width: '5%' },
-    { id: '21', label: '21', isOccupied: false, type: 'rect-h-4', top: '59%', left: '78%',  width: '9%' },
-    { id: '11', label: '11', isOccupied: false, type: 'rect-h-4', top: '68.6%', left: '78%', width: '9%' },
+    { id: '21', label: '21', isOccupied: false, type: 'rect-h-4', top: '45%', left: '78%',  width: '9%' },
+    { id: '11', label: '11', isOccupied: false, type: 'rect-h-4', top: '54.6%', left: '78%', width: '9%' },
     { id: '15', label: '15', isOccupied: false, type: 'square-2', top: '57%', left: '91%',  width: '5%' },
     { id: '14', label: '14', isOccupied: false, type: 'square-2', top: '68%', left: '91%',  width: '5%' },
     { id: '13', label: '13', isOccupied: false, type: 'square-2', top: '79%', left: '91%',  width: '5%' },
@@ -2512,12 +2513,12 @@ export default function AdminPage() {
                       }}
                     >
                       {t.isOccupied && attachedRes ? (
-                        <div className="relative w-full h-full flex items-center justify-center pointer-events-none select-none">
-                          <span className="absolute top-0.5 left-0.5 text-[6px] font-mono font-bold text-white/90 leading-none whitespace-nowrap bg-black/20 px-0.5 rounded-sm">
+                        <div className="relative w-full h-full flex flex-col items-center justify-center pointer-events-none select-none px-px">
+                          <span className="font-mono font-black text-white leading-none w-full text-center whitespace-nowrap" style={{ fontSize: getTimeFontSize(t.type) }}>
                             {formatShortTime(attachedRes.time)}
                           </span>
                           <span className="font-black text-white leading-none" style={{ fontSize: getPrimaryNumberFontSize(t.type) }}>
-                            {t.label}
+                            {guestCountForTable}
                           </span>
                         </div>
                       ) : (
@@ -2529,7 +2530,7 @@ export default function AdminPage() {
                         className="absolute z-30 bg-slate-900/90 text-white text-[7px] font-bold px-1 py-px rounded truncate pointer-events-none select-none shadow"
                         style={{ top: `${getNameTagTopPercent(t)}%`, left: t.left, maxWidth: '90px' }}
                       >
-                        {guestCountForTable}名 {attachedRes.guest_name}
+                        {attachedRes.guest_name}
                       </div>
                     )}
                   </Fragment>
