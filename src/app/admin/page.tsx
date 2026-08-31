@@ -1970,8 +1970,6 @@ export default function AdminPage() {
     setIsQaCheckRunning(true);
     setQaCheckResult(null);
     try {
-      // CRON_SECRET は環境変数から取得できないため、認証なしで呼び出す
-      // サーバーサイドでセッション/トークンベースの認証を実装することを推奨
       const res = await fetch('/api/admin/qa-check-manual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
