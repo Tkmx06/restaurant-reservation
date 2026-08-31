@@ -5,12 +5,6 @@
       "schedule": "0 8 * * 2,5"
     }
   ],
-  "skew": {
-    "defaultSkewProtection": false
-  },
-  "funcErrorMetrics": {
-    "maxAge": 7200
-  },
   "skipAuthenticationPaths": [
     "/api/reservations",
     "/api/reservations/*",
