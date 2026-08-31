@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/qa-check",
-      "schedule": "7 6 * * 2,5"
+      "schedule": "0 8 * * 2,5"
     }
   ],
   "skew": {
@@ -10,5 +10,10 @@
   },
   "funcErrorMetrics": {
     "maxAge": 7200
-  }
+  },
+  "skipAuthenticationPaths": [
+    "/api/reservations",
+    "/api/reservations/*",
+    "/api/business-hours"
+  ]
 }
