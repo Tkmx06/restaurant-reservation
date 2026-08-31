@@ -4,5 +4,16 @@
       "path": "/api/cron/qa-check",
       "schedule": "7 6 * * *"
     }
+  ],
+  "skew": {
+    "defaultSkewProtection": false
+  },
+  "funcErrorMetrics": {
+    "maxAge": 7200
+  },
+  "skipAuthenticationPaths": [
+    "/api/reservations",
+    "/api/reservations/*",
+    "/api/business-hours"
   ]
 }
