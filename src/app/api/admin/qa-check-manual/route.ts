@@ -148,16 +148,17 @@ export async function POST(req: NextRequest) {
 
   // チェック実行
   const results = await Promise.all(checks.map(c => c.run()));
-  const failures = checks.filter((c, i) => !results[i].ok);
+  const failures = checks
+    .map((c, i) => ({ ...c, ...results[i] }))
+    .filter((c) => !c.ok);
 
   // 異常があれば通知
   if (failures.length > 0) {
     const ALERT_EMAIL = 'taka01234567890@gmail.com';
-    const failureText = failures.map(f => `• ${f.name}`).join('\n');
     await sendQaAlertEmail({
-      subject: `⚠️ 【手動実行】予約システムQAチェックで異常を検知 (${failures.length}件)`,
-      body: `予約システムの手動QAチェック実行時に、想定と異なる挙動が見つかりました。\n\n${failureText}`,
-      email: ALERT_EMAIL,
+      toEmail: ALERT_EMAIL,
+      failures: failures.map(f => ({ name: f.name, detail: f.detail })),
+      checkedAt: new Date().toISOString(),
     });
   }
 
