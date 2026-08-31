@@ -1163,6 +1163,10 @@ export default function AdminPage() {
   const [isCombineMode, setIsCombineMode] = useState(false); 
   const [hasMovedSignificantly, setHasMovedSignificantly] = useState(false);
 
+  // ─── QAチェック手動実行用状態 ───
+  const [isQaCheckRunning, setIsQaCheckRunning] = useState(false);
+  const [qaCheckResult, setQaCheckResult] = useState<{ passed: number; failed: number; failures: string[] } | null>(null);
+
   const initialTables: TableStatus[] = [
     { id: '51', label: '51', isOccupied: false, type: 'square-2', top: '4%', left: '44%', width: '5%' },
     { id: '52', label: '52', isOccupied: false, type: 'square-2', top: '4%', left: '50%', width: '5%' },
@@ -1961,6 +1965,38 @@ export default function AdminPage() {
     setNewOrderFreeTableIds([]);
   };
 
+  // ─── QAチェック手動実行 ───
+  const runQaCheckManual = async () => {
+    setIsQaCheckRunning(true);
+    setQaCheckResult(null);
+    try {
+      // CRON_SECRET は環境変数から取得できないため、認証なしで呼び出す
+      // サーバーサイドでセッション/トークンベースの認証を実装することを推奨
+      const res = await fetch('/api/admin/qa-check-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timestamp: new Date().toISOString() }),
+      });
+      if (!res.ok) {
+        alert('QAチェック実行エラー: ' + (await res.text()));
+        setIsQaCheckRunning(false);
+        return;
+      }
+      const data = await res.json();
+      setQaCheckResult({
+        passed: data.passedChecks,
+        failed: data.failedChecks,
+        failures: data.failures || [],
+      });
+      alert(`QAチェック完了\nパス: ${data.passedChecks}/${data.totalChecks}\nエラー: ${data.failedChecks > 0 ? data.failures.join(', ') : 'なし'}`);
+    } catch (err) {
+      console.error('QAチェック実行エラー:', err);
+      alert('QAチェック実行中にエラーが発生しました');
+    } finally {
+      setIsQaCheckRunning(false);
+    }
+  };
+
   const openNewOrderModal = () => {
     let targetDateStr = selectedDate; 
     if (checkIsClosed(targetDateStr)) {
@@ -2405,6 +2441,19 @@ export default function AdminPage() {
             style={{ cursor: 'pointer' }}
           >
             ➕ 新規予約登録
+          </button>
+          <button
+            type="button"
+            onClick={runQaCheckManual}
+            disabled={isQaCheckRunning}
+            className={`text-white text-xs font-black px-4 py-1.5 rounded-xl border transition shadow-md ${
+              isQaCheckRunning 
+                ? 'bg-slate-400 border-slate-500 cursor-not-allowed' 
+                : 'bg-orange-600 hover:bg-orange-500 border-orange-700'
+            }`}
+            style={{ cursor: isQaCheckRunning ? 'not-allowed' : 'pointer' }}
+          >
+            {isQaCheckRunning ? '⏳ チェック中...' : '🔍 QAチェック実行'}
           </button>
           <button
             type="button"
