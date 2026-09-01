@@ -3568,6 +3568,15 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+          <div className="flex justify-end mt-3">
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-full shadow font-bold transition"
+              style={{ cursor: 'pointer' }}
+            >
+              ↑ トップへ戻る
+            </button>
+          </div>
         </div>
       ) : (
         <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
