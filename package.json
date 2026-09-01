@@ -6,10 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "import-quandoo": "ts-node scripts/import-quandoo.ts",
+    "archive-reservations": "ts-node scripts/archive-reservations.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
+    "@vercel/analytics": "^2.0.1",
     "date-fns": "^4.4.0",
     "next": "16.2.9",
     "react": "19.2.4",
@@ -26,6 +29,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "ts-node": "^10.9.2",
+    "typescript": "^5",
+    "csv-parse": "^5.5.2"
   }
 }
