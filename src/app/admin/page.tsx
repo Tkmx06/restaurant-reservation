@@ -234,7 +234,7 @@ const miniMapTables = [
   { id: '52', type: 'rect-h-4', top: 4,    left: (58.5 - OL)*S+1, w: 9.5 *S, h: 5.5 },
   { id: '53', type: 'rect-h-4', top: 14,   left: (48   - OL)*S+1, w: 9.5 *S, h: 5.5 },
   { id: '54', type: 'rect-h-4', top: 14,   left: (58.5 - OL)*S+1, w: 9.5 *S, h: 5.5 },
-  { id: '68', type: 'rect-v-4', top: 4,    left: (71   - OL)*S+1, w: 5.5 *S, h: 11  },
+  { id: '68', type: 'rect-h-4', top: 4,    left: (71   - OL)*S+1, w: 5.5 *S, h: 5.5 },
   { id: '67', type: 'square-2', top: 4,    left: (78   - OL)*S+1, w: 5   *S, h: 5.5 },
   { id: '66', type: 'square-2', top: 4,    left: (84   - OL)*S+1, w: 5   *S, h: 5.5 },
   { id: '65', type: 'rect-h-4', top: 4,    left: (89.5 - OL)*S+1, w: 9   *S, h: 5.5 },
@@ -571,6 +571,7 @@ interface MobileAdminViewProps {
   setEditTable: (t: string) => void;
   setEditSelectedGroup: (g: any) => void;
   setEditFreeTableIds: (updater: string[] | ((prev: string[]) => string[])) => void;
+  setEditNotes: (n: string) => void;
   filteredCustomerList: CustomerSummary[];
   sortedCustomerList: CustomerSummary[];
   customerSearchQuery: string;
@@ -593,7 +594,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
     displaySideReservations, totalLunchGuests, totalLunchCount, totalDinnerGuests, totalDinnerCount,
     isLunchTime, formatShortTime, getCleanNotes, displayTableIds,
     tables, reservations, isSelectedDateClosed,
-    setSelectedRes, setEditTime, setEditGuests, setEditTable, setEditSelectedGroup, setEditFreeTableIds,
+    setSelectedRes, setEditTime, setEditGuests, setEditTable, setEditSelectedGroup, setEditFreeTableIds, setEditNotes,
     filteredCustomerList, sortedCustomerList, customerSearchQuery, setCustomerSearchQuery, openCustomerEditModal,
     filteredReservations,
   } = props;
@@ -624,6 +625,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
     setEditTable(String(r.table_id));
     setEditSelectedGroup(null);
     setEditFreeTableIds(Number(r.guests) >= 9 ? getReservationTableIds(r) : []);
+    setEditNotes(getCleanNotes(r.notes));
   };
 
   const navItems: { key: 'list' | 'floor' | 'customers' | 'history'; icon: string; label: string }[] = [
@@ -990,6 +992,7 @@ export default function AdminPage() {
   const [editTable, setEditTable] = useState('51');
   const [editSelectedGroup, setEditSelectedGroup] = useState<TableGroup | null>(null);
   const [editFreeTableIds, setEditFreeTableIds] = useState<string[]>([]);
+  const [editNotes, setEditNotes] = useState('');
   
   const [showNewOrderModal, setShowNewOrderModal] = useState(false);
   const [newOrderStep, setNewOrderStep] = useState<'guests' | 'details'>('guests'); 
@@ -1770,6 +1773,7 @@ export default function AdminPage() {
         setEditTable(String(foundRes.table_id));
         setEditSelectedGroup(null);
         setEditFreeTableIds(Number(foundRes.guests) >= 9 ? getReservationTableIds(foundRes) : []);
+        setEditNotes(getCleanNotes(foundRes.notes));
       }
     } else {
       const defaultTime = '18:00';
@@ -1839,7 +1843,7 @@ export default function AdminPage() {
     const occupiedIds = getOccupiedTableIds(selectedRes.date, editTime, selectedRes.id);
 
     let finalTableId = editTable;
-    let finalNotes = getCleanNotes(selectedRes.notes);
+    let finalNotes = editNotes;
 
     const editGuestsNum = parseInt(editGuests, 10);
 
@@ -1856,7 +1860,7 @@ export default function AdminPage() {
       finalTableId = editFreeTableIds[0];
       finalNotes = buildCombinedNotes(
         { label: '', mainTable: finalTableId, combinedTables: editFreeTableIds.slice(1), description: '' },
-        getCleanNotes(selectedRes.notes),
+        editNotes,
       );
     } else if (editSelectedGroup) {
       const allGroupIds = [editSelectedGroup.mainTable, ...editSelectedGroup.combinedTables];
@@ -1866,7 +1870,7 @@ export default function AdminPage() {
         return;
       }
       finalTableId = editSelectedGroup.mainTable;
-      finalNotes = buildCombinedNotes(editSelectedGroup, getCleanNotes(selectedRes.notes));
+      finalNotes = buildCombinedNotes(editSelectedGroup, editNotes);
     } else {
       if (occupiedIds.includes(String(editTable).trim())) {
         alert(`⚠️ テーブル番号 ${editTable} はすでに埋まっています。`);
@@ -1905,6 +1909,7 @@ export default function AdminPage() {
     setSelectedRes(null);
     setEditSelectedGroup(null);
     setEditFreeTableIds([]);
+    setEditNotes('');
   };
 
   const handleCreateNewOrder = async (e: React.FormEvent) => {
@@ -2600,7 +2605,7 @@ export default function AdminPage() {
                           key={r.id} 
                           role="button"
                           tabIndex={0}
-                          onClick={() => { setSelectedRes(r); setEditTime(formatShortTime(r.time)); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); setEditFreeTableIds(Number(r.guests) >= 9 ? getReservationTableIds(r) : []); }} 
+                          onClick={() => { setSelectedRes(r); setEditTime(formatShortTime(r.time)); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); setEditFreeTableIds(Number(r.guests) >= 9 ? getReservationTableIds(r) : []); setEditNotes(getCleanNotes(r.notes)); }} 
                           className={`border h-8 px-1 rounded-md flex items-center transition-all text-[11px] font-black ${isNightMapMode ? 'bg-[#12141C]/40 hover:bg-blue-600/20 border-[#2A2E3D]/60 hover:border-blue-500/40' : 'bg-[#F5F4F0] hover:bg-blue-50 border-[#E7E5DD] hover:border-blue-300'}`}
                           style={{ cursor: 'pointer' }}
                         >
@@ -3128,7 +3133,7 @@ export default function AdminPage() {
               </div>
               <button
                 type="button"
-                onClick={() => { setSelectedRes(null); setEditSelectedGroup(null); setEditFreeTableIds([]); }}
+                onClick={() => { setSelectedRes(null); setEditSelectedGroup(null); setEditFreeTableIds([]); setEditNotes(''); }}
                 className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition"
                 style={{ cursor: 'pointer' }}
               >
@@ -3178,10 +3183,14 @@ export default function AdminPage() {
               )}
 
               <div>
-                <label className="text-[10px] text-slate-500 font-bold block mb-1">📝 オンラインコメント欄</label>
-                <div className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-medium whitespace-pre-wrap leading-relaxed min-h-[60px]">
-                  {getCleanNotes(selectedRes.notes) ? getCleanNotes(selectedRes.notes) : <span className="text-slate-600 italic font-normal">コメントはありません</span>}
-                </div>
+                <label className="text-[10px] text-slate-500 font-bold block mb-1">📝 備考（スタッフ編集可）</label>
+                <textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  rows={3}
+                  placeholder="コメントはありません"
+                  className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-medium leading-relaxed placeholder:text-slate-600 placeholder:italic placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                />
               </div>
             </div>
             <div className="bg-slate-950/60 p-3 px-4 border-t border-slate-800 flex justify-between items-center shrink-0">
@@ -3200,7 +3209,7 @@ export default function AdminPage() {
               <div className="flex space-x-2">
                 <button 
                   type="button" 
-                  onClick={() => { setSelectedRes(null); setEditSelectedGroup(null); setEditFreeTableIds([]); }} 
+                  onClick={() => { setSelectedRes(null); setEditSelectedGroup(null); setEditFreeTableIds([]); setEditNotes(''); }} 
                   className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 rounded-lg transition"
                   style={{ cursor: 'pointer' }}
                 >
@@ -3609,7 +3618,7 @@ export default function AdminPage() {
                   return (
                     <tr 
                       key={r.id} 
-                      onClick={() => { setSelectedRes(r); setEditTime(formatShortTime(r.time)); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); setEditFreeTableIds(Number(r.guests) >= 9 ? getReservationTableIds(r) : []); }} 
+                      onClick={() => { setSelectedRes(r); setEditTime(formatShortTime(r.time)); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); setEditFreeTableIds(Number(r.guests) >= 9 ? getReservationTableIds(r) : []); setEditNotes(getCleanNotes(r.notes)); }} 
                       className="border-b transition cursor-pointer border-slate-100 hover:bg-slate-50"
                     >
                       <td className="p-2.5 font-mono font-black text-amber-600">{r.date} {formatShortTime(r.time)}</td>
@@ -3669,6 +3678,7 @@ export default function AdminPage() {
         setEditTable={setEditTable}
         setEditSelectedGroup={setEditSelectedGroup}
         setEditFreeTableIds={setEditFreeTableIds}
+        setEditNotes={setEditNotes}
         filteredCustomerList={filteredCustomerList}
         sortedCustomerList={sortedCustomerList}
         customerSearchQuery={customerSearchQuery}
