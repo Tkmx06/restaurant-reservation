@@ -201,14 +201,20 @@ const getAdjacencyColorMap = (occupiedTables: TableStatus[]) => {
   return colorMap;
 };
 
-// 全テーブル共通：見やすいサイズ（旧rect-h-4サイズ）に統一
-const getPrimaryNumberFontSize = (_type: TableStatus['type']) => {
-  return '20px';
+// テーブル形状ごとに、主役として大きく見せる人数の文字サイズを調整
+const getPrimaryNumberFontSize = (type: TableStatus['type']) => {
+  if (type === 'counter-1') return '11px';
+  if (type === 'square-2') return '15px';
+  if (type === 'rect-h-4') return '20px';
+  return '16px'; // rect-v-4
 };
 
-// 全テーブル共通：見やすいサイズ（旧rect-h-4サイズ）に統一
-const getTimeFontSize = (_type: TableStatus['type']) => {
-  return '15px';
+// テーブル形状ごとに、幅いっぱいに見せる時間の文字サイズを調整
+const getTimeFontSize = (type: TableStatus['type']) => {
+  if (type === 'counter-1') return '9px';
+  if (type === 'square-2') return '11px';
+  if (type === 'rect-h-4') return '15px';
+  return '12px'; // rect-v-4
 };
 
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
