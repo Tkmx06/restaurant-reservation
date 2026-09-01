@@ -1166,10 +1166,6 @@ export default function AdminPage() {
   const [isCombineMode, setIsCombineMode] = useState(false); 
   const [hasMovedSignificantly, setHasMovedSignificantly] = useState(false);
 
-  // ─── QAチェック手動実行用状態 ───
-  const [isQaCheckRunning, setIsQaCheckRunning] = useState(false);
-  const [qaCheckResult, setQaCheckResult] = useState<{ passed: number; failed: number; failures: string[] } | null>(null);
-
   const initialTables: TableStatus[] = [
     { id: '51', label: '51', isOccupied: false, type: 'square-2', top: '4%', left: '44%', width: '5%' },
     { id: '52', label: '52', isOccupied: false, type: 'square-2', top: '4%', left: '50%', width: '5%' },
@@ -1966,36 +1962,6 @@ export default function AdminPage() {
     setNewOrderName('');
     setNewOrderSelectedGroup(null);
     setNewOrderFreeTableIds([]);
-  };
-
-  // ─── QAチェック手動実行 ───
-  const runQaCheckManual = async () => {
-    setIsQaCheckRunning(true);
-    setQaCheckResult(null);
-    try {
-      const res = await fetch('/api/admin/qa-check-manual', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timestamp: new Date().toISOString() }),
-      });
-      if (!res.ok) {
-        alert('QAチェック実行エラー: ' + (await res.text()));
-        setIsQaCheckRunning(false);
-        return;
-      }
-      const data = await res.json();
-      setQaCheckResult({
-        passed: data.passedChecks,
-        failed: data.failedChecks,
-        failures: data.failures || [],
-      });
-      alert(`QAチェック完了\nパス: ${data.passedChecks}/${data.totalChecks}\nエラー: ${data.failedChecks > 0 ? data.failures.join(', ') : 'なし'}`);
-    } catch (err) {
-      console.error('QAチェック実行エラー:', err);
-      alert('QAチェック実行中にエラーが発生しました');
-    } finally {
-      setIsQaCheckRunning(false);
-    }
   };
 
   const openNewOrderModal = () => {
@@ -3566,15 +3532,13 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
-          <div className="flex justify-end mt-3">
-            <button
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-full shadow font-bold transition"
-              style={{ cursor: 'pointer' }}
-            >
-              ↑ トップへ戻る
-            </button>
-          </div>
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-full shadow-lg font-bold transition"
+            style={{ cursor: 'pointer', position: 'fixed', bottom: '24px', right: '24px', zIndex: 50 }}
+          >
+            ↑ トップへ戻る
+          </button>
         </div>
       ) : (
         <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
