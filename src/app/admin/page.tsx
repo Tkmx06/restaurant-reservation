@@ -563,6 +563,7 @@ interface MobileAdminViewProps {
   setEditTable: (t: string) => void;
   setEditSelectedGroup: (g: any) => void;
   filteredCustomerList: CustomerSummary[];
+  sortedCustomerList: CustomerSummary[];
   customerSearchQuery: string;
   setCustomerSearchQuery: (q: string) => void;
   openCustomerEditModal: (c: CustomerSummary) => void;
@@ -584,7 +585,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
     isLunchTime, formatShortTime, getCleanNotes, displayTableIds,
     tables, reservations, isSelectedDateClosed,
     setSelectedRes, setEditTime, setEditGuests, setEditTable, setEditSelectedGroup,
-    filteredCustomerList, customerSearchQuery, setCustomerSearchQuery, openCustomerEditModal,
+    filteredCustomerList, sortedCustomerList, customerSearchQuery, setCustomerSearchQuery, openCustomerEditModal,
     filteredReservations,
   } = props;
 
@@ -3541,7 +3542,7 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredCustomerList.map((c, idx) => (
+                {sortedCustomerList.map((c, idx) => (
                   <tr
                     key={idx}
                     role="button"
@@ -3557,7 +3558,7 @@ export default function AdminPage() {
                     <td className="p-2.5 font-mono text-amber-600">{c.total_visits > 0 ? c.last_visit : ""}</td>
                   </tr>
                 ))}
-                {filteredCustomerList.length === 0 && (
+                {sortedCustomerList.length === 0 && (
                   <tr>
                     <td colSpan={5} className="p-4 text-center text-slate-400 italic">該当する顧客が見つかりません</td>
                   </tr>
@@ -3667,6 +3668,7 @@ export default function AdminPage() {
         setEditTable={setEditTable}
         setEditSelectedGroup={setEditSelectedGroup}
         filteredCustomerList={filteredCustomerList}
+        sortedCustomerList={sortedCustomerList}
         customerSearchQuery={customerSearchQuery}
         setCustomerSearchQuery={setCustomerSearchQuery}
         openCustomerEditModal={openCustomerEditModal}
