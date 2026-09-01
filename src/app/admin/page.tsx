@@ -880,7 +880,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
               className="w-full mb-3 p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
             />
             <div className="flex flex-col gap-2">
-              {filteredCustomerList.map((c, idx) => (
+              {sortedCustomerList.map((c, idx) => (
                 <div
                   key={idx}
                   role="button"
@@ -897,7 +897,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
                   {c.company_name && <div className="text-[10px] text-slate-600 mt-0.5">{c.company_name}</div>}
                 </div>
               ))}
-              {filteredCustomerList.length === 0 && (
+              {sortedCustomerList.length === 0 && (
                 <p className="text-xs text-slate-500 italic text-center py-10">該当する顧客が見つかりません</p>
               )}
             </div>
@@ -995,6 +995,8 @@ export default function AdminPage() {
   const [mainCalendarMonth, setMainCalendarMonth] = useState(new Date());
 
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [customerSortKey, setCustomerSortKey] = useState<'name' | 'company' | 'visits' | 'last_visit'>('name');
+  const [customerSortDir, setCustomerSortDir] = useState<'asc' | 'desc'>('asc');
 
   // ─── PC版/モバイル版の手動切り替え ───
   const [forcedView, setForcedView] = useState<'pc' | 'mobile'>('pc');
@@ -2242,6 +2244,14 @@ export default function AdminPage() {
         );
       })
     : customerList;
+  const sortedCustomerList = [...filteredCustomerList].sort((a, b) => {
+    let compare = 0;
+    if (customerSortKey === 'name') compare = a.guest_name.localeCompare(b.guest_name, 'ja');
+    else if (customerSortKey === 'company') compare = (a.company_name || '').localeCompare(b.company_name || '', 'ja');
+    else if (customerSortKey === 'visits') compare = (a.total_visits || 0) - (b.total_visits || 0);
+    else if (customerSortKey === 'last_visit') compare = (a.last_visit || '').localeCompare(b.last_visit || '');
+    return customerSortDir === 'asc' ? compare : -compare;
+  });
 
   const generateCalendarDays = (currentMonthDate: Date) => {
     const year = currentMonthDate.getFullYear();
@@ -2439,19 +2449,6 @@ export default function AdminPage() {
             style={{ cursor: 'pointer' }}
           >
             ➕ 新規予約登録
-          </button>
-          <button
-            type="button"
-            onClick={runQaCheckManual}
-            disabled={isQaCheckRunning}
-            className={`text-white text-xs font-black px-4 py-1.5 rounded-xl border transition shadow-md ${
-              isQaCheckRunning 
-                ? 'bg-slate-400 border-slate-500 cursor-not-allowed' 
-                : 'bg-orange-600 hover:bg-orange-500 border-orange-700'
-            }`}
-            style={{ cursor: isQaCheckRunning ? 'not-allowed' : 'pointer' }}
-          >
-            {isQaCheckRunning ? '⏳ チェック中...' : '🔍 QAチェック実行'}
           </button>
           <button
             type="button"
@@ -3536,11 +3533,11 @@ export default function AdminPage() {
             <table className="w-full border-collapse text-left text-xs">
               <thead>
                 <tr className="border-b text-[10px] bg-slate-100 text-slate-600 border-slate-200">
-                  <th className="p-2.5 font-bold">お客様氏名</th>
+                  <th className="p-2.5 font-bold cursor-pointer hover:bg-slate-200" onClick={() => { setCustomerSortKey('name'); setCustomerSortDir(d => d === 'asc' ? 'desc' : 'asc'); }}>お客様氏名{customerSortKey === 'name' ? (customerSortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
                   <th className="p-2.5 font-bold">メールアドレス</th>
-                  <th className="p-2.5 font-bold">会社名</th>
-                  <th className="p-2.5 font-bold text-center">来店回数</th>
-                  <th className="p-2.5 font-bold">最終来店日</th>
+                  <th className="p-2.5 font-bold cursor-pointer hover:bg-slate-200" onClick={() => { setCustomerSortKey('company'); setCustomerSortDir(d => d === 'asc' ? 'desc' : 'asc'); }}>会社名{customerSortKey === 'company' ? (customerSortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
+                  <th className="p-2.5 font-bold text-center cursor-pointer hover:bg-slate-200" onClick={() => { setCustomerSortKey('visits'); setCustomerSortDir(d => d === 'asc' ? 'desc' : 'asc'); }}>来店回数{customerSortKey === 'visits' ? (customerSortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
+                  <th className="p-2.5 font-bold cursor-pointer hover:bg-slate-200" onClick={() => { setCustomerSortKey('last_visit'); setCustomerSortDir(d => d === 'asc' ? 'desc' : 'asc'); }}>最終来店日{customerSortKey === 'last_visit' ? (customerSortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
                 </tr>
               </thead>
               <tbody>
