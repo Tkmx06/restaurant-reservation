@@ -201,20 +201,14 @@ const getAdjacencyColorMap = (occupiedTables: TableStatus[]) => {
   return colorMap;
 };
 
-// テーブル形状ごとに、主役として大きく見せる人数の文字サイズを調整
-const getPrimaryNumberFontSize = (type: TableStatus['type']) => {
-  if (type === 'counter-1') return '11px';
-  if (type === 'square-2') return '15px';
-  if (type === 'rect-h-4') return '20px';
-  return '16px'; // rect-v-4
+// 全テーブル共通：見やすいサイズ（旧rect-h-4サイズ）に統一
+const getPrimaryNumberFontSize = (_type: TableStatus['type']) => {
+  return '20px';
 };
 
-// テーブル形状ごとに、幅いっぱいに見せる時間の文字サイズを調整
-const getTimeFontSize = (type: TableStatus['type']) => {
-  if (type === 'counter-1') return '9px';
-  if (type === 'square-2') return '11px';
-  if (type === 'rect-h-4') return '15px';
-  return '12px'; // rect-v-4
+// 全テーブル共通：見やすいサイズ（旧rect-h-4サイズ）に統一
+const getTimeFontSize = (_type: TableStatus['type']) => {
+  return '15px';
 };
 
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
@@ -2551,10 +2545,10 @@ export default function AdminPage() {
                 </div>
 
                 <div className={`flex items-center gap-1 w-full rounded-lg p-1 shadow-inner ${isNightMapMode ? 'bg-[#1B1E29] border border-[#2A2E3D]' : 'bg-[#EDEBE3] border border-[#E7E5DD]'}`}>
-                  <span className={`flex-1 text-center text-[13px] font-mono font-black ${currentShift === 'lunch' ? 'text-[#A85A1E]' : 'text-slate-400'}`}>
+                  <span className={`flex-1 text-center text-[13px] font-mono font-black ${currentShift === 'lunch' ? (isNightMapMode ? 'text-slate-200' : 'text-slate-800') : 'text-slate-400'}`}>
                     {totalLunchGuests}名/{totalLunchCount}件
                   </span>
-                  <span className={`flex-1 text-center text-[13px] font-mono font-black ${currentShift === 'dinner' ? 'text-[#9698F0]' : 'text-slate-500'}`}>
+                  <span className={`flex-1 text-center text-[13px] font-mono font-black ${currentShift === 'dinner' ? (isNightMapMode ? 'text-slate-200' : 'text-slate-800') : 'text-slate-500'}`}>
                     {totalDinnerGuests}名/{totalDinnerCount}件
                   </span>
                 </div>
@@ -2609,7 +2603,7 @@ export default function AdminPage() {
                           className={`border h-8 px-1 rounded-md flex items-center transition-all text-[11px] font-black ${isNightMapMode ? 'bg-[#12141C]/40 hover:bg-blue-600/20 border-[#2A2E3D]/60 hover:border-blue-500/40' : 'bg-[#F5F4F0] hover:bg-blue-50 border-[#E7E5DD] hover:border-blue-300'}`}
                           style={{ cursor: 'pointer' }}
                         >
-                          <span className={`w-[9%] shrink-0 font-mono flex items-center ${isLunch ? 'text-[#C9803E]' : 'text-[#7376E0]'}`}>
+                          <span className={`w-[9%] shrink-0 font-mono flex items-center ${isNightMapMode ? 'text-slate-200' : 'text-slate-800'}`}>
                             {formatShortTime(r.time)}
                           </span>
                           <span className={`w-[10%] shrink-0 text-center font-mono ${isNightMapMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{r.guests}名</span>
