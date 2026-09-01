@@ -206,12 +206,9 @@ const getPrimaryNumberFontSize = (_type: TableStatus['type']) => {
   return '20px';
 };
 
-// テーブル形状ごとに、幅いっぱいに見せる時間の文字サイズを調整
-const getTimeFontSize = (type: TableStatus['type']) => {
-  if (type === 'counter-1') return '9px';
-  if (type === 'square-2') return '11px';
-  if (type === 'rect-h-4') return '15px';
-  return '12px'; // rect-v-4
+// 時刻も視認性重視で全テーブル共通サイズに統一（正方形テーブルの幅に収まる11px基準）
+const getTimeFontSize = (_type: TableStatus['type']) => {
+  return '11px';
 };
 
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
