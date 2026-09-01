@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
 
   const { data: reservations, error } = await supabase
     .from('reservations')
-    .select('id, guest_name, email, date, time, guests, cancel_token, status')
+    .select('id, guest_name, email, date, time, guests, cancel_token, status, locale')
     .eq('status', 'confirmed')
     .in('date', [localToday, localTomorrow]);
 
@@ -79,13 +79,14 @@ export async function GET(req: NextRequest) {
   const results = await Promise.all(
     targets.map(async (r) => {
       try {
-        const cancelUrl = `${base}/reservation/cancel/${r.cancel_token}?locale=de`;
+        const locale: 'de' | 'en' | 'ja' = r.locale === 'en' || r.locale === 'ja' ? r.locale : 'de';
+        const cancelUrl = `${base}/reservation/cancel/${r.cancel_token}?locale=${locale}`;
         await sendReminderEmail({
           customerName: r.guest_name,
           customerEmail: r.email,
           bookingDate: `${r.date} ${String(r.time).slice(0, 5)}`,
           guests: r.guests,
-          locale: 'de',
+          locale,
           cancelUrl,
         });
         return { id: r.id, ok: true };

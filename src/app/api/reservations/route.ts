@@ -199,6 +199,7 @@ export async function POST(req: NextRequest) {
         company_name: companyName,
         visit_count: visitCount,
         status: 'confirmed',
+        locale: locale || 'de',
       })
       .select()
       .single();
