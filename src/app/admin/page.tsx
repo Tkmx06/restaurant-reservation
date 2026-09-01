@@ -3557,7 +3557,7 @@ export default function AdminPage() {
                     <td className="p-2.5 font-mono text-slate-600 underline decoration-slate-200">{c.email}</td>
                     <td className="p-2.5 text-slate-500">{c.company_name || '-'}</td>
                     <td className="p-2.5 text-center font-black font-mono text-emerald-700">{c.total_visits > 0 ? c.total_visits + " 回" : ""}</td>
-                    <td className="p-2.5 font-mono text-amber-600">{c.last_visit >= "2026-09-01" ? c.last_visit : ""}</td>
+                    <td className="p-2.5 font-mono text-amber-600">{c.total_visits > 0 ? c.last_visit : ""}</td>
                   </tr>
                 ))}
                 {filteredCustomerList.length === 0 && (
