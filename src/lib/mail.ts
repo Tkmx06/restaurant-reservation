@@ -143,7 +143,7 @@ export async function sendStaffNotification({
   }
 }
 
-// 3b. 日次QAチェックで異常を検知した際のアラートメール
+// 3b. 日次QAチェックで問題を検知した際のアラートメール（問題があった時だけ届く）
 export async function sendQaAlertEmail({
   toEmail,
   failures,
@@ -157,10 +157,10 @@ export async function sendQaAlertEmail({
     await resend.emails.send({
       from: `予約システム QAチェック <${FROM_EMAIL}>`,
       to: [toEmail],
-      subject: `⚠️ 予約システムQAチェックで異常を検知（${failures.length}件）`,
+      subject: `⚠️ 予約システムQAチェック：問題があります（${failures.length}件）`,
       html: `
         <div>
-          <p style="margin: 4px 0;">${checkedAt} の自動チェックで、想定と異なる挙動が見つかりました。</p>
+          <p style="margin: 4px 0;">${checkedAt} の自動チェックで、問題が見つかりました。</p>
           <ul>
             ${failures.map((f) => `<li style="margin: 8px 0;"><strong>${f.name}</strong><br/><span style="color:#555;">${f.detail}</span></li>`).join('')}
           </ul>
@@ -170,6 +170,32 @@ export async function sendQaAlertEmail({
     });
   } catch (error) {
     console.error('QAアラートメール送信エラー:', error);
+    throw error;
+  }
+}
+
+// 3c. 日次QAチェックで問題がなかった時の完了メール（安心用・詳細なし）
+export async function sendQaOkEmail({
+  toEmail,
+  checkedAt,
+}: {
+  toEmail: string;
+  checkedAt: string;
+}) {
+  try {
+    await resend.emails.send({
+      from: `予約システム QAチェック <${FROM_EMAIL}>`,
+      to: [toEmail],
+      subject: `✅ 予約システムQAチェック：問題なし`,
+      html: `
+        <div>
+          <p style="margin: 4px 0;">${checkedAt} の自動チェックで、問題は見つかりませんでした。</p>
+          <p style="margin-top: 16px; color: #888; font-size: 12px;">このメールは /api/cron/qa-check からの自動送信です。</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('QA完了メール送信エラー:', error);
     throw error;
   }
 }

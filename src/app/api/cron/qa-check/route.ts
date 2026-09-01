@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendQaAlertEmail } from '@/lib/mail';
+import { sendQaAlertEmail, sendQaOkEmail } from '@/lib/mail';
 
 // ─── 日次の自動QAチェック ───
 // 実際の予約は一切作らず、「弾かれるべきものが正しく弾かれるか」だけを毎日確認する。
@@ -173,6 +173,15 @@ export async function GET(req: NextRequest) {
       });
     } catch (mailError) {
       console.error('QAアラートメール送信に失敗しました:', mailError);
+    }
+  } else {
+    try {
+      await sendQaOkEmail({
+        toEmail: ALERT_EMAIL,
+        checkedAt: new Date().toLocaleString('ja-JP', { timeZone: 'Europe/Berlin' }),
+      });
+    } catch (mailError) {
+      console.error('QA完了メール送信に失敗しました:', mailError);
     }
   }
 

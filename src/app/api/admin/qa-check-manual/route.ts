@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendQaAlertEmail } from '@/lib/mail';
+import { sendQaAlertEmail, sendQaOkEmail } from '@/lib/mail';
 
 // ─── 手動QAチェック実行用エンドポイント ───
 // 管理者が管理画面から QAチェックを手動実行する際に使用
@@ -152,12 +152,17 @@ export async function POST(req: NextRequest) {
     .map((c, i) => ({ ...c, ...results[i] }))
     .filter((c) => !c.ok);
 
-  // 異常があれば通知
+  // 結果を通知（問題があれば警告メール、なければ完了メール）
+  const ALERT_EMAIL = 'taka01234567890@gmail.com';
   if (failures.length > 0) {
-    const ALERT_EMAIL = 'taka01234567890@gmail.com';
     await sendQaAlertEmail({
       toEmail: ALERT_EMAIL,
       failures: failures.map(f => ({ name: f.name, detail: f.detail })),
+      checkedAt: new Date().toISOString(),
+    });
+  } else {
+    await sendQaOkEmail({
+      toEmail: ALERT_EMAIL,
       checkedAt: new Date().toISOString(),
     });
   }
