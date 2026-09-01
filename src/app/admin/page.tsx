@@ -201,12 +201,9 @@ const getAdjacencyColorMap = (occupiedTables: TableStatus[]) => {
   return colorMap;
 };
 
-// テーブル形状ごとに、主役として大きく見せる人数の文字サイズを調整
-const getPrimaryNumberFontSize = (type: TableStatus['type']) => {
-  if (type === 'counter-1') return '11px';
-  if (type === 'square-2') return '15px';
-  if (type === 'rect-h-4') return '20px';
-  return '16px'; // rect-v-4
+// 人数は視認性重視で全テーブル共通の大きめサイズに統一
+const getPrimaryNumberFontSize = (_type: TableStatus['type']) => {
+  return '20px';
 };
 
 // テーブル形状ごとに、幅いっぱいに見せる時間の文字サイズを調整
