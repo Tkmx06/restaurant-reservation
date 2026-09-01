@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendReminderEmail } from '@/lib/mail';
 
@@ -6,11 +6,6 @@ import { sendReminderEmail } from '@/lib/mail';
 // 毎日17:00(UTC)にVercelのcronから Authorization: Bearer <CRON_SECRET> 付きで叩かれる想定。
 // ・翌日の予約 → 前日リマインダーとして全件送信
 // ・当日の予約のうち、開始時刻が「今から約2時間後」のもの → 直前リマインダーとして送信
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const REMINDER_LEAD_MIN = 120; // 当日リマインダーの目安リード（分）
 const REMINDER_WINDOW_MIN = 30; // 上記リードからの許容幅（分）

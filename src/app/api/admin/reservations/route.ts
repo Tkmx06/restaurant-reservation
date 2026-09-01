@@ -1,11 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractCompanyDomain } from '@/lib/companyName';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 // ==========================================
 // 1. 予約データの取得（GET）

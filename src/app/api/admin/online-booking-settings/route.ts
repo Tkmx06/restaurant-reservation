@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import { NextRequest, NextResponse } from 'next/server';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 // 管理画面用：指定日にオンライン予約に開放されているテーブル一覧を取得
 export async function GET(req: NextRequest) {

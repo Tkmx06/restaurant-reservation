@@ -1,12 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendCustomerConfirmation, sendStaffNotification } from '@/lib/mail';
 import { extractCompanyDomain } from '@/lib/companyName';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 // ─── 画面のテーブル名からデータベースの数値IDへの変換表（二重予約チェック用） ───
 const LABEL_TO_DB_ID: Record<string, number> = {

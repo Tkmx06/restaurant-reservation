@@ -1,11 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendCancellationStaffNotification } from '@/lib/mail';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 // お客様自身が予約内容を確認するための最小限の情報取得（GET）
 export async function GET(req: NextRequest, ctx: RouteContext<'/api/reservations/cancel/[token]'>) {
