@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as csv from 'csv-parse/sync';
+import * as XLSX from 'xlsx';
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase クライアント初期化
@@ -26,14 +27,30 @@ interface ImportResult {
   errors: Array<{ row: number; error: string }>;
 }
 
-async function importQuandooCSV(filePath: string): Promise<ImportResult> {
+async function importQuandooData(filePath: string): Promise<ImportResult> {
   try {
-    // CSV ファイル読み込み
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
-    const records = csv.parse(fileContent, {
-      columns: true,
-      skip_empty_lines: true,
-    }) as QuandooRecord[];
+    let records: QuandooRecord[] = [];
+
+    // ファイル拡張子で処理方法を判定
+    const ext = filePath.toLowerCase().split('.').pop();
+
+    if (ext === 'xls' || ext === 'xlsx') {
+      // Excel ファイル読み込み
+      const workbook = XLSX.readFile(filePath);
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const rawRecords = XLSX.utils.sheet_to_json<QuandooRecord>(worksheet);
+      records = rawRecords;
+    } else if (ext === 'csv') {
+      // CSV ファイル読み込み
+      const fileContent = fs.readFileSync(filePath, 'utf-8');
+      records = csv.parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+      }) as QuandooRecord[];
+    } else {
+      throw new Error(`⚠️ サポート対象外のファイル形式: ${ext}`);
+    }
 
     console.log(`📋 ${records.length} 件の予約を読み込みました\n`);
 
@@ -114,20 +131,21 @@ async function importQuandooCSV(filePath: string): Promise<ImportResult> {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // メイン実行
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const csvPath = process.argv[2];
+const filePath = process.argv[2];
 
-if (!csvPath) {
-  console.error('❌ 使い方: npm run import-quandoo <csv-file-path>');
+if (!filePath) {
+  console.error('❌ 使い方: npm run import-quandoo <file-path>');
+  console.error('   例: npm run import-quandoo ./quandoo-export.xlsx');
   console.error('   例: npm run import-quandoo ./quandoo-export.csv');
   process.exit(1);
 }
 
-if (!fs.existsSync(csvPath)) {
-  console.error(`❌ ファイルが見つかりません: ${csvPath}`);
+if (!fs.existsSync(filePath)) {
+  console.error(`❌ ファイルが見つかりません: ${filePath}`);
   process.exit(1);
 }
 
-importQuandooCSV(csvPath)
+importQuandooData(filePath)
   .then((result) => {
     console.log('\n📊 インポート結果:');
     console.log(`✅ 成功: ${result.success} 件`);
