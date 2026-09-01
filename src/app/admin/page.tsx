@@ -3610,7 +3610,9 @@ export default function AdminPage() {
                 {[...filteredReservations].sort((a, b) => {
                   if (a.status === 'cancelled' && b.status !== 'cancelled') return 1;
                   if (a.status !== 'cancelled' && b.status === 'cancelled') return -1;
-                  return a.time.localeCompare(b.time);
+                  const aKey = `${a.date} ${a.time}`;
+                  const bKey = `${b.date} ${b.time}`;
+                  return aKey.localeCompare(bKey);
                 }).map((r) => {
                   const cleanNote = getCleanNotes(r.notes);
                   return (
