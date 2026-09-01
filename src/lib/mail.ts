@@ -123,7 +123,7 @@ export async function sendStaffNotification({
   bookingDate,
   guests,
 }: BookingEmailProps) {
-  const STAFF_EMAIL = 'tstylefrankfurt@gmail.com';
+  const STAFF_EMAIL = 'taka01234567890@gmail.com';
   try {
     await resend.emails.send({
       from: `予約通知システム <${FROM_EMAIL}>`,
@@ -181,7 +181,7 @@ export async function sendCancellationStaffNotification({
   bookingDate,
   guests,
 }: BookingEmailProps) {
-  const STAFF_EMAIL = 'tstylefrankfurt@gmail.com';
+  const STAFF_EMAIL = 'taka01234567890@gmail.com';
   try {
     await resend.emails.send({
       from: `予約通知システム <${FROM_EMAIL}>`,
@@ -197,6 +197,88 @@ export async function sendCancellationStaffNotification({
     });
   } catch (error) {
     console.error('キャンセル通知エラー:', error);
+    throw error;
+  }
+}
+
+// 4. 来店リマインダーメール（お客様向け）
+export async function sendReminderEmail({
+  customerName,
+  customerEmail,
+  bookingDate,
+  guests,
+  locale = 'de',
+  cancelUrl,
+}: BookingEmailProps) {
+  const texts = {
+    de: {
+      subject: 'Erinnerung an Ihre Reservierung',
+      greeting: `Sehr geehrte(r) ${customerName},`,
+      intro: 'Wir möchten Sie an Ihre bevorstehende Reservierung erinnern:',
+      dateLabel: 'Datum & Uhrzeit',
+      guestsLabel: 'Personenanzahl',
+      thanks: 'Wir freuen uns auf Ihren Besuch im Japanisches Bistro T-style.',
+      menuText: 'Unsere Speisekarte finden Sie hier:',
+      menuLink: 'Zur Speisekarte',
+      cancelText: 'Falls Sie Ihre Reservierung stornieren müssen, klicken Sie bitte auf den folgenden Link:',
+      cancelLink: 'Reservierung stornieren',
+    },
+    en: {
+      subject: 'Reminder: Your upcoming reservation',
+      greeting: `Dear ${customerName},`,
+      intro: 'This is a reminder of your upcoming reservation:',
+      dateLabel: 'Date & Time',
+      guestsLabel: 'Number of guests',
+      thanks: 'We look forward to welcoming you to Japanisches Bistro T-style.',
+      menuText: 'You can view our menu here:',
+      menuLink: 'View menu',
+      cancelText: 'If you need to cancel your reservation, please click the link below:',
+      cancelLink: 'Cancel reservation',
+    },
+    ja: {
+      subject: '【ご予約のリマインダー】',
+      greeting: `${customerName} 様`,
+      intro: 'まもなくご予約のお時間です。ご予約内容をご確認ください。',
+      dateLabel: '日時',
+      guestsLabel: '人数',
+      thanks: 'Japanisches Bistro T-styleへのご来店を心よりお待ちしております。',
+      menuText: 'メニューはこちらからご覧いただけます。',
+      menuLink: 'メニューを見る',
+      cancelText: 'ご予約をキャンセルされる場合は、以下のリンクよりお手続きください。',
+      cancelLink: 'ご予約をキャンセルする',
+    },
+  };
+
+  const t = texts[locale as keyof typeof texts] || texts.de;
+
+  try {
+    await resend.emails.send({
+      from: `Japanisches Bistro T-style <${FROM_EMAIL}>`,
+      to: [customerEmail],
+      subject: t.subject,
+      html: `
+        <div>
+          <h2>${t.greeting}</h2>
+          <p>${t.intro}</p>
+          <ul>
+            <li><strong>${t.dateLabel}:</strong> ${bookingDate}</li>
+            <li><strong>${t.guestsLabel}:</strong> ${guests}</li>
+          </ul>
+          <p>${t.thanks}</p>
+          <p style="margin-top: 16px;">
+            ${t.menuText}<br />
+            <a href="${MENU_URL}" style="color: #1d4ed8;">${t.menuLink}</a>
+          </p>
+          ${cancelUrl ? `
+          <p style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #555;">
+            ${t.cancelText}<br />
+            <a href="${cancelUrl}" style="color: #b91c1c;">${t.cancelLink}</a>
+          </p>` : ''}
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('リマインダーメール送信エラー:', error);
     throw error;
   }
 }
