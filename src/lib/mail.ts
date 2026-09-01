@@ -123,7 +123,7 @@ export async function sendStaffNotification({
   bookingDate,
   guests,
 }: BookingEmailProps) {
-  const STAFF_EMAIL = 'taka01234567890@gmail.com';
+  const STAFF_EMAIL = 'tstylefrankfurt@gmail.com';
   try {
     await resend.emails.send({
       from: `予約通知システム <${FROM_EMAIL}>`,
@@ -181,7 +181,7 @@ export async function sendCancellationStaffNotification({
   bookingDate,
   guests,
 }: BookingEmailProps) {
-  const STAFF_EMAIL = 'taka01234567890@gmail.com';
+  const STAFF_EMAIL = 'tstylefrankfurt@gmail.com';
   try {
     await resend.emails.send({
       from: `予約通知システム <${FROM_EMAIL}>`,
