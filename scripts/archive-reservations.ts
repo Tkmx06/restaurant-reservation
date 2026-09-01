@@ -1,5 +1,18 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { createClient } from '@supabase/supabase-js';
+
+// .env.local ファイルからEnvironment変数をロード
+const dotenvPath = path.join(process.cwd(), '.env.local');
+if (fs.existsSync(dotenvPath)) {
+  const env = fs.readFileSync(dotenvPath, 'utf-8');
+  env.split('\n').forEach(line => {
+    const match = line.match(/^([^=]+)=(.*)$/);
+    if (match) {
+      process.env[match[1].trim()] = match[2].trim();
+    }
+  });
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
