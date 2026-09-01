@@ -206,9 +206,11 @@ const getPrimaryNumberFontSize = (_type: TableStatus['type']) => {
   return '20px';
 };
 
-// 時刻も視認性重視で全テーブル共通サイズに統一（正方形テーブルの幅に収まる11px基準）
+// 時刻も視認性重視で全テーブル共通サイズに統一
+// 実測の結果、正方形テーブルの表示幅では11pxでも文字がわずかに欠けるため、
+// 確実に収まる9pxを全テーブル共通サイズとする
 const getTimeFontSize = (_type: TableStatus['type']) => {
-  return '11px';
+  return '9px';
 };
 
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
@@ -2708,14 +2710,16 @@ export default function AdminPage() {
                       }}
                     >
                       {t.isOccupied && attachedRes ? (
-                        <div className="relative w-full h-full flex flex-col items-center justify-between pointer-events-none select-none px-px py-0.5">
-                          <span className="font-mono font-black text-white leading-none w-full text-center whitespace-nowrap" style={{ fontSize: getTimeFontSize(t.type) }}>
-                            {formatShortTime(attachedRes.time)}
-                          </span>
-                          <span className="font-black text-white leading-none" style={{ fontSize: getPrimaryNumberFontSize(t.type) }}>
-                            {guestCountForTable}
-                          </span>
-                        </div>
+                        isSecondaryOfCombo ? null : (
+                          <div className="relative w-full h-full flex flex-col items-center justify-between pointer-events-none select-none px-px py-0.5">
+                            <span className="font-mono font-black text-white leading-none w-full text-center whitespace-nowrap" style={{ fontSize: getTimeFontSize(t.type) }}>
+                              {formatShortTime(attachedRes.time)}
+                            </span>
+                            <span className="font-black text-white leading-none" style={{ fontSize: getPrimaryNumberFontSize(t.type) }}>
+                              {guestCountForTable}
+                            </span>
+                          </div>
+                        )
                       ) : (
                         <span className="font-black text-xs tracking-tight pointer-events-none select-none">{t.label}</span>
                       )}
