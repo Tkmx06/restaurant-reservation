@@ -203,14 +203,14 @@ const getAdjacencyColorMap = (occupiedTables: TableStatus[]) => {
 
 // 人数は視認性重視で全テーブル共通の大きめサイズに統一
 const getPrimaryNumberFontSize = (_type: TableStatus['type']) => {
-  return '20px';
+  return '24px';
 };
 
 // 時刻も視認性重視で全テーブル共通サイズに統一
 // 以前は正方形テーブルの表示幅で11pxだと文字がわずかに欠けていたため9pxにしていたが、
 // タブレット操作時の視認性を優先して11pxに引き上げ。欠けが再発する場合はここを調整する。
 const getTimeFontSize = (_type: TableStatus['type']) => {
-  return '11px';
+  return '14px';
 };
 
 // ⚠️ 修正: 削除されてしまっていた getTodayString を復元
@@ -354,7 +354,7 @@ const renderGroupSelector = (
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-[12px] text-slate-400 font-bold">
+        <label className="text-[16px] text-slate-400 font-bold">
           🗺️ テーブル選択{' '}
           <span className="text-amber-400">
             ({guestsStr}名{isFreeMode ? ' · 自由複数選択' : ' · おすすめ席'})
@@ -364,7 +364,7 @@ const renderGroupSelector = (
           <button
             type="button"
             onClick={() => onToggleFreeTable?.('__clear__')}
-            className="text-[12px] text-slate-400 hover:text-rose-400 font-bold underline"
+            className="text-[16px] text-slate-400 hover:text-rose-400 font-bold underline"
             style={{ cursor: 'pointer' }}
           >
             全解除
@@ -442,14 +442,14 @@ const renderGroupSelector = (
 
         <div className="absolute bottom-1 left-1 flex items-center gap-2 pointer-events-none select-none">
           {!isFreeMode && (
-            <span className="flex items-center gap-0.5 text-[9px] text-slate-500 font-bold">
+            <span className="flex items-center gap-0.5 text-[13px] text-slate-500 font-bold">
               <span style={{width:8,height:8,borderRadius:2,background:'#172554',border:'1px solid #3b82f6',display:'inline-block'}} />推奨
             </span>
           )}
-          <span className="flex items-center gap-0.5 text-[9px] text-slate-500 font-bold">
+          <span className="flex items-center gap-0.5 text-[13px] text-slate-500 font-bold">
             <span style={{width:8,height:8,borderRadius:2,background:'linear-gradient(135deg,#059669,#0d9488)',border:'1px solid #34d399',display:'inline-block'}} />選択中
           </span>
-          <span className="flex items-center gap-0.5 text-[9px] text-slate-500 font-bold">
+          <span className="flex items-center gap-0.5 text-[13px] text-slate-500 font-bold">
             <span style={{width:8,height:8,borderRadius:2,background:'#7f1d1d',border:'1px solid #991b1b',display:'inline-block'}} />埋まり
           </span>
         </div>
@@ -458,17 +458,17 @@ const renderGroupSelector = (
       {isFreeMode && (
         <div className="mt-1.5 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 min-h-[28px]">
           {freeSelectedSet.size === 0 ? (
-            <span className="text-[12px] text-slate-600 font-bold">テーブルをタップして選択してください</span>
+            <span className="text-[16px] text-slate-600 font-bold">テーブルをタップして選択してください</span>
           ) : (
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[12px] text-emerald-400 font-black">✓ 選択中:</span>
+              <span className="text-[16px] text-emerald-400 font-black">✓ 選択中:</span>
               {[...freeSelectedSet].map(id => (
                 <span
                   key={id}
                   role="button"
                   tabIndex={0}
                   onClick={() => onToggleFreeTable?.(id)}
-                  className="text-[12px] font-black font-mono bg-emerald-800/60 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded cursor-pointer hover:bg-rose-900/60 hover:text-rose-300 hover:border-rose-700 transition-all select-none touch-manipulation"
+                  className="text-[16px] font-black font-mono bg-emerald-800/60 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded cursor-pointer hover:bg-rose-900/60 hover:text-rose-300 hover:border-rose-700 transition-all select-none touch-manipulation"
                   style={{ cursor: 'pointer' }}
                   title="クリックで解除"
                 >
@@ -482,14 +482,14 @@ const renderGroupSelector = (
 
       {!isFreeMode && selectedGroup && (
         <div className="mt-1.5 bg-emerald-950/40 border border-emerald-800/60 rounded-lg px-3 py-1.5 flex items-center justify-between">
-          <span className="text-[13px] font-black text-emerald-300">
+          <span className="text-[17px] font-black text-emerald-300">
             ✓ {selectedGroup.label}
             <span className="text-emerald-500 font-medium ml-1">— {selectedGroup.description}</span>
           </span>
           <button 
             type="button" 
             onClick={() => onSelectGroup(null)}
-            className="text-[12px] text-slate-400 hover:text-rose-400 font-bold underline ml-2"
+            className="text-[16px] text-slate-400 hover:text-rose-400 font-bold underline ml-2"
             style={{ cursor: 'pointer' }}
           >
             解除
@@ -499,11 +499,11 @@ const renderGroupSelector = (
 
       {!isFreeMode && !selectedGroup && (
         <div className="mt-1.5 border-t border-slate-800 pt-1.5">
-          <div className="text-[12px] text-slate-600 font-bold mb-1">▾ 推奨外のテーブルを個別指定</div>
+          <div className="text-[16px] text-slate-600 font-bold mb-1">▾ 推奨外のテーブルを個別指定</div>
           <select
             value={selectedSingleTable}
             onChange={(e) => onSelectSingleTable(e.target.value)}
-            className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-blue-400 font-bold cursor-pointer font-mono text-sm"
+            className="w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-blue-400 font-bold cursor-pointer font-mono text-lg"
             style={{ cursor: 'pointer' }}
           >
             {sortedTableIds.map(id => {
@@ -637,19 +637,19 @@ function MobileAdminView(props: MobileAdminViewProps) {
       <div className="shrink-0 px-4 pt-3.5 pb-3 bg-slate-900 border-b border-slate-800">
         <div className="flex items-center gap-2 mb-2.5">
           <div className="flex-1 flex items-center justify-between">
-          <button onClick={() => changeDate(-1)} style={{ cursor: 'pointer' }} className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-lg">◀</button>
+          <button onClick={() => changeDate(-1)} style={{ cursor: 'pointer' }} className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-2xl">◀</button>
           <div className="flex flex-col items-center">
-            <span className="text-[17px] font-black text-white">{formatPureDate(selectedDate)}</span>
-            <span className="text-[12px] font-extrabold text-emerald-400">{getDateTopLabel(selectedDate) || ' '}</span>
+            <span className="text-[21px] font-black text-white">{formatPureDate(selectedDate)}</span>
+            <span className="text-[16px] font-extrabold text-emerald-400">{getDateTopLabel(selectedDate) || ' '}</span>
           </div>
-          <button onClick={() => changeDate(1)} style={{ cursor: 'pointer' }} className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-lg">▶</button>
+          <button onClick={() => changeDate(1)} style={{ cursor: 'pointer' }} className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-2xl">▶</button>
           </div>
           <div className="relative w-10 h-10 shrink-0">
             <button
               type="button"
               onClick={() => { setMobileCalendarMonth(new Date(selectedDate + 'T00:00:00')); setShowMobileCalendarPopup(!showMobileCalendarPopup); }}
               style={{ cursor: 'pointer' }}
-              className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg"
+              className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-2xl"
             >
               📅
             </button>
@@ -662,21 +662,21 @@ function MobileAdminView(props: MobileAdminViewProps) {
                       type="button"
                       onClick={() => { const d = new Date(mobileCalendarMonth); d.setMonth(d.getMonth() - 1); setMobileCalendarMonth(d); }}
                       style={{ cursor: 'pointer' }}
-                      className="text-slate-400 hover:text-white px-1 text-sm font-bold"
+                      className="text-slate-400 hover:text-white px-1 text-lg font-bold"
                     >
                       &lt;
                     </button>
-                    <span className="font-black text-sm text-amber-400">{mobileCalendarMonth.getFullYear()}年 {mobileCalendarMonth.getMonth() + 1}月</span>
+                    <span className="font-black text-lg text-amber-400">{mobileCalendarMonth.getFullYear()}年 {mobileCalendarMonth.getMonth() + 1}月</span>
                     <button
                       type="button"
                       onClick={() => { const d = new Date(mobileCalendarMonth); d.setMonth(d.getMonth() + 1); setMobileCalendarMonth(d); }}
                       style={{ cursor: 'pointer' }}
-                      className="text-slate-400 hover:text-white px-1 text-sm font-bold"
+                      className="text-slate-400 hover:text-white px-1 text-lg font-bold"
                     >
                       &gt;
                     </button>
                   </div>
-                  <div className="grid grid-cols-7 gap-1 text-center font-bold text-[11px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
+                  <div className="grid grid-cols-7 gap-1 text-center font-bold text-[15px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
                     <span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span>
                   </div>
                   <div className="grid grid-cols-7 gap-1">
@@ -689,7 +689,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
                           key={dayObj.dateStr}
                           onClick={() => { setSelectedDate(dayObj.dateStr); setShowMobileCalendarPopup(false); }}
                           style={{ cursor: 'pointer' }}
-                          className={`h-7 rounded text-[12px] font-bold flex items-center justify-center ${
+                          className={`h-7 rounded text-[16px] font-bold flex items-center justify-center ${
                             isSelected
                               ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-950 font-black'
                               : dayObj.isClosed
@@ -714,14 +714,14 @@ function MobileAdminView(props: MobileAdminViewProps) {
               disabled={!isSelectedDateLunchAllowed}
               onClick={() => setCurrentShift('lunch')}
               style={{ cursor: isSelectedDateLunchAllowed ? 'pointer' : 'not-allowed' }}
-              className={`flex-1 text-center py-2 rounded-lg text-sm font-black transition ${!isSelectedDateLunchAllowed ? 'opacity-30 text-slate-500' : currentShift === 'lunch' ? 'bg-gradient-to-b from-[#E6A05E] to-[#C9803E] text-[#2A1B0E]' : 'text-slate-400'}`}
+              className={`flex-1 text-center py-2 rounded-lg text-lg font-black transition ${!isSelectedDateLunchAllowed ? 'opacity-30 text-slate-500' : currentShift === 'lunch' ? 'bg-gradient-to-b from-[#E6A05E] to-[#C9803E] text-[#2A1B0E]' : 'text-slate-400'}`}
             >
               ☀️ 昼
             </button>
             <button
               onClick={() => setCurrentShift('dinner')}
               style={{ cursor: 'pointer' }}
-              className={`flex-1 text-center py-2 rounded-lg text-sm font-black transition ${currentShift === 'dinner' ? 'bg-gradient-to-b from-[#7376E0] to-[#5457C9] text-white' : 'text-slate-400'}`}
+              className={`flex-1 text-center py-2 rounded-lg text-lg font-black transition ${currentShift === 'dinner' ? 'bg-gradient-to-b from-[#7376E0] to-[#5457C9] text-white' : 'text-slate-400'}`}
             >
               🌙 夜
             </button>
@@ -729,20 +729,20 @@ function MobileAdminView(props: MobileAdminViewProps) {
         )}
 
         <div className="flex items-center gap-1.5">
-          <button onClick={handleGoToToday} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-white text-slate-700 text-[13px] font-black flex items-center justify-center gap-1">🏠 今日</button>
-          <button onClick={() => setShowBusinessDaysModal(true)} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-slate-700 text-slate-100 text-[13px] font-black flex items-center justify-center gap-1">📅 営業日</button>
-          <button onClick={openNewOrderModal} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-emerald-950 text-[13px] font-black flex items-center justify-center gap-1">➕ 新規予約</button>
+          <button onClick={handleGoToToday} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-white text-slate-700 text-[17px] font-black flex items-center justify-center gap-1">🏠 今日</button>
+          <button onClick={() => setShowBusinessDaysModal(true)} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-slate-700 text-slate-100 text-[17px] font-black flex items-center justify-center gap-1">📅 営業日</button>
+          <button onClick={openNewOrderModal} style={{ cursor: 'pointer' }} className="flex-1 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-emerald-950 text-[17px] font-black flex items-center justify-center gap-1">➕ 新規予約</button>
         </div>
 
         <div className="flex justify-end items-center gap-1.5 mt-2">
           <button
             onClick={() => { setOnlineEditMode(v => !v); setMobileTab('floor'); }}
             style={{ cursor: 'pointer' }}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-black ${onlineEditMode ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[16px] font-black ${onlineEditMode ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300'}`}
           >
             {onlineEditMode ? '✅ 編集を終了' : '🔒 オフライン'}
           </button>
-          <button onClick={toggleForcedView} style={{ cursor: 'pointer' }} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 text-[12px] font-black">
+          <button onClick={toggleForcedView} style={{ cursor: 'pointer' }} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 text-[16px] font-black">
             💻 PC
           </button>
         </div>
@@ -754,13 +754,13 @@ function MobileAdminView(props: MobileAdminViewProps) {
         {mobileTab === 'list' && (
           <div className="p-4">
             <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[15px] font-black text-slate-100">{currentShift === 'lunch' ? '昼' : '夜'}の予約</span>
-              <span className="text-[13px] font-black bg-slate-700 text-white px-2.5 py-0.5 rounded-full">{totalCount}件 / {totalGuests}名</span>
+              <span className="text-[19px] font-black text-slate-100">{currentShift === 'lunch' ? '昼' : '夜'}の予約</span>
+              <span className="text-[17px] font-black bg-slate-700 text-white px-2.5 py-0.5 rounded-full">{totalCount}件 / {totalGuests}名</span>
             </div>
             {isSelectedDateClosed ? (
-              <p className="text-sm text-slate-500 italic text-center py-10">この日は定休日です</p>
+              <p className="text-lg text-slate-500 italic text-center py-10">この日は定休日です</p>
             ) : displaySideReservations.length === 0 ? (
-              <p className="text-sm text-slate-500 italic text-center py-10">この時間帯に予約はありません</p>
+              <p className="text-lg text-slate-500 italic text-center py-10">この時間帯に予約はありません</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {displaySideReservations.map((r) => {
@@ -776,14 +776,14 @@ function MobileAdminView(props: MobileAdminViewProps) {
                       className={`flex items-center gap-3 bg-slate-900 border border-slate-800 border-l-4 ${accent} rounded-xl px-3.5 py-3`}
                     >
                       <div className="flex flex-col items-start shrink-0 w-11">
-                        <span className="text-[15px] font-mono font-black text-slate-100">{formatShortTime(r.time)}</span>
-                        <span className="text-[11px] font-extrabold text-slate-500">{isLunchTime(r.time) ? '昼' : '夜'}</span>
+                        <span className="text-[19px] font-mono font-black text-slate-100">{formatShortTime(r.time)}</span>
+                        <span className="text-[15px] font-extrabold text-slate-500">{isLunchTime(r.time) ? '昼' : '夜'}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-base font-extrabold text-white truncate">{r.guest_name}</div>
-                        <div className="text-[12px] font-bold text-slate-500 mt-0.5">{r.guests}名</div>
+                        <div className="text-xl font-extrabold text-white truncate">{r.guest_name}</div>
+                        <div className="text-[16px] font-bold text-slate-500 mt-0.5">{r.guests}名</div>
                       </div>
-                      <span className={`shrink-0 text-[13px] font-black px-2.5 py-1 rounded-full bg-gradient-to-br ${colorClasses.split(' ').slice(0, 2).join(' ')} text-white`}>
+                      <span className={`shrink-0 text-[17px] font-black px-2.5 py-1 rounded-full bg-gradient-to-br ${colorClasses.split(' ').slice(0, 2).join(' ')} text-white`}>
                         {displayTableIds(r)}
                       </span>
                     </div>
@@ -797,9 +797,9 @@ function MobileAdminView(props: MobileAdminViewProps) {
         {mobileTab === 'floor' && (
           <div className="p-4">
             {onlineEditMode && (
-              <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-700 text-[12px] text-emerald-300 font-bold flex items-center justify-between gap-2">
+              <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-950/60 border border-emerald-700 text-[16px] text-emerald-300 font-bold flex items-center justify-between gap-2">
                 <span>🔓🔒 {formatPureDate(selectedDate)} の常連様テーブルをタップして切替</span>
-                <button type="button" onClick={() => setOnlineEditMode(false)} className="shrink-0 bg-emerald-600 text-white text-[12px] font-black px-2 py-1 rounded-lg" style={{ cursor: 'pointer' }}>
+                <button type="button" onClick={() => setOnlineEditMode(false)} className="shrink-0 bg-emerald-600 text-white text-[16px] font-black px-2 py-1 rounded-lg" style={{ cursor: 'pointer' }}>
                   完了
                 </button>
               </div>
@@ -808,12 +808,12 @@ function MobileAdminView(props: MobileAdminViewProps) {
               {GUEST_COUNT_LEGEND.map((g) => (
                 <div key={g.label} className="flex items-center gap-1">
                   <span className={`w-2.5 h-2.5 rounded-full ${g.swatch}`} />
-                  <span className="text-[12px] font-bold text-slate-400">{g.label}</span>
+                  <span className="text-[16px] font-bold text-slate-400">{g.label}</span>
                 </div>
               ))}
             </div>
             {isSelectedDateClosed && !onlineEditMode ? (
-              <p className="text-sm text-slate-500 italic text-center py-10">この日は定休日です</p>
+              <p className="text-lg text-slate-500 italic text-center py-10">この日は定休日です</p>
             ) : (
               MOBILE_FLOOR_ZONES.map((zoneIds, zi) => (
                 <div key={zi} className="grid grid-cols-4 gap-2 mb-3.5">
@@ -826,7 +826,7 @@ function MobileAdminView(props: MobileAdminViewProps) {
                       if (!isSpecial) {
                         return (
                           <div key={tid} className="aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5 border bg-slate-900 border-slate-800 opacity-25">
-                            <span className="text-sm font-black text-slate-600">{t.label}</span>
+                            <span className="text-lg font-black text-slate-600">{t.label}</span>
                           </div>
                         );
                       }
@@ -843,8 +843,8 @@ function MobileAdminView(props: MobileAdminViewProps) {
                             isOpen ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 border-emerald-700' : 'bg-gradient-to-br from-slate-600 to-slate-800 border-slate-900'
                           } ${isSaving ? 'opacity-50' : ''}`}
                         >
-                          {!isOpen && <span className="text-base leading-none">🔒</span>}
-                          <span className="text-sm font-black text-white">{t.label}</span>
+                          {!isOpen && <span className="text-xl leading-none">🔒</span>}
+                          <span className="text-lg font-black text-white">{t.label}</span>
                         </div>
                       );
                     }
@@ -864,8 +864,8 @@ function MobileAdminView(props: MobileAdminViewProps) {
                         style={{ cursor: attachedRes ? 'pointer' : 'default' }}
                         className={`aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5 border ${attachedRes ? `bg-gradient-to-br ${colorClasses.split(' ').slice(0, 2).join(' ')} border-transparent` : 'bg-slate-900 border-slate-800'}`}
                       >
-                        <span className={`text-sm font-black ${attachedRes ? 'text-white' : 'text-slate-600'}`}>{t.label}</span>
-                        <span className={`text-[10px] font-extrabold ${attachedRes ? 'text-white/85' : 'text-slate-600'}`}>{attachedRes ? `${attachedRes.guests}名` : '空席'}</span>
+                        <span className={`text-lg font-black ${attachedRes ? 'text-white' : 'text-slate-600'}`}>{t.label}</span>
+                        <span className={`text-[14px] font-extrabold ${attachedRes ? 'text-white/85' : 'text-slate-600'}`}>{attachedRes ? `${attachedRes.guests}名` : '空席'}</span>
                       </div>
                     );
                   })}
@@ -878,15 +878,15 @@ function MobileAdminView(props: MobileAdminViewProps) {
         {mobileTab === 'customers' && (
           <div className="p-4">
             <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[15px] font-black text-slate-100">👥 顧客名簿</span>
-              <span className="text-[13px] font-black bg-slate-700 text-white px-2.5 py-0.5 rounded-full">{filteredCustomerList.length}名</span>
+              <span className="text-[19px] font-black text-slate-100">👥 顧客名簿</span>
+              <span className="text-[17px] font-black bg-slate-700 text-white px-2.5 py-0.5 rounded-full">{filteredCustomerList.length}名</span>
             </div>
             <input
               type="text"
               value={customerSearchQuery}
               onChange={(e) => setCustomerSearchQuery(e.target.value)}
               placeholder="🔍 名前・会社名・メールアドレスで検索"
-              className="w-full mb-3 p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              className="w-full mb-3 p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
             />
             <div className="flex flex-col gap-2">
               {sortedCustomerList.map((c, idx) => (
@@ -899,15 +899,15 @@ function MobileAdminView(props: MobileAdminViewProps) {
                   className="bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-3"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-base font-extrabold text-white">{c.guest_name}</span>
-                    <span className="text-[12px] font-black font-mono bg-slate-800 text-emerald-400 px-2 py-0.5 rounded-full">{c.total_visits}回</span>
+                    <span className="text-xl font-extrabold text-white">{c.guest_name}</span>
+                    <span className="text-[16px] font-black font-mono bg-slate-800 text-emerald-400 px-2 py-0.5 rounded-full">{c.total_visits}回</span>
                   </div>
-                  <div className="text-[13px] font-mono text-slate-500 truncate">{c.email}</div>
-                  {c.company_name && <div className="text-[12px] text-slate-600 mt-0.5">{c.company_name}</div>}
+                  <div className="text-[17px] font-mono text-slate-500 truncate">{c.email}</div>
+                  {c.company_name && <div className="text-[16px] text-slate-600 mt-0.5">{c.company_name}</div>}
                 </div>
               ))}
               {sortedCustomerList.length === 0 && (
-                <p className="text-sm text-slate-500 italic text-center py-10">該当する顧客が見つかりません</p>
+                <p className="text-lg text-slate-500 italic text-center py-10">該当する顧客が見つかりません</p>
               )}
             </div>
           </div>
@@ -916,8 +916,8 @@ function MobileAdminView(props: MobileAdminViewProps) {
         {mobileTab === 'history' && (
           <div className="p-4">
             <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[15px] font-black text-slate-100">🗄️ すべての予約履歴</span>
-              <span className="text-[13px] font-black bg-slate-700 text-white px-2.5 py-0.5 rounded-full">{filteredReservations.length}件</span>
+              <span className="text-[19px] font-black text-slate-100">🗄️ すべての予約履歴</span>
+              <span className="text-[17px] font-black bg-slate-700 text-white px-2.5 py-0.5 rounded-full">{filteredReservations.length}件</span>
             </div>
             <div className="flex flex-col gap-2">
               {[...filteredReservations].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map((r) => {
@@ -932,14 +932,14 @@ function MobileAdminView(props: MobileAdminViewProps) {
                     className="bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-3"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[13px] font-mono font-black text-amber-500">{r.date} {formatShortTime(r.time)}</span>
-                      <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${r.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{r.status}</span>
+                      <span className="text-[17px] font-mono font-black text-amber-500">{r.date} {formatShortTime(r.time)}</span>
+                      <span className={`text-[15px] font-black px-2 py-0.5 rounded-full ${r.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{r.status}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-base font-extrabold text-white truncate">{r.guest_name}</span>
-                      <span className="text-[12px] font-mono font-black bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md shrink-0">{displayTableIds(r)}</span>
+                      <span className="text-xl font-extrabold text-white truncate">{r.guest_name}</span>
+                      <span className="text-[16px] font-mono font-black bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md shrink-0">{displayTableIds(r)}</span>
                     </div>
-                    {cleanNote && <div className="text-[12px] text-amber-500/80 mt-1 truncate">{cleanNote}</div>}
+                    {cleanNote && <div className="text-[16px] text-amber-500/80 mt-1 truncate">{cleanNote}</div>}
                   </div>
                 );
               })}
@@ -960,8 +960,8 @@ function MobileAdminView(props: MobileAdminViewProps) {
               style={{ cursor: 'pointer' }}
               className="flex-1 flex flex-col items-center gap-0.5 py-1"
             >
-              <span className={`text-lg ${isActive ? '' : 'opacity-50'}`}>{item.icon}</span>
-              <span className={`text-[11px] font-black ${isActive ? 'text-emerald-400' : 'text-slate-500'}`}>{item.label}</span>
+              <span className={`text-2xl ${isActive ? '' : 'opacity-50'}`}>{item.icon}</span>
+              <span className={`text-[15px] font-black ${isActive ? 'text-emerald-400' : 'text-slate-500'}`}>{item.label}</span>
             </button>
           );
         })}
@@ -2282,7 +2282,7 @@ export default function AdminPage() {
               key={tab.key}
               role="button"
               onClick={() => { setActiveTab(tab.key); if (tab.key === 'future') setFutureListMode('upcoming'); }}
-              className={`text-sm font-black px-3 py-1.5 rounded-lg transition-all`}
+              className={`text-lg font-black px-3 py-1.5 rounded-lg transition-all`}
               style={{ cursor: 'pointer' }}
             >
               <span className={activeTab === tab.key ? 'text-blue-600 font-black' : 'text-slate-500 font-medium'}>
@@ -2294,7 +2294,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => setFutureListMode(m => m === 'past' ? 'upcoming' : 'past')}
-              className={`text-sm font-black px-3 py-1.5 rounded-lg transition-all ${futureListMode === 'past' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+              className={`text-lg font-black px-3 py-1.5 rounded-lg transition-all ${futureListMode === 'past' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
               style={{ cursor: 'pointer' }}
             >
               {futureListMode === 'past' ? '🚀 今後の予約に戻す' : '🕰️ 過去の予約'}
@@ -2305,7 +2305,7 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => setShowBusinessDaysModal(true)}
-            className="bg-slate-700 hover:bg-slate-600 text-white text-sm font-black px-4 py-1.5 rounded-xl border border-slate-800 transition shadow-md"
+            className="bg-slate-700 hover:bg-slate-600 text-white text-lg font-black px-4 py-1.5 rounded-xl border border-slate-800 transition shadow-md"
             style={{ cursor: 'pointer' }}
           >
             📅 営業日の変更
@@ -2313,7 +2313,7 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={openNewOrderModal}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-black px-4 py-1.5 rounded-xl border border-blue-700 transition shadow-md"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-lg font-black px-4 py-1.5 rounded-xl border border-blue-700 transition shadow-md"
             style={{ cursor: 'pointer' }}
           >
             ➕ 新規予約登録
@@ -2321,7 +2321,7 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={toggleForcedView}
-            className="bg-white hover:bg-slate-100 text-slate-500 text-sm font-black px-3 py-1.5 rounded-xl border border-slate-300 transition shadow-md"
+            className="bg-white hover:bg-slate-100 text-slate-500 text-lg font-black px-3 py-1.5 rounded-xl border border-slate-300 transition shadow-md"
             style={{ cursor: 'pointer' }}
           >
             📱 モバイル
@@ -2335,7 +2335,7 @@ export default function AdminPage() {
     <div className="flex items-center space-x-1.5 p-1.5 rounded-xl border shadow-inner w-full mb-3 justify-between bg-slate-200/60 border-slate-300">
       <button
         onClick={() => changeDate(-1)}
-        className="w-9 h-9 rounded-lg font-bold text-base shrink-0 shadow-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
+        className="w-9 h-9 rounded-lg font-bold text-xl shrink-0 shadow-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
         style={{ cursor: 'pointer' }}
       >
         &lt;
@@ -2359,21 +2359,21 @@ export default function AdminPage() {
               key={dateStr}
               onClick={() => setSelectedDate(dateStr)}
               title={calendarInfo?.label}
-              className={`relative px-2 py-1 text-sm font-bold rounded-lg transition-all flex flex-col items-center min-w-[85px] h-10 justify-center ${isCurrentLoopSelected ? isLoopClosed ? 'bg-white text-slate-900 ring-2 ring-slate-300' : 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 ring-2 ring-emerald-300' : isLoopClosed ? 'bg-slate-300/40 text-slate-400 opacity-40' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}`}
+              className={`relative px-2 py-1 text-lg font-bold rounded-lg transition-all flex flex-col items-center min-w-[85px] h-10 justify-center ${isCurrentLoopSelected ? isLoopClosed ? 'bg-white text-slate-900 ring-2 ring-slate-300' : 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 ring-2 ring-emerald-300' : isLoopClosed ? 'bg-slate-300/40 text-slate-400 opacity-40' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}`}
               style={{ cursor: 'pointer' }}
             >
               {calendarInfo && (
                 <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ring-1 ring-white ${calendarInfo.type === 'holiday' ? 'bg-rose-500' : 'bg-violet-500'}`} />
               )}
-              {topLabel ? <span className="text-[11px] tracking-tight font-black leading-none">{topLabel}</span> : <span className="text-[11px] h-3 block"></span>}
-              <span className="text-sm font-mono font-bold mt-0.5">{formatPureDate(dateStr)}</span>
+              {topLabel ? <span className="text-[15px] tracking-tight font-black leading-none">{topLabel}</span> : <span className="text-[15px] h-3 block"></span>}
+              <span className="text-lg font-mono font-bold mt-0.5">{formatPureDate(dateStr)}</span>
             </button>
           );
         })}
       </div>
       <button
         onClick={() => changeDate(1)}
-        className="w-9 h-9 rounded-lg font-bold text-base shrink-0 shadow-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
+        className="w-9 h-9 rounded-lg font-bold text-xl shrink-0 shadow-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
         style={{ cursor: 'pointer' }}
       >
         &gt;
@@ -2383,7 +2383,7 @@ export default function AdminPage() {
           type="button"
           onClick={() => { setMainCalendarMonth(new Date(selectedDate + 'T00:00:00')); setShowMainCalendarPopup(!showMainCalendarPopup); }}
           style={{ cursor: 'pointer' }}
-          className="w-9 h-9 rounded-lg bg-blue-600 text-white font-bold border border-blue-700 shadow-md flex items-center justify-center text-base"
+          className="w-9 h-9 rounded-lg bg-blue-600 text-white font-bold border border-blue-700 shadow-md flex items-center justify-center text-xl"
         >
           📅
         </button>
@@ -2394,23 +2394,23 @@ export default function AdminPage() {
               <div className="flex justify-between items-center mb-2">
                 <button
                   type="button"
-                  className="text-slate-400 hover:text-white px-1 text-sm font-bold"
+                  className="text-slate-400 hover:text-white px-1 text-lg font-bold"
                   onClick={() => { const d = new Date(mainCalendarMonth); d.setMonth(d.getMonth() - 1); setMainCalendarMonth(d); }}
                   style={{ cursor: 'pointer' }}
                 >
                   &lt;
                 </button>
-                <span className="font-black text-sm text-amber-400">{mainCalendarMonth.getFullYear()}年 {mainCalendarMonth.getMonth() + 1}月</span>
+                <span className="font-black text-lg text-amber-400">{mainCalendarMonth.getFullYear()}年 {mainCalendarMonth.getMonth() + 1}月</span>
                 <button
                   type="button"
-                  className="text-slate-400 hover:text-white px-1 text-sm font-bold"
+                  className="text-slate-400 hover:text-white px-1 text-lg font-bold"
                   onClick={() => { const d = new Date(mainCalendarMonth); d.setMonth(d.getMonth() + 1); setMainCalendarMonth(d); }}
                   style={{ cursor: 'pointer' }}
                 >
                   &gt;
                 </button>
               </div>
-              <div className="grid grid-cols-7 gap-1 text-center font-bold text-[12px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
+              <div className="grid grid-cols-7 gap-1 text-center font-bold text-[16px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
                 <span>月</span><span className="text-rose-500/80">火</span><span className="text-rose-500/80">水</span><span>木</span><span>金</span><span>土</span><span>日</span>
               </div>
               <div className="grid grid-cols-7 gap-1">
@@ -2424,7 +2424,7 @@ export default function AdminPage() {
                       key={dayObj.dateStr}
                       onClick={() => { setSelectedDate(dayObj.dateStr); setShowMainCalendarPopup(false); }}
                       title={[dayObj.isClosed ? '休業日' : '営業日', calendarInfo?.label].filter(Boolean).join(' / ')}
-                      className={`relative h-7 rounded text-[12px] font-bold transition flex items-center justify-center ${
+                      className={`relative h-7 rounded text-[16px] font-bold transition flex items-center justify-center ${
                         isSelected
                           ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
                           : dayObj.isClosed
@@ -2441,7 +2441,7 @@ export default function AdminPage() {
                   );
                 })}
               </div>
-              <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-800 text-[11px] text-slate-500">
+              <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-800 text-[15px] text-slate-500">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-slate-800 border border-slate-700 inline-block" />休業日</span>
                 <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block" />祝日（独）</span>
                 <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-violet-400 inline-block" />見本市</span>
@@ -2484,17 +2484,17 @@ export default function AdminPage() {
             style={{ cursor: 'pointer' }}
             className={`absolute z-[45] leading-none transition ${
               isMapFullscreen
-                ? 'top-2 right-2 text-lg text-slate-500 hover:text-slate-800'
-                : 'top-2 right-2 text-lg text-slate-400 hover:text-slate-700'
+                ? 'top-2 right-2 text-2xl text-slate-500 hover:text-slate-800'
+                : 'top-2 right-2 text-2xl text-slate-400 hover:text-slate-700'
             }`}
           >
             {isMapFullscreen ? '✕' : '⛶'}
           </button>
           {isMapFullscreen && (<>{topHeaderBar}{dateNavBar}</>)}
           {onlineEditMode && (
-            <div className="mb-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-300 text-[13px] text-emerald-800 font-bold flex items-center justify-between gap-2">
+            <div className="mb-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-300 text-[17px] text-emerald-800 font-bold flex items-center justify-between gap-2">
               <span>🔓🔒 {formatPureDate(selectedDate)} の常連様テーブルをタップしてオンライン/オフライン切替（上の日付ナビで日を変更できます）</span>
-              <button type="button" onClick={() => setOnlineEditMode(false)} className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white text-[12px] font-black px-2.5 py-1 rounded-lg" style={{ cursor: 'pointer' }}>
+              <button type="button" onClick={() => setOnlineEditMode(false)} className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white text-[16px] font-black px-2.5 py-1 rounded-lg" style={{ cursor: 'pointer' }}>
                 完了
               </button>
             </div>
@@ -2525,7 +2525,7 @@ export default function AdminPage() {
                     type="button"
                     disabled={!isSelectedDateLunchAllowed}
                     onClick={() => setCurrentShift('lunch')}
-                    className={`flex-1 text-[12px] font-black px-2 py-1 rounded-md transition-all flex items-center justify-center space-x-1 ${
+                    className={`flex-1 text-[16px] font-black px-2 py-1 rounded-md transition-all flex items-center justify-center space-x-1 ${
                       !isSelectedDateLunchAllowed
                         ? 'opacity-30 cursor-not-allowed text-slate-400'
                         : currentShift === 'lunch'
@@ -2540,7 +2540,7 @@ export default function AdminPage() {
                   <button
                     type="button"
                     onClick={() => setCurrentShift('dinner')}
-                    className={`flex-1 text-[12px] font-black px-2 py-1 rounded-md transition-all flex items-center justify-center space-x-1 ${
+                    className={`flex-1 text-[16px] font-black px-2 py-1 rounded-md transition-all flex items-center justify-center space-x-1 ${
                       currentShift === 'dinner' ? 'bg-gradient-to-b from-[#7376E0] to-[#5457C9] text-white shadow-md' : 'text-slate-600 hover:text-slate-900'
                     }`}
                     style={{ cursor: 'pointer' }}
@@ -2550,10 +2550,10 @@ export default function AdminPage() {
                 </div>
 
                 <div className={`flex items-center gap-1 w-full rounded-lg p-1 shadow-inner ${isNightMapMode ? 'bg-[#1B1E29] border border-[#2A2E3D]' : 'bg-[#EDEBE3] border border-[#E7E5DD]'}`}>
-                  <span className={`flex-1 text-center text-[15px] font-mono font-black ${currentShift === 'lunch' ? (isNightMapMode ? 'text-slate-200' : 'text-slate-800') : 'text-slate-400'}`}>
+                  <span className={`flex-1 text-center text-[19px] font-mono font-black ${currentShift === 'lunch' ? (isNightMapMode ? 'text-slate-200' : 'text-slate-800') : 'text-slate-400'}`}>
                     {totalLunchGuests}名/{totalLunchCount}件
                   </span>
-                  <span className={`flex-1 text-center text-[15px] font-mono font-black ${currentShift === 'dinner' ? (isNightMapMode ? 'text-slate-200' : 'text-slate-800') : 'text-slate-500'}`}>
+                  <span className={`flex-1 text-center text-[19px] font-mono font-black ${currentShift === 'dinner' ? (isNightMapMode ? 'text-slate-200' : 'text-slate-800') : 'text-slate-500'}`}>
                     {totalDinnerGuests}名/{totalDinnerCount}件
                   </span>
                 </div>
@@ -2564,7 +2564,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={handleGoToToday}
-                  className="flex-1 bg-white hover:bg-slate-100 text-slate-700 text-[12px] font-black rounded-lg border border-slate-300 transition shadow-md flex items-center justify-center"
+                  className="flex-1 bg-white hover:bg-slate-100 text-slate-700 text-[16px] font-black rounded-lg border border-slate-300 transition shadow-md flex items-center justify-center"
                   style={{ cursor: 'pointer' }}
                 >
                   🏠 今日
@@ -2572,7 +2572,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => setOnlineEditMode(v => !v)}
-                  className={`flex-1 text-[12px] font-black rounded-lg border transition shadow-md flex items-center justify-center ${
+                  className={`flex-1 text-[16px] font-black rounded-lg border transition shadow-md flex items-center justify-center ${
                     onlineEditMode
                       ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-700'
                       : 'bg-slate-700 hover:bg-slate-600 text-white border-slate-800'
@@ -2585,7 +2585,7 @@ export default function AdminPage() {
 
               {/* 左側予約リストエリア（全画面表示中も表示） */}
               <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-[#12141C]/40 border-[#2A2E3D]/60' : 'bg-white/80 border-[#E7E5DD]/80'}`} style={{ top: '15%', left: '2%', width: '72.5%', height: '62%' }}>
-                <div className={`flex items-center text-[12px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-[#8A8FA3] border-[#2A2E3D]' : 'text-slate-600 border-[#E7E5DD]'}`}>
+                <div className={`flex items-center text-[16px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-[#8A8FA3] border-[#2A2E3D]' : 'text-slate-600 border-[#E7E5DD]'}`}>
                   <span className="w-[9%] shrink-0">時間</span>
                   <span className="w-[10%] shrink-0 text-center">人数</span>
                   <span className="w-[32%] shrink-0 px-1 truncate">お名前</span>
@@ -2594,7 +2594,7 @@ export default function AdminPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-0.5 pr-0.5 scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
                   {displaySideReservations.length === 0 ? (
-                    <p className="text-[13px] text-slate-400 italic pt-10 text-center">この時間帯に予約はありません</p>
+                    <p className="text-[17px] text-slate-400 italic pt-10 text-center">この時間帯に予約はありません</p>
                   ) : (
                     displaySideReservations.map((r) => {
                       const cleanNote = getCleanNotes(r.notes);
@@ -2605,7 +2605,7 @@ export default function AdminPage() {
                           role="button"
                           tabIndex={0}
                           onClick={() => { setSelectedRes(r); setEditTime(formatShortTime(r.time)); setEditGuests(String(r.guests)); setEditTable(String(r.table_id)); setEditSelectedGroup(null); setEditFreeTableIds(Number(r.guests) >= 9 ? getReservationTableIds(r) : []); setEditNotes(getCleanNotes(r.notes)); }} 
-                          className={`border h-8 px-1 rounded-md flex items-center transition-all text-[13px] font-black ${isNightMapMode ? 'bg-[#12141C]/40 hover:bg-blue-600/20 border-[#2A2E3D]/60 hover:border-blue-500/40' : 'bg-[#F5F4F0] hover:bg-blue-50 border-[#E7E5DD] hover:border-blue-300'}`}
+                          className={`border h-8 px-1 rounded-md flex items-center transition-all text-[17px] font-black ${isNightMapMode ? 'bg-[#12141C]/40 hover:bg-blue-600/20 border-[#2A2E3D]/60 hover:border-blue-500/40' : 'bg-[#F5F4F0] hover:bg-blue-50 border-[#E7E5DD] hover:border-blue-300'}`}
                           style={{ cursor: 'pointer' }}
                         >
                           <span className={`w-[9%] shrink-0 font-mono flex items-center ${isNightMapMode ? 'text-slate-200' : 'text-slate-800'}`}>
@@ -2613,8 +2613,8 @@ export default function AdminPage() {
                           </span>
                           <span className={`w-[10%] shrink-0 text-center font-mono ${isNightMapMode ? 'text-emerald-400' : 'text-emerald-600'}`}>{r.guests}名</span>
                           <span className={`w-[32%] shrink-0 px-1 truncate ${isNightMapMode ? 'text-slate-200' : 'text-slate-800'}`}>{r.guest_name}</span>
-                          <span className={`w-[10%] shrink-0 text-center font-mono rounded text-[12px] py-0.5 px-0.5 truncate ${isNightMapMode ? 'bg-[#2A2E3D]/80 text-[#C7C9D6]' : 'bg-[#EDEBE3] text-[#4A4842]'}`}>{displayTableIds(r)}</span>
-                          <span className={`flex-1 px-1 truncate text-left text-[13px] ${isNightMapMode ? 'text-amber-400/90' : 'text-amber-700'}`}>{cleanNote || ''}</span>
+                          <span className={`w-[10%] shrink-0 text-center font-mono rounded text-[16px] py-0.5 px-0.5 truncate ${isNightMapMode ? 'bg-[#2A2E3D]/80 text-[#C7C9D6]' : 'bg-[#EDEBE3] text-[#4A4842]'}`}>{displayTableIds(r)}</span>
+                          <span className={`flex-1 px-1 truncate text-left text-[17px] ${isNightMapMode ? 'text-amber-400/90' : 'text-amber-700'}`}>{cleanNote || ''}</span>
                         </div>
                       );
                     })
@@ -2638,8 +2638,8 @@ export default function AdminPage() {
                   const isSpecial = SPECIAL_TABLES.includes(t.id);
                   if (!isSpecial) {
                     return (
-                      <div key={t.id} className={`absolute flex flex-col items-center justify-center border text-center text-sm opacity-25 ${shapeClass} ${radiusClass} ${isNightMapMode ? 'bg-[#1B1E29] border-[#2A2E3D] text-[#6B6F80]' : 'bg-[#EDEBE3] border-[#E7E5DD] text-[#B0AC9E]'}`} style={{ top: t.top, left: t.left, width: t.width }}>
-                        <span className="font-bold text-[12px]">{t.label}</span>
+                      <div key={t.id} className={`absolute flex flex-col items-center justify-center border text-center text-lg opacity-25 ${shapeClass} ${radiusClass} ${isNightMapMode ? 'bg-[#1B1E29] border-[#2A2E3D] text-[#6B6F80]' : 'bg-[#EDEBE3] border-[#E7E5DD] text-[#B0AC9E]'}`} style={{ top: t.top, left: t.left, width: t.width }}>
+                        <span className="font-bold text-[16px]">{t.label}</span>
                       </div>
                     );
                   }
@@ -2658,14 +2658,14 @@ export default function AdminPage() {
                       } ${isSaving ? 'opacity-50' : ''}`}
                       style={{ top: t.top, left: t.left, width: t.width, cursor: isSaving ? 'wait' : 'pointer' }}
                     >
-                      {!isOpen && <span className="text-base leading-none">🔒</span>}
-                      <span className="font-black text-[12px] mt-0.5">{t.label}</span>
+                      {!isOpen && <span className="text-xl leading-none">🔒</span>}
+                      <span className="font-black text-[16px] mt-0.5">{t.label}</span>
                     </div>
                   );
                 }
 
                 if (isSelectedDateClosed) {
-                  return <div key={t.id} className={`absolute flex flex-col items-center justify-center bg-slate-200 text-slate-400 border border-slate-300 opacity-30 text-center text-sm ${shapeClass} ${radiusClass}`} style={{ top: t.top, left: t.left, width: t.width }}><span className="font-bold text-[12px]">{t.label}</span></div>;
+                  return <div key={t.id} className={`absolute flex flex-col items-center justify-center bg-slate-200 text-slate-400 border border-slate-300 opacity-30 text-center text-lg ${shapeClass} ${radiusClass}`} style={{ top: t.top, left: t.left, width: t.width }}><span className="font-bold text-[16px]">{t.label}</span></div>;
                 }
 
                 const attachedRes = reservations.find(r => {
@@ -2724,12 +2724,12 @@ export default function AdminPage() {
                           </div>
                         )
                       ) : (
-                        <span className="font-black text-sm tracking-tight pointer-events-none select-none">{t.label}</span>
+                        <span className="font-black text-lg tracking-tight pointer-events-none select-none">{t.label}</span>
                       )}
                     </div>
                     {t.isOccupied && attachedRes && !isThisTableDragging && !isSecondaryOfCombo && (
                       <div
-                        className="absolute z-30 bg-[#1B1E29]/90 text-white text-[9px] font-bold px-1 py-px rounded truncate pointer-events-none select-none shadow"
+                        className="absolute z-30 bg-[#1B1E29]/90 text-white text-[13px] font-bold px-1 py-px rounded truncate pointer-events-none select-none shadow"
                         style={{ top: `${getNameTagTopPercent(t)}%`, left: t.left, maxWidth: '90px' }}
                       >
                         {attachedRes.guest_name}
@@ -2765,8 +2765,8 @@ export default function AdminPage() {
                       className={`absolute rounded-xl bg-gradient-to-br ${colorClasses} ring-1 pointer-events-none flex flex-col items-center justify-center leading-none shadow-lg`}
                       style={{ top: `${top}%`, left: `${left}%`, width: `${right - left}%`, height: `${bottom - top}%` }}
                     >
-                      <span className="font-mono font-black text-white leading-none" style={{ fontSize: '13px' }}>{formatShortTime(r.time)}</span>
-                      <span className="font-black text-white leading-none mt-0.5" style={{ fontSize: '17px' }}>{r.guests}</span>
+                      <span className="font-mono font-black text-white leading-none" style={{ fontSize: '16px' }}>{formatShortTime(r.time)}</span>
+                      <span className="font-black text-white leading-none mt-0.5" style={{ fontSize: '20px' }}>{r.guests}</span>
                     </div>
                   );
                 })}
@@ -2787,7 +2787,7 @@ export default function AdminPage() {
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 text-slate-100">
           <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 text-white flex justify-between items-center border-b border-slate-700">
-              <h3 className="text-base font-black tracking-tight">📅 営業日の変更</h3>
+              <h3 className="text-xl font-black tracking-tight">📅 営業日の変更</h3>
               <button
                 type="button"
                 onClick={() => { setShowBusinessDaysModal(false); setBdPendingEntries([]); setBdShowCalendarPopup(false); setBdShowEndCalendarPopup(false); }}
@@ -2798,17 +2798,17 @@ export default function AdminPage() {
               </button>
             </div>
 
-            <div className="p-4 space-y-3.5 text-sm max-h-[70vh] overflow-y-auto">
+            <div className="p-4 space-y-3.5 text-lg max-h-[70vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-2">
                 <div ref={bdStartFieldRef}>
-                  <label className="text-[12px] text-slate-400 font-bold block mb-1">開始日</label>
+                  <label className="text-[16px] text-slate-400 font-bold block mb-1">開始日</label>
                   <div className="flex space-x-1">
                     <input
                       type="date"
                       value={bdStartDate}
                       onChange={(e) => e.target.value && handleBdStartDateChange(e.target.value)}
                       onFocus={openBdStartCalendar}
-                      className="flex-1 w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono text-base"
+                      className="flex-1 w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono text-xl"
                     />
                     <button
                       type="button"
@@ -2821,7 +2821,7 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div ref={bdEndFieldRef}>
-                  <label className="text-[12px] text-slate-500 font-bold block mb-1">終了日（複数日をまとめる場合のみ変更）</label>
+                  <label className="text-[16px] text-slate-500 font-bold block mb-1">終了日（複数日をまとめる場合のみ変更）</label>
                   <div className="flex space-x-1">
                     <input
                       type="date"
@@ -2829,7 +2829,7 @@ export default function AdminPage() {
                       onChange={(e) => e.target.value && setBdEndDate(e.target.value)}
                       onFocus={openBdEndCalendar}
                       min={bdStartDate}
-                      className="flex-1 w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono text-base"
+                      className="flex-1 w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono text-xl"
                     />
                     <button
                       type="button"
@@ -2853,23 +2853,23 @@ export default function AdminPage() {
                     <div className="flex justify-between items-center mb-2">
                       <button
                         type="button"
-                        className="text-slate-400 hover:text-white px-1 text-sm font-bold"
+                        className="text-slate-400 hover:text-white px-1 text-lg font-bold"
                         onClick={() => { const d = new Date(bdCalendarMonth); d.setMonth(d.getMonth() - 1); setBdCalendarMonth(d); }}
                         style={{ cursor: 'pointer' }}
                       >
                         &lt;
                       </button>
-                      <span className="font-black text-sm text-amber-400">{bdCalendarMonth.getFullYear()}年 {bdCalendarMonth.getMonth() + 1}月</span>
+                      <span className="font-black text-lg text-amber-400">{bdCalendarMonth.getFullYear()}年 {bdCalendarMonth.getMonth() + 1}月</span>
                       <button
                         type="button"
-                        className="text-slate-400 hover:text-white px-1 text-sm font-bold"
+                        className="text-slate-400 hover:text-white px-1 text-lg font-bold"
                         onClick={() => { const d = new Date(bdCalendarMonth); d.setMonth(d.getMonth() + 1); setBdCalendarMonth(d); }}
                         style={{ cursor: 'pointer' }}
                       >
                         &gt;
                       </button>
                     </div>
-                    <div className="grid grid-cols-7 gap-1 text-center font-bold text-[12px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
+                    <div className="grid grid-cols-7 gap-1 text-center font-bold text-[16px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
                       <span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span>
                     </div>
                     <div className="grid grid-cols-7 gap-1">
@@ -2881,7 +2881,7 @@ export default function AdminPage() {
                             type="button"
                             key={dayObj.dateStr}
                             onClick={() => { handleBdStartDateChange(dayObj.dateStr); setBdShowCalendarPopup(false); }}
-                            className={`h-7 rounded text-[12px] font-bold transition flex items-center justify-center ${
+                            className={`h-7 rounded text-[16px] font-bold transition flex items-center justify-center ${
                               isSelected
                                 ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
                                 : dayObj.isClosed
@@ -2911,23 +2911,23 @@ export default function AdminPage() {
                     <div className="flex justify-between items-center mb-2">
                       <button
                         type="button"
-                        className="text-slate-400 hover:text-white px-1 text-sm font-bold"
+                        className="text-slate-400 hover:text-white px-1 text-lg font-bold"
                         onClick={() => { const d = new Date(bdEndCalendarMonth); d.setMonth(d.getMonth() - 1); setBdEndCalendarMonth(d); }}
                         style={{ cursor: 'pointer' }}
                       >
                         &lt;
                       </button>
-                      <span className="font-black text-sm text-amber-400">{bdEndCalendarMonth.getFullYear()}年 {bdEndCalendarMonth.getMonth() + 1}月</span>
+                      <span className="font-black text-lg text-amber-400">{bdEndCalendarMonth.getFullYear()}年 {bdEndCalendarMonth.getMonth() + 1}月</span>
                       <button
                         type="button"
-                        className="text-slate-400 hover:text-white px-1 text-sm font-bold"
+                        className="text-slate-400 hover:text-white px-1 text-lg font-bold"
                         onClick={() => { const d = new Date(bdEndCalendarMonth); d.setMonth(d.getMonth() + 1); setBdEndCalendarMonth(d); }}
                         style={{ cursor: 'pointer' }}
                       >
                         &gt;
                       </button>
                     </div>
-                    <div className="grid grid-cols-7 gap-1 text-center font-bold text-[12px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
+                    <div className="grid grid-cols-7 gap-1 text-center font-bold text-[16px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
                       <span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span>
                     </div>
                     <div className="grid grid-cols-7 gap-1">
@@ -2936,14 +2936,14 @@ export default function AdminPage() {
                         const isBeforeStart = dayObj.dateStr < bdStartDate;
                         const isSelected = dayObj.dateStr === bdEndDate;
                         if (isBeforeStart) {
-                          return <div key={dayObj.dateStr} className="h-7 rounded flex items-center justify-center text-slate-700 text-[12px] cursor-not-allowed">{dayObj.day}</div>;
+                          return <div key={dayObj.dateStr} className="h-7 rounded flex items-center justify-center text-slate-700 text-[16px] cursor-not-allowed">{dayObj.day}</div>;
                         }
                         return (
                           <button
                             type="button"
                             key={dayObj.dateStr}
                             onClick={() => { setBdEndDate(dayObj.dateStr); setBdShowEndCalendarPopup(false); }}
-                            className={`h-7 rounded text-[12px] font-bold transition flex items-center justify-center ${
+                            className={`h-7 rounded text-[16px] font-bold transition flex items-center justify-center ${
                               isSelected
                                 ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black'
                                 : dayObj.isClosed
@@ -2967,7 +2967,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => setBdIsClosed(false)}
-                  className={`flex-1 py-2 text-sm font-black transition ${!bdIsClosed ? 'bg-emerald-600 text-white' : 'bg-slate-950 text-slate-500'}`}
+                  className={`flex-1 py-2 text-lg font-black transition ${!bdIsClosed ? 'bg-emerald-600 text-white' : 'bg-slate-950 text-slate-500'}`}
                   style={{ cursor: 'pointer' }}
                 >
                   営業する
@@ -2975,7 +2975,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => setBdIsClosed(true)}
-                  className={`flex-1 py-2 text-sm font-black transition ${bdIsClosed ? 'bg-rose-600 text-white' : 'bg-slate-950 text-slate-500'}`}
+                  className={`flex-1 py-2 text-lg font-black transition ${bdIsClosed ? 'bg-rose-600 text-white' : 'bg-slate-950 text-slate-500'}`}
                   style={{ cursor: 'pointer' }}
                 >
                   休業する
@@ -2985,7 +2985,7 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={handleAddBdEntry}
-                className="w-full bg-blue-600/20 hover:bg-blue-600 border border-blue-800 text-blue-300 hover:text-white font-bold py-2 rounded-lg transition text-[13px]"
+                className="w-full bg-blue-600/20 hover:bg-blue-600 border border-blue-800 text-blue-300 hover:text-white font-bold py-2 rounded-lg transition text-[17px]"
                 style={{ cursor: 'pointer' }}
               >
                 ＋ この内容を追加
@@ -2993,20 +2993,20 @@ export default function AdminPage() {
 
               {bdPendingEntries.length > 0 && (
                 <div className="space-y-1.5 border-t border-slate-800 pt-3">
-                  <p className="text-[12px] text-slate-500 font-bold">保存待ちの変更</p>
+                  <p className="text-[16px] text-slate-500 font-bold">保存待ちの変更</p>
                   {bdPendingEntries.map((entry, i) => (
                     <div key={i} className="flex items-center justify-between bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5">
-                      <span className="font-mono text-[13px] text-slate-300">
+                      <span className="font-mono text-[17px] text-slate-300">
                         {entry.startDate}{entry.endDate !== entry.startDate ? ` 〜 ${entry.endDate}` : ''}
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className={`text-[12px] font-black px-1.5 py-0.5 rounded ${entry.is_closed ? 'bg-rose-900/60 text-rose-300' : 'bg-emerald-900/60 text-emerald-300'}`}>
+                        <span className={`text-[16px] font-black px-1.5 py-0.5 rounded ${entry.is_closed ? 'bg-rose-900/60 text-rose-300' : 'bg-emerald-900/60 text-emerald-300'}`}>
                           {entry.is_closed ? '休業' : '営業'}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleRemoveBdEntry(i)}
-                          className="text-slate-500 hover:text-rose-400 text-sm"
+                          className="text-slate-500 hover:text-rose-400 text-lg"
                           style={{ cursor: 'pointer' }}
                         >
                           ✕
@@ -3018,7 +3018,7 @@ export default function AdminPage() {
                     type="button"
                     onClick={handleSaveBdEntries}
                     disabled={bdSaving}
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-black py-2.5 rounded-xl transition text-sm"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-black py-2.5 rounded-xl transition text-lg"
                     style={{ cursor: 'pointer' }}
                   >
                     {bdSaving ? '保存中...' : '保存する'}
@@ -3028,18 +3028,18 @@ export default function AdminPage() {
 
               {businessDayOverrides.length > 0 && (
                 <div className="space-y-1.5 border-t border-slate-800 pt-3">
-                  <p className="text-[12px] text-slate-500 font-bold">設定済みの特別営業日</p>
+                  <p className="text-[16px] text-slate-500 font-bold">設定済みの特別営業日</p>
                   {businessDayOverrides.map((o) => (
                     <div key={o.date} className="flex items-center justify-between bg-slate-950/60 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
-                      <span className="font-mono text-[13px] text-slate-300">{o.date}</span>
+                      <span className="font-mono text-[17px] text-slate-300">{o.date}</span>
                       <div className="flex items-center gap-2">
-                        <span className={`text-[12px] font-black px-1.5 py-0.5 rounded ${o.is_closed ? 'bg-rose-900/60 text-rose-300' : 'bg-emerald-900/60 text-emerald-300'}`}>
+                        <span className={`text-[16px] font-black px-1.5 py-0.5 rounded ${o.is_closed ? 'bg-rose-900/60 text-rose-300' : 'bg-emerald-900/60 text-emerald-300'}`}>
                           {o.is_closed ? '休業' : '営業'}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleDeleteOverride(o.date)}
-                          className="text-[12px] text-slate-500 hover:text-rose-400 font-bold"
+                          className="text-[16px] text-slate-500 hover:text-rose-400 font-bold"
                           style={{ cursor: 'pointer' }}
                         >
                           解除
@@ -3062,8 +3062,8 @@ export default function AdminPage() {
           <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 text-white flex justify-between items-center border-b border-slate-700">
               <div>
-                <h3 className="text-base font-black tracking-tight">👤 顧客情報の編集</h3>
-                <p className="text-[13px] text-slate-400 mt-0.5">来店回数: {editingCustomer.total_visits}回 / 最終来店: {editingCustomer.last_visit}</p>
+                <h3 className="text-xl font-black tracking-tight">👤 顧客情報の編集</h3>
+                <p className="text-[17px] text-slate-400 mt-0.5">来店回数: {editingCustomer.total_visits}回 / 最終来店: {editingCustomer.last_visit}</p>
               </div>
               <button
                 type="button"
@@ -3074,35 +3074,35 @@ export default function AdminPage() {
                 ✕
               </button>
             </div>
-            <div className="p-4 space-y-3 text-sm max-h-[70vh] overflow-y-auto">
+            <div className="p-4 space-y-3 text-lg max-h-[70vh] overflow-y-auto">
               <div>
-                <label className="text-[12px] text-slate-400 font-bold block mb-1">お名前</label>
+                <label className="text-[16px] text-slate-400 font-bold block mb-1">お名前</label>
                 <input value={ceName} onChange={(e) => setCeName(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-bold" />
               </div>
               <div>
-                <label className="text-[12px] text-slate-400 font-bold block mb-1">メールアドレス</label>
+                <label className="text-[16px] text-slate-400 font-bold block mb-1">メールアドレス</label>
                 <input value={ceEmail} onChange={(e) => setCeEmail(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono" />
               </div>
               <div>
-                <label className="text-[12px] text-slate-400 font-bold block mb-1">電話番号</label>
+                <label className="text-[16px] text-slate-400 font-bold block mb-1">電話番号</label>
                 <input value={cePhone} onChange={(e) => setCePhone(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono" />
               </div>
               <div>
-                <label className="text-[12px] text-slate-400 font-bold block mb-1">会社名</label>
+                <label className="text-[16px] text-slate-400 font-bold block mb-1">会社名</label>
                 <input value={ceCompany} onChange={(e) => setCeCompany(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100" />
               </div>
               <div>
-                <label className="text-[12px] text-slate-500 font-bold block mb-1">備考（直近の予約に反映されます）</label>
+                <label className="text-[16px] text-slate-500 font-bold block mb-1">備考（直近の予約に反映されます）</label>
                 <textarea value={ceNotes} onChange={(e) => setCeNotes(e.target.value)} rows={3} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100" />
               </div>
-              <p className="text-[12px] text-slate-500 leading-relaxed">
+              <p className="text-[16px] text-slate-500 leading-relaxed">
                 お名前・メール・電話番号・会社名はこの方の全ての予約履歴に反映されます。備考のみ直近の予約に反映されます。
               </p>
               <button
                 type="button"
                 onClick={handleSaveCustomer}
                 disabled={ceSaving || !ceName.trim()}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-black py-2.5 rounded-xl transition text-sm"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-black py-2.5 rounded-xl transition text-lg"
                 style={{ cursor: 'pointer' }}
               >
                 {ceSaving ? '保存中...' : '保存する'}
@@ -3111,7 +3111,7 @@ export default function AdminPage() {
                 type="button"
                 onClick={handleDeleteCustomer}
                 disabled={ceSaving}
-                className="w-full bg-rose-600/10 hover:bg-rose-600 border border-rose-900 text-rose-400 hover:text-white disabled:opacity-60 font-bold py-2.5 rounded-xl transition text-sm"
+                className="w-full bg-rose-600/10 hover:bg-rose-600 border border-rose-900 text-rose-400 hover:text-white disabled:opacity-60 font-bold py-2.5 rounded-xl transition text-lg"
                 style={{ cursor: 'pointer' }}
               >
                 🗑️ この顧客の予約履歴を完全に削除
@@ -3129,8 +3129,8 @@ export default function AdminPage() {
           <form onSubmit={handleUpdateReservation} className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col">
             <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-4 text-white flex justify-between items-center border-b border-slate-700 shrink-0">
               <div>
-                <h3 className="text-base font-black tracking-tight">⚙️ 予約情報の確認・変更</h3>
-                <p className="text-[13px] text-slate-400 mt-0.5">{selectedRes.date} / {selectedRes.guest_name} 様</p>
+                <h3 className="text-xl font-black tracking-tight">⚙️ 予約情報の確認・変更</h3>
+                <p className="text-[17px] text-slate-400 mt-0.5">{selectedRes.date} / {selectedRes.guest_name} 様</p>
               </div>
               <button
                 type="button"
@@ -3141,10 +3141,10 @@ export default function AdminPage() {
                 ✕
               </button>
             </div>
-            <div className="p-4 space-y-3.5 text-sm overflow-y-auto overscroll-contain flex-1 min-h-0">
+            <div className="p-4 space-y-3.5 text-lg overflow-y-auto overscroll-contain flex-1 min-h-0">
               <div>
-                <label className="text-[12px] text-slate-400 font-bold block mb-1">⏰ 来店予約時刻</label>
-                <select value={editTime} onChange={(e) => setEditTime(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-amber-400 font-mono font-black text-base cursor-pointer focus:outline-none" style={{ cursor: 'pointer' }}>
+                <label className="text-[16px] text-slate-400 font-bold block mb-1">⏰ 来店予約時刻</label>
+                <select value={editTime} onChange={(e) => setEditTime(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-amber-400 font-mono font-black text-xl cursor-pointer focus:outline-none" style={{ cursor: 'pointer' }}>
                   {availableTimes.map(t => {
                     if (!isLunchDay(selectedRes.date) && isLunchTime(t)) return null;
                     return <option key={t} value={t}>{isLunchTime(t) ? `☀️ 昼 ${t}` : `🌙 夜 ${t}`}</option>;
@@ -3152,12 +3152,12 @@ export default function AdminPage() {
                 </select>
               </div>
               <div>
-                <label className="text-[12px] text-slate-500 font-bold block mb-1">👤 お客様氏名</label>
-                <div className="w-full p-2.5 rounded-xl bg-slate-950/50 border border-slate-800/60 text-slate-300 font-black text-base">{selectedRes.guest_name}</div>
+                <label className="text-[16px] text-slate-500 font-bold block mb-1">👤 お客様氏名</label>
+                <div className="w-full p-2.5 rounded-xl bg-slate-950/50 border border-slate-800/60 text-slate-300 font-black text-xl">{selectedRes.guest_name}</div>
               </div>
               <div>
-                <label className="text-[12px] text-slate-400 font-bold block mb-1">👥 人数</label>
-                <select value={editGuests} onChange={(e) => { setEditGuests(e.target.value); setEditSelectedGroup(null); setEditFreeTableIds([]); }} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-emerald-400 font-black text-base cursor-pointer" style={{ cursor: 'pointer' }}>
+                <label className="text-[16px] text-slate-400 font-bold block mb-1">👥 人数</label>
+                <select value={editGuests} onChange={(e) => { setEditGuests(e.target.value); setEditSelectedGroup(null); setEditFreeTableIds([]); }} className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-emerald-400 font-black text-xl cursor-pointer" style={{ cursor: 'pointer' }}>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={String(n)}>{n} 名</option>)}
                 </select>
               </div>
@@ -3184,7 +3184,7 @@ export default function AdminPage() {
               )}
 
               <div>
-                <label className="text-[12px] text-slate-500 font-bold block mb-1">📝 備考（スタッフ編集可）</label>
+                <label className="text-[16px] text-slate-500 font-bold block mb-1">📝 備考（スタッフ編集可）</label>
                 <textarea
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
@@ -3199,13 +3199,13 @@ export default function AdminPage() {
                 <button 
                   type="button" 
                   onClick={() => handleCancelReservation(selectedRes.id, selectedRes.guest_name)} 
-                  className="bg-rose-600/20 hover:bg-rose-600 border border-rose-900 text-rose-400 hover:text-white font-bold px-3 py-2 rounded-lg transition text-[13px]"
+                  className="bg-rose-600/20 hover:bg-rose-600 border border-rose-900 text-rose-400 hover:text-white font-bold px-3 py-2 rounded-lg transition text-[17px]"
                   style={{ cursor: 'pointer' }}
                 >
                   🗑️ 予約取消
                 </button>
               ) : (
-                <span className="text-rose-500 font-bold text-[13px]">⚠️ 取消済み</span>
+                <span className="text-rose-500 font-bold text-[17px]">⚠️ 取消済み</span>
               )}
               <div className="flex space-x-2">
                 <button 
@@ -3243,13 +3243,13 @@ export default function AdminPage() {
               <div>
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex justify-between items-center">
                   <div>
-                    <h3 className="text-sm font-black tracking-tight">🔢 ステップ1: ご来店人数の入力</h3>
-                    <p className="text-[12px] opacity-80 mt-0.5">最初に人数を決定してください</p>
+                    <h3 className="text-lg font-black tracking-tight">🔢 ステップ1: ご来店人数の入力</h3>
+                    <p className="text-[16px] opacity-80 mt-0.5">最初に人数を決定してください</p>
                   </div>
                   <button 
                     type="button" 
                     onClick={() => setShowNewOrderModal(false)} 
-                    className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 text-white font-bold flex items-center justify-center text-sm"
+                    className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 text-white font-bold flex items-center justify-center text-lg"
                     style={{ cursor: 'pointer' }}
                   >
                     ✕
@@ -3258,13 +3258,13 @@ export default function AdminPage() {
 
                 <div className="p-4 space-y-4">
                   <div className="bg-slate-950 rounded-xl p-3 text-right border border-slate-800 shadow-inner">
-                    <span className="text-[12px] text-slate-500 font-bold block mb-1">来店予定人数</span>
-                    <span className="text-3xl font-mono font-black text-emerald-400">{newOrderGuests}</span>
-                    <span className="text-base font-bold text-slate-400 ml-1.5">名</span>
+                    <span className="text-[16px] text-slate-500 font-bold block mb-1">来店予定人数</span>
+                    <span className="text-5xl font-mono font-black text-emerald-400">{newOrderGuests}</span>
+                    <span className="text-xl font-bold text-slate-400 ml-1.5">名</span>
                     {/* 席提案予告バナー */}
                     {parseInt(newOrderGuests, 10) >= 1 && (
                       <div className="text-left bg-amber-950/40 border border-amber-700/50 rounded-lg px-2 py-1.5 mt-2">
-                        <span className="text-[12px] text-amber-300 font-bold">🪑 {newOrderGuests}名 → 次のステップでおすすめ席を提案します</span>
+                        <span className="text-[16px] text-amber-300 font-bold">🪑 {newOrderGuests}名 → 次のステップでおすすめ席を提案します</span>
                       </div>
                     )}
                   </div>
@@ -3275,7 +3275,7 @@ export default function AdminPage() {
                         key={num}
                         type="button"
                         onClick={() => handleCalcPress(num)}
-                        className="h-14 rounded-xl bg-slate-800 text-xl font-bold font-mono active:bg-slate-700 border border-slate-700/60 shadow-md transition-all flex items-center justify-center text-slate-100"
+                        className="h-14 rounded-xl bg-slate-800 text-3xl font-bold font-mono active:bg-slate-700 border border-slate-700/60 shadow-md transition-all flex items-center justify-center text-slate-100"
                         style={{ cursor: 'pointer' }}
                       >
                         {num}
@@ -3284,7 +3284,7 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={handleCalcClear}
-                      className="h-14 rounded-xl bg-rose-950/40 text-rose-400 font-bold active:bg-rose-900/50 border border-rose-900/40 shadow-md flex items-center justify-center text-sm"
+                      className="h-14 rounded-xl bg-rose-950/40 text-rose-400 font-bold active:bg-rose-900/50 border border-rose-900/40 shadow-md flex items-center justify-center text-lg"
                       style={{ cursor: 'pointer' }}
                     >
                       クリア
@@ -3292,7 +3292,7 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={() => handleCalcPress('0')}
-                      className="h-14 rounded-xl bg-slate-800 text-xl font-bold font-mono active:bg-slate-700 border border-slate-700/60 shadow-md flex items-center justify-center text-slate-100"
+                      className="h-14 rounded-xl bg-slate-800 text-3xl font-bold font-mono active:bg-slate-700 border border-slate-700/60 shadow-md flex items-center justify-center text-slate-100"
                       style={{ cursor: 'pointer' }}
                     >
                       0
@@ -3300,7 +3300,7 @@ export default function AdminPage() {
                     <button
                       type="button"
                       onClick={handleCalcConfirm}
-                      className="h-14 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-slate-955 font-black active:from-emerald-600 shadow-lg flex items-center justify-center text-sm border border-emerald-400/20"
+                      className="h-14 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-slate-955 font-black active:from-emerald-600 shadow-lg flex items-center justify-center text-lg border border-emerald-400/20"
                       style={{ cursor: 'pointer' }}
                     >
                       確定して次へ
@@ -3315,22 +3315,22 @@ export default function AdminPage() {
               <form onSubmit={handleCreateNewOrder}>
                 <div className="bg-gradient-to-r from-indigo-600 to-teal-600 p-4 text-white flex justify-between items-center">
                   <div>
-                    <h3 className="text-sm font-black tracking-tight">📝 ステップ2: 予約詳細の入力</h3>
-                    <p className="text-[12px] opacity-80 mt-0.5">人数: {newOrderGuests} 名 (変更は戻るをクリック)</p>
+                    <h3 className="text-lg font-black tracking-tight">📝 ステップ2: 予約詳細の入力</h3>
+                    <p className="text-[16px] opacity-80 mt-0.5">人数: {newOrderGuests} 名 (変更は戻るをクリック)</p>
                   </div>
                   <button 
                     type="button" 
                     onClick={() => { setNewOrderStep('guests'); setNewOrderSelectedGroup(null); setNewOrderFreeTableIds([]); }} 
-                    className="text-[12px] bg-black/20 hover:bg-black/40 px-2.5 py-1 rounded-md font-bold text-white transition"
+                    className="text-[16px] bg-black/20 hover:bg-black/40 px-2.5 py-1 rounded-md font-bold text-white transition"
                     style={{ cursor: 'pointer' }}
                   >
                     ← 戻る
                   </button>
                 </div>
                 
-                <div className="p-4 space-y-3.5 text-sm overflow-y-auto max-h-[70vh]" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <div className="p-4 space-y-3.5 text-lg overflow-y-auto max-h-[70vh]" style={{ WebkitOverflowScrolling: 'touch' }}>
                   <div>
-                    <label className="text-[12px] text-slate-400 font-bold block mb-1">📅 予約日付</label>
+                    <label className="text-[16px] text-slate-400 font-bold block mb-1">📅 予約日付</label>
                     <div className="flex space-x-1 relative">
                       <input 
                         type="date" 
@@ -3361,29 +3361,29 @@ export default function AdminPage() {
                           <div className="flex justify-between items-center mb-2">
                             <button 
                               type="button" 
-                              className="text-slate-400 hover:text-white px-1 text-sm font-bold" 
+                              className="text-slate-400 hover:text-white px-1 text-lg font-bold" 
                               onClick={() => { const d = new Date(currentCalendarMonth); d.setMonth(d.getMonth() - 1); setCurrentCalendarMonth(d); }}
                               style={{ cursor: 'pointer' }}
                             >
                               &lt;
                             </button>
-                            <span className="font-black text-sm text-amber-400">{currentCalendarMonth.getFullYear()}年 {currentCalendarMonth.getMonth() + 1}月</span>
+                            <span className="font-black text-lg text-amber-400">{currentCalendarMonth.getFullYear()}年 {currentCalendarMonth.getMonth() + 1}月</span>
                             <button 
                               type="button" 
-                              className="text-slate-400 hover:text-white px-1 text-sm font-bold" 
+                              className="text-slate-400 hover:text-white px-1 text-lg font-bold" 
                               onClick={() => { const d = new Date(currentCalendarMonth); d.setMonth(d.getMonth() + 1); setCurrentCalendarMonth(d); }}
                               style={{ cursor: 'pointer' }}
                             >
                               &gt;
                             </button>
                           </div>
-                          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[12px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
+                          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[16px] border-b border-slate-800 pb-1 mb-1 text-slate-500">
                             <span>月</span><span className="text-red-500/80">火</span><span className="text-red-500/80">水</span><span>木</span><span>金</span><span>土</span><span>日</span>
                           </div>
                           <div className="grid grid-cols-7 gap-1">
                             {generateCalendarDays(currentCalendarMonth).map((dayObj, index) => {
                               if (!dayObj) return <div key={`empty-${index}`} />;
-                              if (dayObj.isClosed) return <div key={dayObj.dateStr} title="休業日" className="h-7 rounded flex items-center justify-center bg-slate-900/50 text-slate-700 text-[12px] line-through cursor-not-allowed font-medium">{dayObj.day}</div>;
+                              if (dayObj.isClosed) return <div key={dayObj.dateStr} title="休業日" className="h-7 rounded flex items-center justify-center bg-slate-900/50 text-slate-700 text-[16px] line-through cursor-not-allowed font-medium">{dayObj.day}</div>;
                               return (
                                 <button 
                                   type="button" 
@@ -3397,7 +3397,7 @@ export default function AdminPage() {
                                       setNewOrderTime('18:00');
                                     }
                                   }} 
-                                  className={`h-7 rounded text-[12px] font-bold transition flex items-center justify-center ${dayObj.dateStr === newOrderDate ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black' : 'bg-slate-900 hover:bg-slate-800 text-slate-200'}`}
+                                  className={`h-7 rounded text-[16px] font-bold transition flex items-center justify-center ${dayObj.dateStr === newOrderDate ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 font-black' : 'bg-slate-900 hover:bg-slate-800 text-slate-200'}`}
                                   style={{ cursor: 'pointer' }}
                                 >
                                   {dayObj.day}
@@ -3412,12 +3412,12 @@ export default function AdminPage() {
 
                   {/* 時間選択：昼夜分離グリッド */}
                   <div>
-                    <label className="text-[12px] text-slate-400 font-bold block mb-1">⏰ 来店時刻の選択</label>
+                    <label className="text-[16px] text-slate-400 font-bold block mb-1">⏰ 来店時刻の選択</label>
                     <div className="grid grid-cols-2 gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800">
                       <div className="space-y-1">
-                        <div className="text-center font-black text-[12px] text-[#E6A05E] pb-1 border-b border-slate-800/60 mb-1">☀️ 昼の部</div>
+                        <div className="text-center font-black text-[16px] text-[#E6A05E] pb-1 border-b border-slate-800/60 mb-1">☀️ 昼の部</div>
                         {!isLunchDay(newOrderDate) ? (
-                          <div className="text-[12px] text-slate-600 italic text-center pt-6">昼の営業なし</div>
+                          <div className="text-[16px] text-slate-600 italic text-center pt-6">昼の営業なし</div>
                         ) : (
                           <div className="grid grid-cols-2 gap-1">
                             {lunchTimes.map(t => {
@@ -3427,7 +3427,7 @@ export default function AdminPage() {
                                   key={t}
                                   type="button"
                                   onClick={() => { setNewOrderTime(t); setNewOrderSelectedGroup(null); setNewOrderFreeTableIds([]); }}
-                                  className={`py-1.5 rounded-md font-mono text-[13px] font-bold border transition-all ${
+                                  className={`py-1.5 rounded-md font-mono text-[17px] font-bold border transition-all ${
                                     isSelected 
                                       ? 'bg-gradient-to-b from-[#E6A05E] to-[#C9803E] text-[#2A1B0E] font-black border-[#D07C3C] shadow-md'
                                       : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
@@ -3443,7 +3443,7 @@ export default function AdminPage() {
                       </div>
 
                       <div className="space-y-1 border-l border-slate-800/80 pl-2">
-                        <div className="text-center font-black text-[12px] text-[#7376E0] pb-1 border-b border-slate-800/60 mb-1">🌙 夜の部</div>
+                        <div className="text-center font-black text-[16px] text-[#7376E0] pb-1 border-b border-slate-800/60 mb-1">🌙 夜の部</div>
                         <div className="grid grid-cols-2 gap-1">
                           {dinnerTimes.map(t => {
                             const isSelected = newOrderTime === t;
@@ -3452,7 +3452,7 @@ export default function AdminPage() {
                                 key={t}
                                 type="button"
                                 onClick={() => { setNewOrderTime(t); setNewOrderSelectedGroup(null); setNewOrderFreeTableIds([]); }}
-                                className={`py-1.5 rounded-md font-mono text-[13px] font-bold border transition-all ${
+                                className={`py-1.5 rounded-md font-mono text-[17px] font-bold border transition-all ${
                                   isSelected 
                                     ? 'bg-gradient-to-b from-[#7376E0] to-[#5457C9] text-white font-black border-[#7376E0] shadow-md'
                                     : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
@@ -3469,14 +3469,14 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="text-[12px] text-slate-400 font-bold block mb-1">👤 お客様お名前</label>
+                    <label className="text-[16px] text-slate-400 font-bold block mb-1">👤 お客様お名前</label>
                     <div className="flex gap-1.5">
                       <input type="text" placeholder="お名前を入力" value={newOrderName} onChange={(e) => setNewOrderName(e.target.value)} className="flex-1 p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-bold placeholder-slate-600" />
                       <button
                         type="button"
                         onClick={() => setNewOrderName('ウォークイン')}
                         style={{ cursor: 'pointer' }}
-                        className="shrink-0 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-100 text-[13px] font-black"
+                        className="shrink-0 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-100 text-[17px] font-black"
                       >
                         🚶 ウォークイン
                       </button>
@@ -3508,14 +3508,14 @@ export default function AdminPage() {
                   <button 
                     type="button" 
                     onClick={() => { setShowNewOrderModal(false); setShowCalendarPopup(false); setNewOrderSelectedGroup(null); setNewOrderFreeTableIds([]); }} 
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold px-4 py-2 rounded-lg transition text-sm"
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold px-4 py-2 rounded-lg transition text-lg"
                     style={{ cursor: 'pointer' }}
                   >
                     閉じる
                   </button>
                   <button 
                     type="submit" 
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2 rounded-lg transition shadow-md text-sm"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2 rounded-lg transition shadow-md text-lg"
                     style={{ cursor: 'pointer' }}
                   >
                     登録を確定
@@ -3532,21 +3532,21 @@ export default function AdminPage() {
       <div className={desktopVisibilityClass}>
       {activeTab === 'customers' ? (
         <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
-          <h2 className="text-sm font-black mb-2 flex items-center justify-between px-1">
+          <h2 className="text-lg font-black mb-2 flex items-center justify-between px-1">
             <span>👥 顧客名簿一覧</span>
-            <span className="text-[13px] bg-slate-700 px-2 py-0.5 rounded-full text-white">{filteredCustomerList.length} 名</span>
+            <span className="text-[17px] bg-slate-700 px-2 py-0.5 rounded-full text-white">{filteredCustomerList.length} 名</span>
           </h2>
           <input
             type="text"
             value={customerSearchQuery}
             onChange={(e) => setCustomerSearchQuery(e.target.value)}
             placeholder="🔍 名前・会社名・メールアドレスで検索"
-            className="w-full mb-2 p-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className="w-full mb-2 p-2.5 rounded-xl border border-slate-300 text-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
           />
           <div className="overflow-x-auto rounded-xl border bg-white border-slate-200">
-            <table className="w-full border-collapse text-left text-sm">
+            <table className="w-full border-collapse text-left text-lg">
               <thead>
-                <tr className="border-b text-[12px] bg-slate-100 text-slate-600 border-slate-200">
+                <tr className="border-b text-[16px] bg-slate-100 text-slate-600 border-slate-200">
                   <th className="p-2.5 font-bold cursor-pointer hover:bg-slate-200" onClick={() => { setCustomerSortKey('name'); setCustomerSortDir(d => d === 'asc' ? 'desc' : 'asc'); }}>お客様氏名{customerSortKey === 'name' ? (customerSortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
                   <th className="p-2.5 font-bold">メールアドレス</th>
                   <th className="p-2.5 font-bold cursor-pointer hover:bg-slate-200" onClick={() => { setCustomerSortKey('company'); setCustomerSortDir(d => d === 'asc' ? 'desc' : 'asc'); }}>会社名{customerSortKey === 'company' ? (customerSortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
@@ -3581,7 +3581,7 @@ export default function AdminPage() {
           </div>
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="text-sm bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-full shadow-lg font-bold transition"
+            className="text-lg bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-full shadow-lg font-bold transition"
             style={{ cursor: 'pointer', position: 'fixed', bottom: '24px', right: '24px', zIndex: 50 }}
           >
             ↑ トップへ戻る
@@ -3589,18 +3589,18 @@ export default function AdminPage() {
         </div>
       ) : (
         <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
-          <h2 className="text-sm font-black mb-2 flex items-center justify-between px-1">
+          <h2 className="text-lg font-black mb-2 flex items-center justify-between px-1">
             <span>
               {activeTab === 'today' && '📅 ' + formatPureDate(selectedDate) + ' の使用テーブル一覧'}
               {activeTab === 'future' && (futureListMode === 'past' ? '🕰️ 過去の予約一覧' : '🚀 今後の確定予約一覧')}
               {activeTab === 'all' && '🗄️ すべての予約履歴'}
             </span>
-            <span className="text-[13px] bg-slate-700 px-2 py-0.5 rounded-full text-white">{filteredReservations.length} 件</span>
+            <span className="text-[17px] bg-slate-700 px-2 py-0.5 rounded-full text-white">{filteredReservations.length} 件</span>
           </h2>
           <div className="overflow-x-auto rounded-xl border bg-white border-slate-200">
-            <table className="w-full border-collapse text-left text-sm">
+            <table className="w-full border-collapse text-left text-lg">
               <thead>
-                <tr className="border-b text-[12px] bg-slate-100 text-slate-600 border-slate-200">
+                <tr className="border-b text-[16px] bg-slate-100 text-slate-600 border-slate-200">
                   <th className="p-2.5 font-bold">日時</th>
                   <th className="p-2.5 font-bold">お名前</th>
                   <th className="p-2.5 font-bold">人数</th>
@@ -3627,9 +3627,9 @@ export default function AdminPage() {
                       <td className="p-2.5 font-mono font-black text-amber-600">{r.date} {formatShortTime(r.time)}</td>
                       <td className="p-2.5 font-black text-blue-600">{r.guest_name}</td>
                       <td className="p-2.5 font-black font-mono text-emerald-700">{r.guests} 名</td>
-                      <td className="p-2.5"><span className="px-2 py-1 rounded-md text-[13px] font-mono font-black border bg-slate-100 border-slate-300 text-slate-800">{displayTableIds(r)}</span></td>
-                      <td className="p-2.5 text-[13px] max-w-xs truncate text-slate-700">{cleanNote || '-'}</td>
-                      <td className="p-2.5"><span className={`px-2 py-0.5 rounded-full text-[12px] font-black ${r.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-600' : 'bg-red-500/20 text-red-500'}`}>{r.status}</span></td>
+                      <td className="p-2.5"><span className="px-2 py-1 rounded-md text-[17px] font-mono font-black border bg-slate-100 border-slate-300 text-slate-800">{displayTableIds(r)}</span></td>
+                      <td className="p-2.5 text-[17px] max-w-xs truncate text-slate-700">{cleanNote || '-'}</td>
+                      <td className="p-2.5"><span className={`px-2 py-0.5 rounded-full text-[16px] font-black ${r.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-600' : 'bg-red-500/20 text-red-500'}`}>{r.status}</span></td>
                     </tr>
                   );
                 })}
