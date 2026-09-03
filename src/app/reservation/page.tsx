@@ -326,7 +326,7 @@ export default function ReservationPage() {
 
     const maxDate = new Date();
     maxDate.setHours(0, 0, 0, 0);
-    maxDate.setMonth(maxDate.getMonth() + 4);
+    maxDate.setMonth(maxDate.getMonth() + 3);
 
     for (let day = 1; day <= totalDays; day++) {
       const dateObj = new Date(year, month, day);
@@ -337,7 +337,7 @@ export default function ReservationPage() {
         dateStr: formatDateStr(dateObj),
         isClosed: isDateClosed(formatDateStr(dateObj), dateObj.getDay()),
         isPast: dateObj < today, // 今日より過去の日付かを判定
-        isBeyondMax: dateObj > maxDate, // 本日から4ヶ月先を超える日付かを判定
+        isBeyondMax: dateObj > maxDate, // 本日から3ヶ月先を超える日付かを判定
       });
     }
     return daysArray;
@@ -625,7 +625,7 @@ export default function ReservationPage() {
                       type="button"
                       disabled={(() => {
                         const maxMonth = new Date();
-                        maxMonth.setMonth(maxMonth.getMonth() + 4);
+                        maxMonth.setMonth(maxMonth.getMonth() + 3);
                         return currentCalendarMonth.getFullYear() >= maxMonth.getFullYear() && currentCalendarMonth.getMonth() >= maxMonth.getMonth();
                       })()}
                       style={{ ...touchFix, background: 'none', border: 'none', color: '#888', fontWeight: 'bold' }}
@@ -647,7 +647,7 @@ export default function ReservationPage() {
                     {generateCalendarDays(currentCalendarMonth).map((dayObj, index) => {
                       if (!dayObj) return <div key={`empty-${index}`} />;
                       
-                      // 定休日・過去日・受付期間(4ヶ月先まで)超過の表示制限
+                      // 定休日・過去日・受付期間(3ヶ月先まで)超過の表示制限
                       if (dayObj.isClosed || dayObj.isPast || dayObj.isBeyondMax) {
                         return (
                           <div 

@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '申し訳ございません、ご希望の日は定休日です。' }, { status: 400 });
     }
 
-    // 3. 過去日・予約受付期間（本日から4ヶ月先まで）のチェック
+    // 3. 過去日・予約受付期間（本日から3ヶ月先まで）のチェック
     const localToday = new Intl.DateTimeFormat('ja-JP', {
       timeZone: 'Europe/Berlin',
       year: 'numeric',
@@ -131,11 +131,11 @@ export async function POST(req: NextRequest) {
     }
 
     const maxDateObj = new Date(`${localToday}T00:00:00`);
-    maxDateObj.setMonth(maxDateObj.getMonth() + 4);
+    maxDateObj.setMonth(maxDateObj.getMonth() + 3);
     const maxDateStr = `${maxDateObj.getFullYear()}-${String(maxDateObj.getMonth() + 1).padStart(2, '0')}-${String(maxDateObj.getDate()).padStart(2, '0')}`;
 
     if (date > maxDateStr) {
-      return NextResponse.json({ error: 'ご予約は本日から4ヶ月先までの日付でお願いいたします。' }, { status: 400 });
+      return NextResponse.json({ error: 'ご予約は本日から3ヶ月先までの日付でお願いいたします。' }, { status: 400 });
     }
 
     // 4. 二重予約防止チェック（同日・前後2時間以内に同じテーブル/結合テーブルの予約がないか）

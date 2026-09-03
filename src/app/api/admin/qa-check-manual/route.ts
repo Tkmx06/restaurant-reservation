@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   const pastDateStr = iso(addDays(now, -1));
   const farFutureDateStr = iso(addDays(now, 200));
-  const probeDateStr = iso(addDays(now, 90));
+  const probeDateStr = iso(addDays(now, 45));
 
   const baseValidBody = {
     time: '18:00',
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       },
     },
     {
-      name: '4ヶ月超え未来日の予約は拒否されるか',
+      name: '3ヶ月超え未来日の予約は拒否されるか',
       run: async () => {
         const { status, json } = await postReservation({ ...baseValidBody, date: farFutureDateStr });
         return { ok: status === 400 && !!json.error, detail: `status=${status} body=${JSON.stringify(json)}` };

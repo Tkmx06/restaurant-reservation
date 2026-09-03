@@ -2270,6 +2270,66 @@ export default function AdminPage() {
   const isNightMapMode = currentShift === 'dinner';
   const isSelectedDateLunchAllowed = isLunchDay(selectedDate);
 
+  const topHeaderBar = (
+      <div className="flex justify-between items-center mb-2 border-b pb-2 px-1 border-slate-200">
+        <div className="flex space-x-1.5">
+          {([
+            { key: 'today', label: '配置図・状況' },
+            { key: 'future', label: '今後の予約一覧' },
+            { key: 'customers', label: '👥 顧客名簿' }
+          ] as const).map((tab) => (
+            <button
+              key={tab.key}
+              role="button"
+              onClick={() => { setActiveTab(tab.key); if (tab.key === 'future') setFutureListMode('upcoming'); }}
+              className={`text-xs font-black px-3 py-1.5 rounded-lg transition-all`}
+              style={{ cursor: 'pointer' }}
+            >
+              <span className={activeTab === tab.key ? 'text-blue-600 font-black' : 'text-slate-500 font-medium'}>
+                {tab.label}
+              </span>
+            </button>
+          ))}
+          {activeTab === 'future' && (
+            <button
+              type="button"
+              onClick={() => setFutureListMode(m => m === 'past' ? 'upcoming' : 'past')}
+              className={`text-xs font-black px-3 py-1.5 rounded-lg transition-all ${futureListMode === 'past' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+              style={{ cursor: 'pointer' }}
+            >
+              {futureListMode === 'past' ? '🚀 今後の予約に戻す' : '🕰️ 過去の予約'}
+            </button>
+          )}
+        </div>
+        <div className="flex space-x-1.5">
+          <button
+            type="button"
+            onClick={() => setShowBusinessDaysModal(true)}
+            className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-slate-800 transition shadow-md"
+            style={{ cursor: 'pointer' }}
+          >
+            📅 営業日の変更
+          </button>
+          <button
+            type="button"
+            onClick={openNewOrderModal}
+            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-blue-700 transition shadow-md"
+            style={{ cursor: 'pointer' }}
+          >
+            ➕ 新規予約登録
+          </button>
+          <button
+            type="button"
+            onClick={toggleForcedView}
+            className="bg-white hover:bg-slate-100 text-slate-500 text-xs font-black px-3 py-1.5 rounded-xl border border-slate-300 transition shadow-md"
+            style={{ cursor: 'pointer' }}
+          >
+            📱 モバイル
+          </button>
+        </div>
+      </div>
+  );
+
   // 全画面表示中もここを使い回して日付切替スライダーを表示する（通常時は操作ヘッダーバーとして表示）
   const dateNavBar = (
     <div className="flex items-center space-x-1.5 p-1.5 rounded-xl border shadow-inner w-full mb-3 justify-between bg-slate-200/60 border-slate-300">
@@ -2400,64 +2460,7 @@ export default function AdminPage() {
       <div className={desktopVisibilityClass}>
       {!isMapFullscreen && (
       <>
-      {/* 👑 トップヘッダーメニュー */}
-      <div className="flex justify-between items-center mb-2 border-b pb-2 px-1 border-slate-200">
-        <div className="flex space-x-1.5">
-          {([
-            { key: 'today', label: '配置図・状況' },
-            { key: 'future', label: '今後の予約一覧' },
-            { key: 'customers', label: '👥 顧客名簿' }
-          ] as const).map((tab) => (
-            <button
-              key={tab.key}
-              role="button"
-              onClick={() => { setActiveTab(tab.key); if (tab.key === 'future') setFutureListMode('upcoming'); }}
-              className={`text-xs font-black px-3 py-1.5 rounded-lg transition-all`}
-              style={{ cursor: 'pointer' }}
-            >
-              <span className={activeTab === tab.key ? 'text-blue-600 font-black' : 'text-slate-500 font-medium'}>
-                {tab.label}
-              </span>
-            </button>
-          ))}
-          {activeTab === 'future' && (
-            <button
-              type="button"
-              onClick={() => setFutureListMode(m => m === 'past' ? 'upcoming' : 'past')}
-              className={`text-xs font-black px-3 py-1.5 rounded-lg transition-all ${futureListMode === 'past' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-              style={{ cursor: 'pointer' }}
-            >
-              {futureListMode === 'past' ? '🚀 今後の予約に戻す' : '🕰️ 過去の予約'}
-            </button>
-          )}
-        </div>
-        <div className="flex space-x-1.5">
-          <button
-            type="button"
-            onClick={() => setShowBusinessDaysModal(true)}
-            className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-slate-800 transition shadow-md"
-            style={{ cursor: 'pointer' }}
-          >
-            📅 営業日の変更
-          </button>
-          <button
-            type="button"
-            onClick={openNewOrderModal}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black px-4 py-1.5 rounded-xl border border-blue-700 transition shadow-md"
-            style={{ cursor: 'pointer' }}
-          >
-            ➕ 新規予約登録
-          </button>
-          <button
-            type="button"
-            onClick={toggleForcedView}
-            className="bg-white hover:bg-slate-100 text-slate-500 text-xs font-black px-3 py-1.5 rounded-xl border border-slate-300 transition shadow-md"
-            style={{ cursor: 'pointer' }}
-          >
-            📱 モバイル
-          </button>
-        </div>
-      </div>
+      {topHeaderBar}
 
       {/* 操作ヘッダーバー */}
       {dateNavBar}
@@ -2487,7 +2490,7 @@ export default function AdminPage() {
           >
             {isMapFullscreen ? '✕' : '⛶'}
           </button>
-          {isMapFullscreen && dateNavBar}
+          {isMapFullscreen && (<>{topHeaderBar}{dateNavBar}</>)}
           {onlineEditMode && (
             <div className="mb-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-300 text-[11px] text-emerald-800 font-bold flex items-center justify-between gap-2">
               <span>🔓🔒 {formatPureDate(selectedDate)} の常連様テーブルをタップしてオンライン/オフライン切替（上の日付ナビで日を変更できます）</span>
