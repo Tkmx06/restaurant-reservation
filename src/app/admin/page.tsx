@@ -3547,8 +3547,8 @@ export default function AdminPage() {
         </div>
       )}
 
-      {!isMapFullscreen && (
       {/* 下部データ表示エリア（PC・タブレット向け） */}
+      {!isMapFullscreen && (
       <div className={desktopVisibilityClass}>
       {activeTab === 'customers' ? (
         <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
