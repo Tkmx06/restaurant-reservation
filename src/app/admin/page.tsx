@@ -148,7 +148,7 @@ const TABLE_ASPECT_RATIO: Record<TableStatus['type'], number> = {
   'rect-h-4': 2 / 1.1,
   'rect-v-4': 1 / 2.1,
 };
-const FLOOR_MAP_ASPECT_RATIO = 16 / 7.27;
+const FLOOR_MAP_ASPECT_RATIO = 16 / 9.2;
 
 const getNameTagTopPercent = (t: TableStatus) => {
   const topPercent = parseFloat(t.top);
@@ -156,18 +156,6 @@ const getNameTagTopPercent = (t: TableStatus) => {
   const heightInWidthUnits = widthPercent / TABLE_ASPECT_RATIO[t.type];
   const heightPercent = heightInWidthUnits * FLOOR_MAP_ASPECT_RATIO;
   return topPercent + heightPercent + 0.3;
-};
-
-// 名前タグの横位置：右寄りのテーブル（65,70,15,14,13,12 など）はテーブルの左端から
-// 右方向に伸びると枠の右端で見切れるため、テーブルの右端を基準に左方向へ伸ばす
-const getNameTagHorizontalStyle = (t: TableStatus): { left?: string; right?: string } => {
-  const leftPercent = parseFloat(t.left);
-  const widthPercent = parseFloat(t.width);
-  const rightEdgePercent = leftPercent + widthPercent;
-  if (rightEdgePercent > 50) {
-    return { right: `${100 - rightEdgePercent}%` };
-  }
-  return { left: t.left };
 };
 
 // ─── 隣接テーブルが同じ色にならないようにする、2色の交互配色 ───
@@ -1196,18 +1184,18 @@ export default function AdminPage() {
     { id: '68', label: '68', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '69%',  width: '9%' },
     { id: '67', label: '67', isOccupied: false, type: 'square-2', top: '4%',  left: '79%',  width: '5%' },
     { id: '66', label: '66', isOccupied: false, type: 'square-2', top: '4%',  left: '85%',  width: '5%' },
-    { id: '65', label: '65', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '88.5%',  width: '9%' },
+    { id: '65', label: '65', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '91%',  width: '9%' },
     { id: '1', label: '1', isOccupied: false, type: 'counter-1', top: '24%', left: '82.5%', width: '5%' },
     { id: '2', label: '2', isOccupied: false, type: 'counter-1', top: '35%', left: '82.5%', width: '5%' },
     { id: '23', label: '23', isOccupied: false, type: 'square-2', top: '24%', left: '88.5%', width: '5%' },
-    { id: '70', label: '70', isOccupied: false, type: 'square-2', top: '14.9%', left: '92.5%',  width: '5%' },
+    { id: '70', label: '70', isOccupied: false, type: 'square-2', top: '14.9%', left: '95%',  width: '5%' },
     { id: '22', label: '22', isOccupied: false, type: 'square-2', top: '35%', left: '88.5%', width: '5%' },
     { id: '21', label: '21', isOccupied: false, type: 'rect-h-4', top: '46%',   left: '84.5%',  width: '9%' },
     { id: '11', label: '11', isOccupied: false, type: 'rect-h-4', top: '68%', left: '84.5%', width: '9%' },
-    { id: '15', label: '15', isOccupied: false, type: 'square-2', top: '35%', left: '92.5%',  width: '5%' },
-    { id: '14', label: '14', isOccupied: false, type: 'square-2', top: '46%', left: '92.5%',  width: '5%' },
-    { id: '13', label: '13', isOccupied: false, type: 'square-2', top: '57%', left: '92.5%',  width: '5%' },
-    { id: '12', label: '12', isOccupied: false, type: 'square-2', top: '68%', left: '92.5%',  width: '5%' },
+    { id: '15', label: '15', isOccupied: false, type: 'square-2', top: '35%', left: '95%',  width: '5%' },
+    { id: '14', label: '14', isOccupied: false, type: 'square-2', top: '46%', left: '95%',  width: '5%' },
+    { id: '13', label: '13', isOccupied: false, type: 'square-2', top: '57%', left: '95%',  width: '5%' },
+    { id: '12', label: '12', isOccupied: false, type: 'square-2', top: '68%', left: '95%',  width: '5%' },
   ];
 
   const lunchTimes = ['11:45', '12:00', '12:15', '12:30', '12:45', '13:00'];
@@ -2513,15 +2501,13 @@ export default function AdminPage() {
           )}
           <div
             className={`relative w-full mx-auto rounded-xl border overflow-hidden shadow-inner transition-colors duration-300 ${
-              isMapFullscreen ? 'flex-1 min-h-0' : ''
-            } ${
               isSelectedDateClosed
                 ? 'bg-slate-200 border-slate-300 opacity-95 text-slate-400'
                 : isNightMapMode
                   ? 'bg-[#6E6B60] border-[#57544A] text-[#EDEAE0]'
                   : 'bg-[#D9D5C7]/90 border-[#B8B3A0] text-[#232320]'
             }`}
-            style={isMapFullscreen ? undefined : { aspectRatio: '16/7.27' }}
+            style={{ aspectRatio: '16/7.27' }}
           >
             <div
               ref={mapContainerRef}
@@ -2744,7 +2730,7 @@ export default function AdminPage() {
                     {t.isOccupied && attachedRes && !isThisTableDragging && !isSecondaryOfCombo && (
                       <div
                         className="absolute z-30 bg-[#1B1E29]/90 text-white text-[13px] font-bold px-1 py-px rounded truncate pointer-events-none select-none shadow"
-                        style={{ top: `${getNameTagTopPercent(t)}%`, ...getNameTagHorizontalStyle(t), maxWidth: '90px' }}
+                        style={{ top: `${getNameTagTopPercent(t)}%`, left: t.left, maxWidth: '90px' }}
                       >
                         {attachedRes.guest_name}
                       </div>
@@ -3548,7 +3534,6 @@ export default function AdminPage() {
       )}
 
       {/* 下部データ表示エリア（PC・タブレット向け） */}
-      {!isMapFullscreen && (
       <div className={desktopVisibilityClass}>
       {activeTab === 'customers' ? (
         <div className="border p-3 rounded-xl shadow-xl mt-3 bg-white border-slate-200">
@@ -3659,7 +3644,6 @@ export default function AdminPage() {
         </div>
       )}
       </div>
-      )}
 
       {/* ===== スマホ向けレイアウト（sm未満でのみ表示） ===== */}
       <MobileAdminView
