@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
     return false;
   });
 
-  const base = req.nextUrl.origin;
+  const base = process.env.QA_CHECK_BASE_URL || 'https://reservation.t-style-de.com';
   const results = await Promise.all(
     targets.map(async (r) => {
       try {

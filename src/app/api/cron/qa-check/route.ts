@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: '認証が必要です。' }, { status: 401 });
   }
 
-  const base = req.nextUrl.origin;
+  const base = process.env.QA_CHECK_BASE_URL || 'https://reservation.t-style-de.com';
   const now = new Date();
 
   // 定休日を動的に取得し、確実に休業日となる日付を探す（曜日設定が変わっても追従する）
