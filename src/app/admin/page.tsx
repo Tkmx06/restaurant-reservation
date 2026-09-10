@@ -1546,8 +1546,36 @@ export default function AdminPage() {
     return match ? match.id : null;
   };
 
+  // targetId（移動先）の近くにある、まだ使われていない空席の卓を近い順に count 個返す
+  // （相対位置を保った移動先が見つからないときのフォールバック用。実際のフロア配置は
+  // 完全な格子状ではないため、見た目の並びまでは保証しない）
+  const findNearestFreeTables = (
+    nearId: string,
+    count: number,
+    excludeIds: Set<string>
+  ): string[] | null => {
+    const nearT = initialTables.find(t => t.id === nearId);
+    if (!nearT) return null;
+    const nearTop = parseFloat(nearT.top);
+    const nearLeft = parseFloat(nearT.left);
+
+    const candidates = initialTables
+      .filter(t => !excludeIds.has(t.id))
+      .map(t => {
+        const dTop = parseFloat(t.top) - nearTop;
+        const dLeft = parseFloat(t.left) - nearLeft;
+        return { id: t.id, dist: Math.sqrt(dTop * dTop + dLeft * dLeft) };
+      })
+      .sort((a, b) => a.dist - b.dist);
+
+    if (candidates.length < count) return null;
+    return candidates.slice(0, count).map(c => c.id);
+  };
+
   // 連結グループのサブテーブルをドラッグしたとき、グループ全体を相対位置を保ったまま移動できるか計算する
-  // いずれかのメンバーの移動先が見つからない・埋まっている・重複する場合は null（移動不可）を返す
+  // まず「移動前とまったく同じ配置（相対位置の形）」を維持できる移動先を探し、
+  // それが見つからない場合（フロア配置が格子状でないため等）は、
+  // 移動先の近くにある空いている卓を必要な数だけ自動的に選んで割り当てる（見た目の並びは変わり得る）
   const computeGroupParallelMove = (
     draggedId: string,
     targetId: string,
@@ -1558,18 +1586,40 @@ export default function AdminPage() {
     const allMembers = [mainId, ...subIds];
     const usedTargets = new Set<string>([targetId]);
     const destinationById: Record<string, string> = { [draggedId]: targetId };
+    let exactShapeFailed = false;
 
     for (const memberId of allMembers) {
       if (memberId === draggedId) continue;
       const dest = findTableAtRelativeOffset(draggedId, targetId, memberId);
-      if (!dest || occupiedIds.includes(dest) || usedTargets.has(dest)) return null;
+      if (!dest || occupiedIds.includes(dest) || usedTargets.has(dest)) {
+        exactShapeFailed = true;
+        break;
+      }
       usedTargets.add(dest);
       destinationById[memberId] = dest;
     }
 
+    if (!exactShapeFailed) {
+      return {
+        newMainId: destinationById[mainId],
+        newSubIds: subIds.map(id => destinationById[id]),
+      };
+    }
+
+    // ─── フォールバック：同じ形の配置が見つからない場合、移動先の近くの空席を必要数だけ割り当てる ───
+    const remainingMembers = allMembers.filter(id => id !== draggedId);
+    const excludeIds = new Set<string>([...occupiedIds, targetId, draggedId]);
+    const fallbackTables = findNearestFreeTables(targetId, remainingMembers.length, excludeIds);
+    if (!fallbackTables) return null;
+
+    const fallbackDestinationById: Record<string, string> = { [draggedId]: targetId };
+    remainingMembers.forEach((memberId, i) => {
+      fallbackDestinationById[memberId] = fallbackTables[i];
+    });
+
     return {
-      newMainId: destinationById[mainId],
-      newSubIds: subIds.map(id => destinationById[id]),
+      newMainId: fallbackDestinationById[mainId],
+      newSubIds: subIds.map(id => fallbackDestinationById[id]),
     };
   };
 
