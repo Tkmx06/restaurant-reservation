@@ -1546,8 +1546,36 @@ export default function AdminPage() {
     return match ? match.id : null;
   };
 
+  // targetId（移動先）の近くにある、まだ使われていない空席の卓を近い順に count 個返す
+  // （相対位置を保った移動先が見つからないときのフォールバック用。実際のフロア配置は
+  // 完全な格子状ではないため、見た目の並びまでは保証しない）
+  const findNearestFreeTables = (
+    nearId: string,
+    count: number,
+    excludeIds: Set<string>
+  ): string[] | null => {
+    const nearT = initialTables.find(t => t.id === nearId);
+    if (!nearT) return null;
+    const nearTop = parseFloat(nearT.top);
+    const nearLeft = parseFloat(nearT.left);
+
+    const candidates = initialTables
+      .filter(t => !excludeIds.has(t.id))
+      .map(t => {
+        const dTop = parseFloat(t.top) - nearTop;
+        const dLeft = parseFloat(t.left) - nearLeft;
+        return { id: t.id, dist: Math.sqrt(dTop * dTop + dLeft * dLeft) };
+      })
+      .sort((a, b) => a.dist - b.dist);
+
+    if (candidates.length < count) return null;
+    return candidates.slice(0, count).map(c => c.id);
+  };
+
   // 連結グループのサブテーブルをドラッグしたとき、グループ全体を相対位置を保ったまま移動できるか計算する
-  // いずれかのメンバーの移動先が見つからない・埋まっている・重複する場合は null（移動不可）を返す
+  // まず「移動前とまったく同じ配置（相対位置の形）」を維持できる移動先を探し、
+  // それが見つからない場合（フロア配置が格子状でないため等）は、
+  // 移動先の近くにある空いている卓を必要な数だけ自動的に選んで割り当てる（見た目の並びは変わり得る）
   const computeGroupParallelMove = (
     draggedId: string,
     targetId: string,
@@ -1558,18 +1586,40 @@ export default function AdminPage() {
     const allMembers = [mainId, ...subIds];
     const usedTargets = new Set<string>([targetId]);
     const destinationById: Record<string, string> = { [draggedId]: targetId };
+    let exactShapeFailed = false;
 
     for (const memberId of allMembers) {
       if (memberId === draggedId) continue;
       const dest = findTableAtRelativeOffset(draggedId, targetId, memberId);
-      if (!dest || occupiedIds.includes(dest) || usedTargets.has(dest)) return null;
+      if (!dest || occupiedIds.includes(dest) || usedTargets.has(dest)) {
+        exactShapeFailed = true;
+        break;
+      }
       usedTargets.add(dest);
       destinationById[memberId] = dest;
     }
 
+    if (!exactShapeFailed) {
+      return {
+        newMainId: destinationById[mainId],
+        newSubIds: subIds.map(id => destinationById[id]),
+      };
+    }
+
+    // ─── フォールバック：同じ形の配置が見つからない場合、移動先の近くの空席を必要数だけ割り当てる ───
+    const remainingMembers = allMembers.filter(id => id !== draggedId);
+    const excludeIds = new Set<string>([...occupiedIds, targetId, draggedId]);
+    const fallbackTables = findNearestFreeTables(targetId, remainingMembers.length, excludeIds);
+    if (!fallbackTables) return null;
+
+    const fallbackDestinationById: Record<string, string> = { [draggedId]: targetId };
+    remainingMembers.forEach((memberId, i) => {
+      fallbackDestinationById[memberId] = fallbackTables[i];
+    });
+
     return {
-      newMainId: destinationById[mainId],
-      newSubIds: subIds.map(id => destinationById[id]),
+      newMainId: fallbackDestinationById[mainId],
+      newSubIds: subIds.map(id => fallbackDestinationById[id]),
     };
   };
 
@@ -2436,14 +2486,14 @@ export default function AdminPage() {
               key={dateStr}
               onClick={() => setSelectedDate(dateStr)}
               title={calendarInfo?.label}
-              className={`relative px-2 py-1 text-lg font-bold rounded-lg transition-all flex flex-col items-center min-w-[85px] h-10 justify-center ${isCurrentLoopSelected ? isLoopClosed ? 'bg-white text-slate-900 ring-2 ring-slate-300' : 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 ring-2 ring-emerald-300' : isLoopClosed ? 'bg-slate-300/40 text-slate-400 opacity-40' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}`}
+              className={`relative overflow-hidden px-2 py-1 text-lg font-bold rounded-lg transition-all flex flex-col items-center min-w-[85px] h-10 justify-center ${isCurrentLoopSelected ? isLoopClosed ? 'bg-white text-slate-900 ring-2 ring-slate-300' : 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 ring-2 ring-emerald-300' : isLoopClosed ? 'bg-slate-300/40 text-slate-400 opacity-40' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}`}
               style={{ cursor: 'pointer' }}
             >
+              {weatherIcon && (
+                <span className="absolute inset-0 flex items-center justify-center text-[34px] leading-none opacity-[0.38] pointer-events-none select-none">{weatherIcon}</span>
+              )}
               {calendarInfo && (
                 <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ring-1 ring-white ${calendarInfo.type === 'holiday' ? 'bg-rose-500' : 'bg-violet-500'}`} />
-              )}
-              {weatherIcon && (
-                <span className="absolute top-0 left-1 text-[13px] leading-none">{weatherIcon}</span>
               )}
               {topLabel ? <span className="text-[15px] tracking-tight font-black leading-none">{topLabel}</span> : <span className="text-[15px] h-3 block"></span>}
               <span className="text-lg font-mono font-bold mt-0.5">{formatPureDate(dateStr)}</span>
@@ -2780,6 +2830,7 @@ export default function AdminPage() {
                       onClick={() => handleTableClick(t)}
                       onPointerDown={(e) => handlePointerDown(e, t)}
                       onPointerCancel={handlePointerCancel}
+                      onContextMenu={(e) => e.preventDefault()}
                       className={`absolute flex flex-col items-center justify-center shadow-lg border text-center touch-none transition-transform duration-75 overflow-hidden leading-none p-0.5 select-none ${shapeClass} ${radiusClass} ${tableStyle}`}
                       style={{
                         top: t.top,
@@ -2790,6 +2841,9 @@ export default function AdminPage() {
                         opacity: isThisTableDragging ? 0.85 : undefined,
                         zIndex: isThisTableDragging ? 100 : undefined,
                         WebkitUserSelect: 'none',
+                        // 卓を長押しして連結モードに入る際、iPad Safariが独自の長押しメニュー（共有・印刷など）を
+                        // 表示してしまわないようにする
+                        WebkitTouchCallout: 'none',
                       }}
                     >
                       {t.isOccupied && attachedRes ? (
