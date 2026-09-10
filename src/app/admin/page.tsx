@@ -118,6 +118,28 @@ const GROUPS_BY_GUESTS: Record<number, TableGroup[]> = {
 
 const LARGE_PARTY_THRESHOLD = 1;
 
+// 曜日ラベル（日曜始まり、Dateオブジェクトの getDay() の並びに対応）
+const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+
+// レストランの所在地（フランクフルト）における簡易天気予報の設定
+// Open-Meteo（APIキー不要・無料）を使用
+const WEATHER_LATITUDE = 50.1109;
+const WEATHER_LONGITUDE = 8.6821;
+
+// WMO Weather interpretation code を簡単な天気マークに変換
+function getWeatherIcon(code: number): string {
+  if (code === 0) return '☀️';
+  if (code === 1) return '🌤️';
+  if (code === 2) return '⛅';
+  if (code === 3) return '☁️';
+  if (code === 45 || code === 48) return '🌫️';
+  if ([51, 53, 55, 56, 57, 80, 81, 82].includes(code)) return '🌦️';
+  if ([61, 63, 65, 66, 67].includes(code)) return '🌧️';
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return '🌨️';
+  if ([95, 96, 99].includes(code)) return '⛈️';
+  return '';
+}
+
 // 人数帯ごとのテーブル配色（凡例 GUEST_COUNT_LEGEND と対応）
 const GUEST_COUNT_LEGEND = [
   { label: '1名', swatch: 'bg-sky-500', classes: 'from-sky-500 to-sky-600 border-sky-700 ring-sky-300/30' },
@@ -1043,6 +1065,9 @@ export default function AdminPage() {
   const [ceNotes, setCeNotes] = useState('');
   const [ceSaving, setCeSaving] = useState(false);
 
+  // ─── 日付タブ用の簡易天気予報（日付文字列 → WMOコード） ───
+  const [weatherByDate, setWeatherByDate] = useState<Record<string, number>>({});
+
   // ─── 営業日（特定日の営業/休業）管理 ───
   const [closedWeekDays, setClosedWeekDays] = useState<number[]>([]);
   const [businessDayOverrides, setBusinessDayOverrides] = useState<{ date: string; is_closed: boolean }[]>([]);
@@ -1320,6 +1345,30 @@ export default function AdminPage() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [selectedDate, currentShift]);
+
+  // ─── 日付タブ用の簡易天気予報を取得（Open-Meteo・APIキー不要） ───
+  // 予報は数時間おきにしか変わらないため、起動時と3時間ごとに取得すれば十分。
+  useEffect(() => {
+    async function loadWeather() {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LATITUDE}&longitude=${WEATHER_LONGITUDE}&daily=weather_code&timezone=Europe%2FBerlin&forecast_days=16`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('天気予報の取得に失敗');
+        const data = await res.json();
+        const dates: string[] = data?.daily?.time || [];
+        const codes: number[] = data?.daily?.weather_code || [];
+        const map: Record<string, number> = {};
+        dates.forEach((d, i) => { map[d] = codes[i]; });
+        setWeatherByDate(map);
+      } catch (err) {
+        // 天気予報は補助的な表示のため、取得に失敗しても他の機能には影響させない
+        console.error('天気予報の取得に失敗:', err);
+      }
+    }
+    loadWeather();
+    const weatherInterval = setInterval(loadWeather, 3 * 60 * 60 * 1000); // 3時間ごと
+    return () => clearInterval(weatherInterval);
+  }, []);
 
   async function loadBusinessDays() {
     try {
@@ -2380,6 +2429,8 @@ export default function AdminPage() {
           const isLoopClosed = checkIsClosed(dateStr);
           const topLabel = getDateTopLabel(dateStr);
           const calendarInfo = getCalendarInfoForDate(dateStr);
+          const weatherCode = weatherByDate[dateStr];
+          const weatherIcon = weatherCode !== undefined ? getWeatherIcon(weatherCode) : '';
           return (
             <button
               key={dateStr}
@@ -2390,6 +2441,9 @@ export default function AdminPage() {
             >
               {calendarInfo && (
                 <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ring-1 ring-white ${calendarInfo.type === 'holiday' ? 'bg-rose-500' : 'bg-violet-500'}`} />
+              )}
+              {weatherIcon && (
+                <span className="absolute top-0 left-1 text-[13px] leading-none">{weatherIcon}</span>
               )}
               {topLabel ? <span className="text-[15px] tracking-tight font-black leading-none">{topLabel}</span> : <span className="text-[15px] h-3 block"></span>}
               <span className="text-lg font-mono font-bold mt-0.5">{formatPureDate(dateStr)}</span>
@@ -2827,7 +2881,9 @@ export default function AdminPage() {
             <div className="p-4 space-y-3.5 text-lg max-h-[70vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-2">
                 <div ref={bdStartFieldRef}>
-                  <label className="text-[16px] text-slate-400 font-bold block mb-1">開始日</label>
+                  <label className="text-[16px] text-slate-400 font-bold block mb-1">
+                    開始日{bdStartDate ? `（${WEEKDAY_LABELS[new Date(bdStartDate).getDay()]}）` : ''}
+                  </label>
                   <div className="flex space-x-1">
                     <input
                       type="date"
@@ -2847,7 +2903,9 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div ref={bdEndFieldRef}>
-                  <label className="text-[16px] text-slate-500 font-bold block mb-1">終了日（複数日をまとめる場合のみ変更）</label>
+                  <label className="text-[16px] text-slate-500 font-bold block mb-1">
+                    終了日{bdEndDate ? `（${WEEKDAY_LABELS[new Date(bdEndDate).getDay()]}）` : ''}
+                  </label>
                   <div className="flex space-x-1">
                     <input
                       type="date"

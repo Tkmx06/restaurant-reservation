@@ -126,7 +126,7 @@ export async function sendStaffNotification({
   const STAFF_EMAIL = 'tstylefrankfurt@gmail.com';
   try {
     await resend.emails.send({
-      from: `予約通知システム <${FROM_EMAIL}>`,
+      from: `新規予約 <${FROM_EMAIL}>`,
       to: [STAFF_EMAIL],
       subject: `${formatJapaneseDateTime(bookingDate)}　${guests}名`,
       html: `
@@ -210,7 +210,7 @@ export async function sendCancellationStaffNotification({
   const STAFF_EMAIL = 'tstylefrankfurt@gmail.com';
   try {
     await resend.emails.send({
-      from: `予約通知システム <${FROM_EMAIL}>`,
+      from: `予約キャンセル <${FROM_EMAIL}>`,
       to: [STAFF_EMAIL],
       subject: `✕ ${formatJapaneseDateTime(bookingDate)}　${guests}名`,
       html: `
