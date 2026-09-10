@@ -2780,6 +2780,7 @@ export default function AdminPage() {
                       onClick={() => handleTableClick(t)}
                       onPointerDown={(e) => handlePointerDown(e, t)}
                       onPointerCancel={handlePointerCancel}
+                      onContextMenu={(e) => e.preventDefault()}
                       className={`absolute flex flex-col items-center justify-center shadow-lg border text-center touch-none transition-transform duration-75 overflow-hidden leading-none p-0.5 select-none ${shapeClass} ${radiusClass} ${tableStyle}`}
                       style={{
                         top: t.top,
@@ -2790,6 +2791,9 @@ export default function AdminPage() {
                         opacity: isThisTableDragging ? 0.85 : undefined,
                         zIndex: isThisTableDragging ? 100 : undefined,
                         WebkitUserSelect: 'none',
+                        // 卓を長押しして連結モードに入る際、iPad Safariが独自の長押しメニュー（共有・印刷など）を
+                        // 表示してしまわないようにする
+                        WebkitTouchCallout: 'none',
                       }}
                     >
                       {t.isOccupied && attachedRes ? (
