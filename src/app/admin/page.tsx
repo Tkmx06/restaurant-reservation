@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { getCalendarInfoForDate } from '@/lib/calendarEvents';
+import { supabaseBrowser } from '@/lib/supabaseBrowser';
 
 interface TableStatus {
   id: string;      
@@ -1287,12 +1288,37 @@ export default function AdminPage() {
   useEffect(() => {
     loadData();
 
-    // ─── 追加：5秒ごとに自動で最新データをロードして画面を更新する（リアルタイム同期） ───
-    const interval = setInterval(() => {
-      loadData();
-    }, 5000); // 5000ミリ秒 ＝ 5秒
+    // ─── リアルタイム同期：予約に変更があった瞬間に通知を受け取り、即座に再取得する ───
+    // ブロードキャストには個人情報を一切含めていない（「変更があった」という合図のみ）。
+    // 実際のデータは常に安全な /api/admin/reservations 経由で取得する。
+    const channel = supabaseBrowser
+      .channel('admin-reservations', { config: { private: true } })
+      .on('broadcast', { event: 'reservation_changed' }, () => {
+        loadData();
+      })
+      .subscribe();
 
-    return () => clearInterval(interval);
+    // ─── 保険：リアルタイム通知を万一取りこぼした場合に備えて、緩い間隔でも定期的に再取得する ───
+    // 画面が非表示（バックグラウンド）の間は無駄な通信をしないよう一時停止し、
+    // 再び表示された瞬間には即座に最新データを取得する。
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    }, 60000); // 60000ミリ秒 ＝ 1分（リアルタイムが正常なら実質使われない保険）
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      supabaseBrowser.removeChannel(channel);
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [selectedDate, currentShift]);
 
   async function loadBusinessDays() {
