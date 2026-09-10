@@ -2486,14 +2486,14 @@ export default function AdminPage() {
               key={dateStr}
               onClick={() => setSelectedDate(dateStr)}
               title={calendarInfo?.label}
-              className={`relative px-2 py-1 text-lg font-bold rounded-lg transition-all flex flex-col items-center min-w-[85px] h-10 justify-center ${isCurrentLoopSelected ? isLoopClosed ? 'bg-white text-slate-900 ring-2 ring-slate-300' : 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 ring-2 ring-emerald-300' : isLoopClosed ? 'bg-slate-300/40 text-slate-400 opacity-40' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}`}
+              className={`relative overflow-hidden px-2 py-1 text-lg font-bold rounded-lg transition-all flex flex-col items-center min-w-[85px] h-10 justify-center ${isCurrentLoopSelected ? isLoopClosed ? 'bg-white text-slate-900 ring-2 ring-slate-300' : 'bg-gradient-to-b from-emerald-400 to-emerald-500 text-slate-955 ring-2 ring-emerald-300' : isLoopClosed ? 'bg-slate-300/40 text-slate-400 opacity-40' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}`}
               style={{ cursor: 'pointer' }}
             >
+              {weatherIcon && (
+                <span className="absolute inset-0 flex items-center justify-center text-[34px] leading-none opacity-[0.38] pointer-events-none select-none">{weatherIcon}</span>
+              )}
               {calendarInfo && (
                 <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ring-1 ring-white ${calendarInfo.type === 'holiday' ? 'bg-rose-500' : 'bg-violet-500'}`} />
-              )}
-              {weatherIcon && (
-                <span className="absolute top-0 left-1 text-[13px] leading-none">{weatherIcon}</span>
               )}
               {topLabel ? <span className="text-[15px] tracking-tight font-black leading-none">{topLabel}</span> : <span className="text-[15px] h-3 block"></span>}
               <span className="text-lg font-mono font-bold mt-0.5">{formatPureDate(dateStr)}</span>
