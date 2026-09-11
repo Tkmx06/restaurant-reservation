@@ -857,6 +857,14 @@ export default function ReservationPage() {
             {errorMsg && (
               <div style={{ background: '#FEF2F2', border: '1px solid #E21A22', borderRadius: 8, padding: 12, fontSize: 13, color: '#E21A22', marginBottom: 16 }}>
                 {errorMsg}
+                {errorMsg === FULLY_BOOKED_MSG && (
+                <div style={{ marginTop: 10 }}>
+                  <a href={`tel:${RESTAURANT_PHONE_TEL}`}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#E21A22', textDecoration: 'none', border: '1px solid #E21A22', borderRadius: 6, padding: '8px 14px', fontSize: 14 }}>
+                    {RESTAURANT_PHONE_DISPLAY}
+                  </a>
+                </div>
+                )}
               </div>
             )}
 
