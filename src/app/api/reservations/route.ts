@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       const blockedLabel = involvedSpecialLabels.find((label) => !openLabels.has(label));
       if (blockedLabel) {
         return NextResponse.json(
-          { error: '大変申し訳ございません、ご指定の時間帯は満席となりました。別のお時間かお日にちをお試しください。' },
+          { error: 'お手数をおかけしますが、下記までお電話でお問い合わせください。' },
           { status: 409 }
         );
       }
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
 
     if (hasConflict) {
       return NextResponse.json(
-        { error: '大変申し訳ございません、ご指定の時間帯は満席となりました。別のお時間かお日にちをお試しください。' },
+        { error: 'お手数をおかけしますが、下記までお電話でお問い合わせください。' },
         { status: 409 }
       );
     }
