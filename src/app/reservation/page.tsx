@@ -350,7 +350,19 @@ export default function ReservationPage() {
     setErrorMsg('');
 
     // --- テーブルの自動割り当て処理 ---
-    const occupiedTableIds = getOccupiedTableIds(allReservations, date, time);
+    let latestReservations = allReservations;
+    try {
+      const freshRes = await fetch('/api/admin/reservations', { cache: 'no-store' });
+      const freshData = await freshRes.json();
+      if (freshData.reservations) {
+        latestReservations = freshData.reservations;
+        setAllReservations(freshData.reservations);
+      }
+    } catch (err) {
+      console.error('failed to refetch latest reservations, using cached data:', err);
+    }
+
+    const occupiedTableIds = getOccupiedTableIds(latestReservations, date, time);
     let selectedGroup = null;
     const recommendedGroups = (GROUPS_BY_GUESTS[totalGuests] || []).filter(isGroupOnlineAllowed);
 
