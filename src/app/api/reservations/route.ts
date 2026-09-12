@@ -80,7 +80,9 @@ export async function POST(req: NextRequest) {
       const openLabels = new Set((openRows || []).map((r) => r.table_label));
       const blockedLabel = involvedSpecialLabels.find((label) => !openLabels.has(label));
       if (blockedLabel) {
-        sendFullyBookedAlert({
+        // ─── 注意：Vercelのサーバーレス関数はレスポンス返却後に処理が打ち切られることがあるため、
+        //     メール送信を「投げっぱなし」にせず必ずawaitしてから応答を返す（送信自体の失敗は握りつぶす）───
+        await sendFullyBookedAlert({
           toEmail: FULLY_BOOKED_ALERT_EMAIL,
           date,
           time,
@@ -176,7 +178,9 @@ export async function POST(req: NextRequest) {
     const hasConflict = [...requestedDbIds].some((id) => occupiedDbIds.has(id));
 
     if (hasConflict) {
-      sendFullyBookedAlert({
+      // ─── 注意：Vercelのサーバーレス関数はレスポンス返却後に処理が打ち切られることがあるため、
+      //     メール送信を「投げっぱなし」にせず必ずawaitしてから応答を返す（送信自体の失敗は握りつぶす）───
+      await sendFullyBookedAlert({
         toEmail: FULLY_BOOKED_ALERT_EMAIL,
         date,
         time,
