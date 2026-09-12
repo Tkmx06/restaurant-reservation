@@ -227,6 +227,48 @@ export async function sendCancellationStaffNotification({
   }
 }
 
+// 3d. お客様の予約フォームに「満席」（お電話でのお問い合わせ）表示が出た時のアラートメール（原因調査・機会損失の把握用）
+export async function sendFullyBookedAlert({
+  toEmail,
+  date,
+  time,
+  guests,
+  reason,
+  customerName,
+  customerEmail,
+}: {
+  toEmail: string;
+  date: string;
+  time: string;
+  guests: number | string;
+  reason: string;
+  customerName?: string;
+  customerEmail?: string;
+}) {
+  try {
+    await resend.emails.send({
+      from: `予約システム 満席通知 <${FROM_EMAIL}>`,
+      to: [toEmail],
+      subject: `🔴 満席表示が出ました：${date} ${time.slice(0, 5)}　${guests}名`,
+      html: `
+        <div>
+          <p style="margin: 4px 0;">お客様の予約フォームで「満席」（お電話でのお問い合わせ）表示が出ました。</p>
+          <p style="margin: 4px 0;">日時：${date} ${time.slice(0, 5)}</p>
+          <p style="margin: 4px 0;">人数：${guests}名</p>
+          <p style="margin: 4px 0;">理由：${reason}</p>
+          ${customerName ? `<p style="margin: 4px 0;">お客様名：${customerName}</p>` : ''}
+          ${customerEmail ? `<p style="margin: 4px 0;">連絡先：${customerEmail}</p>` : ''}
+          <p style="margin-top: 16px; color: #888; font-size: 12px;">このメールは /api/reservations からの自動送信です。実際に満席かどうかの確認用にお使いください。</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    // 通知メールの失敗でお客様への応答自体は止めない（呼び出し側でcatch）
+    console.error('満席アラートメール送信エラー:', error);
+    throw error;
+  }
+}
+
 // 4. 来店リマインダーメール（お客様向け）
 export async function sendReminderEmail({
   customerName,

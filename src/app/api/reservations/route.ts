@@ -1,7 +1,11 @@
 import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import { NextRequest, NextResponse } from 'next/server';
-import { sendCustomerConfirmation, sendStaffNotification } from '@/lib/mail';
+import { sendCustomerConfirmation, sendStaffNotification, sendFullyBookedAlert } from '@/lib/mail';
 import { extractCompanyDomain } from '@/lib/companyName';
+
+// 満席（お電話でのお問い合わせ）表示が出た時の通知先。
+// 環境変数 FULLY_BOOKED_ALERT_EMAIL が未設定の場合はスタッフ通知と同じ宛先に送る。
+const FULLY_BOOKED_ALERT_EMAIL = process.env.FULLY_BOOKED_ALERT_EMAIL || 'tstylefrankfurt@gmail.com';
 
 // ─── 画面のテーブル名からデータベースの数値IDへの変換表（二重予約チェック用） ───
 const LABEL_TO_DB_ID: Record<string, number> = {
@@ -76,6 +80,16 @@ export async function POST(req: NextRequest) {
       const openLabels = new Set((openRows || []).map((r) => r.table_label));
       const blockedLabel = involvedSpecialLabels.find((label) => !openLabels.has(label));
       if (blockedLabel) {
+        sendFullyBookedAlert({
+          toEmail: FULLY_BOOKED_ALERT_EMAIL,
+          date,
+          time,
+          guests: totalGuests,
+          reason: `常連様専用テーブル(${blockedLabel})がこの日オンライン非公開のため`,
+          customerName: name,
+          customerEmail: email,
+        }).catch((e) => console.error('満席アラート送信失敗:', e));
+
         return NextResponse.json(
           { error: 'お手数をおかけしますが、下記までお電話でお問い合わせください。' },
           { status: 409 }
@@ -162,6 +176,16 @@ export async function POST(req: NextRequest) {
     const hasConflict = [...requestedDbIds].some((id) => occupiedDbIds.has(id));
 
     if (hasConflict) {
+      sendFullyBookedAlert({
+        toEmail: FULLY_BOOKED_ALERT_EMAIL,
+        date,
+        time,
+        guests: totalGuests,
+        reason: 'ご希望の卓（結合テーブル含む）が直前に他の確定予約と重複したため',
+        customerName: name,
+        customerEmail: email,
+      }).catch((e) => console.error('満席アラート送信失敗:', e));
+
       return NextResponse.json(
         { error: 'お手数をおかけしますが、下記までお電話でお問い合わせください。' },
         { status: 409 }

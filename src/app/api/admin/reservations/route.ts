@@ -1,6 +1,7 @@
 import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractCompanyDomain } from '@/lib/companyName';
+import { findTableConflict } from '@/lib/tableConflict';
 
 // ==========================================
 // 1. 予約データの取得（GET）
@@ -52,6 +53,20 @@ export async function POST(req: Request) {
     }
 
     const { domain, companyName } = extractCompanyDomain(email || '');
+
+    // ─── 二重予約防止：手動登録でも、顧客用オンライン予約(/api/reservations)と
+    //     同じ基準で他の確定予約（結合テーブル分も含む）と重複しないか確認する ───
+    if (body.force !== true) {
+      const result = await findTableConflict({ date, time, tableId: Number(table_id), notes });
+      if (result.conflict) {
+        return NextResponse.json(
+          {
+            error: `テーブル${result.conflictingTableLabel}は${result.conflictingReservation.guest_name || '他のお客様'}様のご予約（${result.conflictingReservation.time}）と重複しています。`,
+          },
+          { status: 409 }
+        );
+      }
+    }
 
     // データベースの空欄不可エラー（NOT NULL制約）を防ぐための補正処理 [1]
     const { data, error } = await supabase
@@ -105,6 +120,40 @@ export async function PUT(req: Request) {
     if (table_id !== undefined) updateData.table_id = table_id;
     if (notes !== undefined) updateData.notes = notes;
     if (status !== undefined) updateData.status = status;
+
+    // ─── 二重予約防止：卓・時間・結合情報のいずれかが変わる場合、更新後の状態が
+    //     他の確定予約（結合テーブル分も含む）と重複しないか確認する ───
+    const touchesOccupancy = table_id !== undefined || time !== undefined || notes !== undefined;
+    if (touchesOccupancy && body.force !== true) {
+      const { data: current, error: fetchError } = await supabase
+        .from('reservations')
+        .select('date, time, table_id, notes, status')
+        .eq('id', id)
+        .maybeSingle();
+      if (fetchError) throw fetchError;
+      if (!current) {
+        return NextResponse.json({ error: '対象の予約が見つかりませんでした。' }, { status: 404 });
+      }
+
+      const nextStatus = status !== undefined ? status : current.status;
+      if (nextStatus === 'confirmed') {
+        const result = await findTableConflict({
+          date: current.date,
+          time: updateData.time ?? current.time,
+          tableId: Number(updateData.table_id ?? current.table_id),
+          notes: updateData.notes ?? current.notes,
+          excludeReservationId: id,
+        });
+        if (result.conflict) {
+          return NextResponse.json(
+            {
+              error: `テーブル${result.conflictingTableLabel}は${result.conflictingReservation.guest_name || '他のお客様'}様のご予約（${result.conflictingReservation.time}）と重複しています。`,
+            },
+            { status: 409 }
+          );
+        }
+      }
+    }
 
     const { data, error } = await supabase
       .from('reservations')
