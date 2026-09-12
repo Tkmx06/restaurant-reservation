@@ -367,61 +367,89 @@ export default function ReservationPage() {
     }
 
     const occupiedTableIds = getOccupiedTableIds(latestReservations, date, time);
-    let selectedGroup = null;
     const recommendedGroups = (GROUPS_BY_GUESTS[totalGuests] || []).filter(isGroupOnlineAllowed);
 
-    // 人数に合う推奨テーブルグループの空きを、優先順位が高い順に1つずつ探索
-    for (const group of recommendedGroups) {
-      const allGroupIds = [group.mainTable, ...group.combinedTables];
-      const isAvailable = allGroupIds.every(id => !occupiedTableIds.includes(id));
-      if (isAvailable) {
-        selectedGroup = group;
-        break;
-      }
-    }
-
-    // 優先順位リストの中にお席の空きがない場合
-    if (!selectedGroup) {
+    // 優先順位リストの中に候補が1つもない場合（例：全て常連様専用テーブルで、この日は非公開）
+    if (recommendedGroups.length === 0) {
       setErrorMsg(lang === 'ja' ? 'ご指定の日時は指定の人数でご案内できるお席がございません。他の日時をご選択ください。' : 'No available table for this party size at this time.');
       setSubmitting(false);
       return;
     }
 
-    // 複数テーブル of 結合情報 (_combined:[ID]) をメモに付与
-    const combinedTags = selectedGroup.combinedTables
-      .map((id: string) => `_combined:[${id}]`)
-      .join(' ');
-    
-    const finalNotes = notes.trim()
-      ? `${notes.trim()} ${combinedTags}`.trim()
-      : combinedTags;
+    // ─── 修正：ローカルの空席情報（直前に取得したもの）だけで候補を1つに決め打ちすると、
+    //     その情報が実際のDB状態とわずかにズレていた場合（他の予約がその直後に確定した等）に、
+    //     「本当は空いている他の候補」を一度も試さないまま「満席（お電話ください）」を
+    //     表示してしまう。これを防ぐため、ローカルで空いていそうな候補を優先しつつも、
+    //     サーバー側が「その卓は使えない（二重予約 or 非公開）」と判定した場合は、
+    //     優先順位リストの次の候補へ自動的に切り替えて再試行する。
+    const isLocallyAvailable = (group: { mainTable: string; combinedTables: string[] }) => {
+      const allGroupIds = [group.mainTable, ...group.combinedTables];
+      return allGroupIds.every(id => !occupiedTableIds.includes(id));
+    };
+    const orderedCandidates = [
+      ...recommendedGroups.filter(isLocallyAvailable),
+      ...recommendedGroups.filter((g) => !isLocallyAvailable(g)),
+    ];
 
-    try {
-      const res = await fetch('/api/reservations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          date, 
-          time, 
-          adults, 
-          children, 
-          childAges, 
-          name, 
-          email, 
-          phone, 
-          notes: finalNotes,          // 結合情報付きのnotes
-          totalGuests,
-          // ─── 修正：文字列テーブル名からデータベース用の数値IDに変換して送信 ───
-          table_id: LABEL_TO_DB_ID[selectedGroup.mainTable] || 1,
-          locale: lang,               // 選択中の言語を確認メールへ反映
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setErrorMsg(data.error || t.defaultErrorMsg); setSubmitting(false); return; }
-      setSubmitted(true);
-    } catch (err) {
-      setErrorMsg(t.networkErrorMsg);
+    let lastErrorMsg = '';
+    for (let i = 0; i < orderedCandidates.length; i++) {
+      const group = orderedCandidates[i];
+      const isLastCandidate = i === orderedCandidates.length - 1;
+
+      // 複数テーブル分の結合情報 (_combined:[ID]) をメモに付与
+      const combinedTags = group.combinedTables
+        .map((id: string) => `_combined:[${id}]`)
+        .join(' ');
+      const finalNotes = notes.trim()
+        ? `${notes.trim()} ${combinedTags}`.trim()
+        : combinedTags;
+
+      try {
+        const res = await fetch('/api/reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date,
+            time,
+            adults,
+            children,
+            childAges,
+            name,
+            email,
+            phone,
+            notes: finalNotes,          // 結合情報付きのnotes
+            totalGuests,
+            // ─── 修正：文字列テーブル名からデータベース用の数値IDに変換して送信 ───
+            table_id: LABEL_TO_DB_ID[group.mainTable] || 1,
+            locale: lang,               // 選択中の言語を確認メールへ反映
+            // まだ他に試す候補が残っている間は「お客様に満席と表示が確定した」わけではないため、
+            // スタッフへの満席アラートは最後の候補で失敗した時だけ送る
+            suppressFullyBookedAlert: !isLastCandidate,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setSubmitted(true);
+          setSubmitting(false);
+          return;
+        }
+        lastErrorMsg = data.error || t.defaultErrorMsg;
+        // 409（この卓は今回使えなかった）以外のエラーは即座に表示して終了
+        if (res.status !== 409) {
+          setErrorMsg(lastErrorMsg);
+          setSubmitting(false);
+          return;
+        }
+        // 409の場合はループを継続し、次の候補を試す
+      } catch (err) {
+        setErrorMsg(t.networkErrorMsg);
+        setSubmitting(false);
+        return;
+      }
     }
+
+    // 全ての候補がサーバー側で使えないと判定された場合
+    setErrorMsg(lastErrorMsg || FULLY_BOOKED_MSG);
     setSubmitting(false);
   };
 

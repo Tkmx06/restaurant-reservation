@@ -41,7 +41,7 @@ const extractCombinedDbIds = (notes: string | null | undefined): number[] => {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { date, time, adults, children, childAges, name, email, phone, notes, totalGuests, table_id, locale } = body;
+    const { date, time, adults, children, childAges, name, email, phone, notes, totalGuests, table_id, locale, suppressFullyBookedAlert } = body;
 
     // 1. 必須項目チェック
     if (!date || !time || !name || !email || !phone || !totalGuests || !table_id) {
@@ -81,16 +81,20 @@ export async function POST(req: NextRequest) {
       const blockedLabel = involvedSpecialLabels.find((label) => !openLabels.has(label));
       if (blockedLabel) {
         // ─── 注意：Vercelのサーバーレス関数はレスポンス返却後に処理が打ち切られることがあるため、
-        //     メール送信を「投げっぱなし」にせず必ずawaitしてから応答を返す（送信自体の失敗は握りつぶす）───
-        await sendFullyBookedAlert({
-          toEmail: FULLY_BOOKED_ALERT_EMAIL,
-          date,
-          time,
-          guests: totalGuests,
-          reason: `常連様専用テーブル(${blockedLabel})がこの日オンライン非公開のため`,
-          customerName: name,
-          customerEmail: email,
-        }).catch((e) => console.error('満席アラート送信失敗:', e));
+        //     メール送信を「投げっぱなし」にせず必ずawaitしてから応答を返す（送信自体の失敗は握りつぶす）
+        //     また、フロント側が他の候補卓を自動で再試行している途中（suppressFullyBookedAlert）は、
+        //     まだお客様に満席と表示が確定したわけではないため、最終的に全滅した時だけ通知する ───
+        if (suppressFullyBookedAlert !== true) {
+          await sendFullyBookedAlert({
+            toEmail: FULLY_BOOKED_ALERT_EMAIL,
+            date,
+            time,
+            guests: totalGuests,
+            reason: `常連様専用テーブル(${blockedLabel})がこの日オンライン非公開のため`,
+            customerName: name,
+            customerEmail: email,
+          }).catch((e) => console.error('満席アラート送信失敗:', e));
+        }
 
         return NextResponse.json(
           { error: 'お手数をおかけしますが、下記までお電話でお問い合わせください。' },
@@ -179,16 +183,20 @@ export async function POST(req: NextRequest) {
 
     if (hasConflict) {
       // ─── 注意：Vercelのサーバーレス関数はレスポンス返却後に処理が打ち切られることがあるため、
-      //     メール送信を「投げっぱなし」にせず必ずawaitしてから応答を返す（送信自体の失敗は握りつぶす）───
-      await sendFullyBookedAlert({
-        toEmail: FULLY_BOOKED_ALERT_EMAIL,
-        date,
-        time,
-        guests: totalGuests,
-        reason: 'ご希望の卓（結合テーブル含む）が直前に他の確定予約と重複したため',
-        customerName: name,
-        customerEmail: email,
-      }).catch((e) => console.error('満席アラート送信失敗:', e));
+      //     メール送信を「投げっぱなし」にせず必ずawaitしてから応答を返す（送信自体の失敗は握りつぶす）
+      //     また、フロント側が他の候補卓を自動で再試行している途中（suppressFullyBookedAlert）は、
+      //     まだお客様に満席と表示が確定したわけではないため、最終的に全滅した時だけ通知する ───
+      if (suppressFullyBookedAlert !== true) {
+        await sendFullyBookedAlert({
+          toEmail: FULLY_BOOKED_ALERT_EMAIL,
+          date,
+          time,
+          guests: totalGuests,
+          reason: 'ご希望の卓（結合テーブル含む）が直前に他の確定予約と重複したため',
+          customerName: name,
+          customerEmail: email,
+        }).catch((e) => console.error('満席アラート送信失敗:', e));
+      }
 
       return NextResponse.json(
         { error: 'お手数をおかけしますが、下記までお電話でお問い合わせください。' },
