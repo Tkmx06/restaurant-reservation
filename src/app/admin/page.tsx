@@ -2490,7 +2490,8 @@ export default function AdminPage() {
               style={{ cursor: 'pointer' }}
             >
               {weatherIcon && (
-                <span className="absolute inset-0 flex items-center justify-center text-[34px] leading-none opacity-[0.38] pointer-events-none select-none">{weatherIcon}</span>
+                <span className="absolute top-0 left-1 text-[13px] leading-none pointer-events-none select-none z-10">{weatherIcon}</span>
+                
               )}
               {calendarInfo && (
                 <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ring-1 ring-white ${calendarInfo.type === 'holiday' ? 'bg-rose-500' : 'bg-violet-500'}`} />
