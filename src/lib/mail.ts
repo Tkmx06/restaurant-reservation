@@ -3,14 +3,17 @@ import { resend } from './resend';
 const FROM_EMAIL = 'reservation@t-style-de.com';
 const MENU_URL = 'https://t-stylefrankfurt.my.canva.site/';
 
-// "2026-08-25 18:00" のような文字列を "8月25日 18:00" に変換（スタッフ向け通知の件名用、年は省略）
+const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+
+// "2026-08-25 18:00" のような文字列を "8月25日(火) 18:00" に変換（スタッフ向け通知の件名用、年は省略）
 function formatJapaneseDateTime(bookingDate: string): string {
   const [datePart, timePart] = bookingDate.split(' ');
   const dateMatch = datePart?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!dateMatch) return bookingDate;
-  const [, , m, d] = dateMatch;
+  const [, y, m, d] = dateMatch;
+  const weekday = WEEKDAY_LABELS[new Date(Number(y), Number(m) - 1, Number(d)).getDay()];
   const timeShort = timePart ? timePart.slice(0, 5) : '';
-  return `${Number(m)}月${Number(d)}日${timeShort ? `　${timeShort}` : ''}`;
+  return `${Number(m)}月${Number(d)}日(${weekday})${timeShort ? `　${timeShort}` : ''}`;
 }
 
 interface BookingEmailProps {
