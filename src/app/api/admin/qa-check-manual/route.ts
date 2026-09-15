@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
     table_id: 7,
     notes: '',
     locale: 'ja',
+    suppressFullyBookedAlert: true,
   };
 
   const checks: Check[] = [

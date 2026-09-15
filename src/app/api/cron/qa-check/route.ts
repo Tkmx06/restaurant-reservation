@@ -67,6 +67,7 @@ export async function GET(req: NextRequest) {
     table_id: 7, // テーブル66（常連様専用ではない通常卓）
     notes: '',
     locale: 'ja',
+    suppressFullyBookedAlert: true,
   };
 
   const checks: Check[] = [
