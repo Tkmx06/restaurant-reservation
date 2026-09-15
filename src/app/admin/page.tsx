@@ -2289,7 +2289,13 @@ export default function AdminPage() {
         customerMap[name].latestReservationId = r.id;
       }
     });
-    return Object.values(customerMap).sort((a, b) => a.guest_name.localeCompare(b.guest_name, 'ja'));
+    // ─── 修正：メールアドレス未入力の来店(ウォークイン・電話予約など)はAPI側で
+    //     email が 'customer@example.com' のダミー値に補完される(src/app/api/admin/reservations/route.ts)。
+    //     これをそのまま顧客名簿に表示すると、別人なのに同じメールアドレスが並んで紛らわしいため、
+    //     このダミー値の時は空欄表示にする(今後追加される同様の予約にも自動的に適用される)───
+    return Object.values(customerMap)
+      .map((c) => ({ ...c, email: c.email === 'customer@example.com' ? '' : c.email }))
+      .sort((a, b) => a.guest_name.localeCompare(b.guest_name, 'ja'));
   })();
 
   const openCustomerEditModal = (c: CustomerSummary) => {
