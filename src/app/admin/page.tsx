@@ -2980,12 +2980,12 @@ export default function AdminPage() {
                       value={bdStartDate}
                       onChange={(e) => e.target.value && handleBdStartDateChange(e.target.value)}
                       onFocus={openBdStartCalendar}
-                      className="flex-1 w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono text-xl"
+                      className="flex-1 w-full min-w-0 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono text-lg"
                     />
                     <button
                       type="button"
                       onClick={() => (bdShowCalendarPopup ? setBdShowCalendarPopup(false) : openBdStartCalendar())}
-                      className="bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-3 rounded-lg border border-slate-700 transition"
+                      className="shrink-0 bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-2.5 rounded-lg border border-slate-700 transition"
                       style={{ cursor: 'pointer' }}
                     >
                       📅
@@ -3003,12 +3003,12 @@ export default function AdminPage() {
                       onChange={(e) => e.target.value && setBdEndDate(e.target.value)}
                       onFocus={openBdEndCalendar}
                       min={bdStartDate}
-                      className="flex-1 w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono text-xl"
+                      className="flex-1 w-full min-w-0 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 font-mono text-lg"
                     />
                     <button
                       type="button"
                       onClick={() => (bdShowEndCalendarPopup ? setBdShowEndCalendarPopup(false) : openBdEndCalendar())}
-                      className="bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-3 rounded-lg border border-slate-700 transition"
+                      className="shrink-0 bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-2.5 rounded-lg border border-slate-700 transition"
                       style={{ cursor: 'pointer' }}
                     >
                       📅
@@ -3525,7 +3525,7 @@ export default function AdminPage() {
                       <button 
                         type="button" 
                         onClick={() => setShowCalendarPopup(!showCalendarPopup)} 
-                        className="bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-3 rounded-lg border border-slate-700 transition"
+                        className="shrink-0 bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-2.5 rounded-lg border border-slate-700 transition"
                         style={{ cursor: 'pointer' }}
                       >
                         日暦
