@@ -283,7 +283,7 @@ const timeToMinutes = (timeStr: string) => {
 // 指定日時に使用されている（重複含む）テーブルの取得
 const getOccupiedTableIdsBase = (reservations: any[], dateStr: string, timeStr: string, excludeResId?: string) => {
   const targetMin = timeToMinutes(timeStr);
-  const SESSION_DURATION = 120; // 2時間の滞在
+  const SESSION_DURATION = 150; // 2時間半の滞在
   const ids: string[] = [];
   
   reservations
@@ -1478,7 +1478,7 @@ export default function AdminPage() {
 
   const getOccupiedTableIds = (dateStr: string, timeStr: string, excludeResId?: string) => {
     const targetMin = timeToMinutes(timeStr);
-    const SESSION_DURATION = 120; // 2時間重複判定
+    const SESSION_DURATION = 150; // 2時間半重複判定
     const ids: string[] = [];
     
     reservations

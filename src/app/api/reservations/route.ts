@@ -22,7 +22,7 @@ const SPECIAL_TABLES = ['1', '2', '21', '22', '23', '51', '52', '53', '54', '68'
 
 const MAX_REASONABLE_GUESTS = 40; // これを超える人数は通常あり得ないため弾く
 
-const SESSION_DURATION_MIN = 120; // 1組あたり2時間滞在とみなして重複判定
+const SESSION_DURATION_MIN = 150; // 1組あたり2時間半滞在とみなして重複判定
 
 const timeToMinutes = (timeStr: string) => {
   const [h, m] = timeStr.split(':').map(Number);
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ご予約は本日から3ヶ月先までの日付でお願いいたします。' }, { status: 400 });
     }
 
-    // 4. 二重予約防止チェック（同日・前後2時間以内に同じテーブル/結合テーブルの予約がないか）
+    // 4. 二重予約防止チェック（同日・前後2時間半以内に同じテーブル/結合テーブルの予約がないか）
     const { data: sameDayReservations, error: sameDayError } = await supabase
       .from('reservations')
       .select('table_id, time, notes')

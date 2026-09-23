@@ -12,7 +12,7 @@ export const DB_ID_TO_LABEL: Record<number, string> = Object.fromEntries(
   Object.entries(LABEL_TO_DB_ID).map(([label, id]) => [id, label])
 );
 
-const SESSION_DURATION_MIN = 120; // 1組あたり2時間滞在とみなして重複判定（/api/reservationsと同じ基準）
+const SESSION_DURATION_MIN = 150; // 1組あたり2時間半滞在とみなして重複判定（/api/reservationsと同じ基準）
 
 const timeToMinutes = (timeStr: string) => {
   const [h, m] = String(timeStr).slice(0, 5).split(':').map(Number);
@@ -38,7 +38,7 @@ export type TableConflictResult =
 
 /**
  * 指定の日付・時間・テーブル（結合テーブル含む）が、他の確定予約と重複していないか確認する。
- * 顧客用の /api/reservations（新規予約）が行っているのと同じ「前後2時間」判定を、
+ * 顧客用の /api/reservations（新規予約）が行っているのと同じ「前後2時間半」判定を、
  * 管理画面からの予約作成・編集（POST / PUT / PATCH）でも共通で使うためのヘルパー。
  *
  * excludeReservationId: 更新対象の予約自身は衝突チェックから除外する（自分自身とは常に重複するため）。

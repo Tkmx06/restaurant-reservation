@@ -129,10 +129,10 @@ const timeToMinutes = (timeStr: string) => {
   return h * 60 + m;
 };
 
-// 指定日時かつ前後2時間（重複）で使用されているテーブルを取得
+// 指定日時かつ前後2時間半（重複）で使用されているテーブルを取得
 const getOccupiedTableIds = (reservations: any[], dateStr: string, timeStr: string) => {
   const targetMin = timeToMinutes(timeStr);
-  const SESSION_DURATION = 120; // 120分(2時間)の滞在として重複を判定
+  const SESSION_DURATION = 150; // 150分(2時間半)の滞在として重複を判定
   const ids: string[] = [];
 
   reservations
