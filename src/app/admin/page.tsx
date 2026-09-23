@@ -1026,6 +1026,8 @@ export default function AdminPage() {
   const [showCalendarPopup, setShowCalendarPopup] = useState(false);
   const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date());
   const [showMainCalendarPopup, setShowMainCalendarPopup] = useState(false);
+  // ☰ メニュー（上部ボタン列をポップアップにまとめたもの）の開閉
+  const [showMainMenu, setShowMainMenu] = useState(false);
   const [mainCalendarMonth, setMainCalendarMonth] = useState(new Date());
 
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
@@ -2207,10 +2209,18 @@ export default function AdminPage() {
     return ''; 
   };
 
+  // 日付スライダー：過去の日付は出さない（今日以降の7日間）。
+  // 選択日が先の日付なら選択日の3日前から表示（ただし今日より前には戻らない）。
+  // カレンダーから過去日を選んだ場合だけ、その日から表示する。
   const weeklyDates = ((centerDateStr: string) => {
     const range = [];
-    for (let i = -3; i <= 3; i++) {
-      const d = new Date(centerDateStr);
+    const todayStr = getTodayString();
+    const startObj = new Date(centerDateStr);
+    startObj.setDate(startObj.getDate() - 3);
+    const threeBeforeStr = `${startObj.getFullYear()}-${String(startObj.getMonth() + 1).padStart(2, '0')}-${String(startObj.getDate()).padStart(2, '0')}`;
+    const startStr = centerDateStr < todayStr ? centerDateStr : (threeBeforeStr < todayStr ? todayStr : threeBeforeStr);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startStr);
       d.setDate(d.getDate() + i);
       range.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
     }
@@ -2401,69 +2411,88 @@ export default function AdminPage() {
   const isNightMapMode = currentShift === 'dinner';
   const isSelectedDateLunchAllowed = isLunchDay(selectedDate);
 
-  const topHeaderBar = (
-      <div className="flex justify-between items-center mb-2 border-b pb-2 px-1 border-slate-200">
-        <div className="flex space-x-1.5">
-          {([
-            { key: 'today', label: '配置図・状況' },
-            { key: 'future', label: '今後の予約一覧' },
-            { key: 'customers', label: '👥 顧客名簿' }
-          ] as const).map((tab) => (
-            <button
-              key={tab.key}
-              role="button"
-              onClick={() => { setActiveTab(tab.key); if (tab.key === 'future') setFutureListMode('upcoming'); }}
-              className={`text-lg font-black px-3 py-1.5 rounded-lg transition-all`}
-              style={{ cursor: 'pointer' }}
-            >
-              <span className={activeTab === tab.key ? 'text-blue-600 font-black' : 'text-slate-500 font-medium'}>
-                {tab.label}
-              </span>
-            </button>
-          ))}
-          {activeTab === 'future' && (
-            <button
-              type="button"
-              onClick={() => setFutureListMode(m => m === 'past' ? 'upcoming' : 'past')}
-              className={`text-lg font-black px-3 py-1.5 rounded-lg transition-all ${futureListMode === 'past' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-              style={{ cursor: 'pointer' }}
-            >
-              {futureListMode === 'past' ? '🚀 今後の予約に戻す' : '🕰️ 過去の予約'}
-            </button>
-          )}
-        </div>
-        <div className="flex space-x-1.5">
-          <button
-            type="button"
-            onClick={() => setShowBusinessDaysModal(true)}
-            className="bg-slate-700 hover:bg-slate-600 text-white text-lg font-black px-4 py-1.5 rounded-xl border border-slate-800 transition shadow-md"
-            style={{ cursor: 'pointer' }}
-          >
-            📅 営業日の変更
-          </button>
-          <button
-            type="button"
-            onClick={openNewOrderModal}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-lg font-black px-4 py-1.5 rounded-xl border border-blue-700 transition shadow-md"
-            style={{ cursor: 'pointer' }}
-          >
-            ➕ 新規予約登録
-          </button>
-          <button
-            type="button"
-            onClick={toggleForcedView}
-            className="bg-white hover:bg-slate-100 text-slate-500 text-lg font-black px-3 py-1.5 rounded-xl border border-slate-300 transition shadow-md"
-            style={{ cursor: 'pointer' }}
-          >
-            📱 モバイル
-          </button>
-        </div>
-      </div>
+  // 上部のボタン列は廃止し、☰ ボタンのポップアップメニューにまとめる
+  const mainMenuItems: { key: string; icon: string; label: string; onClick: () => void; isCurrent?: boolean; separatorBefore?: boolean }[] = [
+    { key: 'today', icon: '🗺️', label: '配置図・状況', isCurrent: activeTab === 'today', onClick: () => setActiveTab('today') },
+    { key: 'future', icon: '📋', label: '今後の予約一覧', isCurrent: activeTab === 'future', onClick: () => { setActiveTab('future'); setFutureListMode('upcoming'); } },
+    { key: 'customers', icon: '👥', label: '顧客名簿', isCurrent: activeTab === 'customers', onClick: () => setActiveTab('customers') },
+    { key: 'businessDays', icon: '📅', label: '営業日の変更', separatorBefore: true, onClick: () => setShowBusinessDaysModal(true) },
+    { key: 'mobile', icon: '📱', label: 'モバイル', onClick: toggleForcedView },
+  ];
+
+  const mainMenuButton = (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        aria-label="メニュー"
+        onClick={() => setShowMainMenu(v => !v)}
+        className={`w-11 h-10 rounded-lg bg-slate-800 text-white text-2xl font-black flex items-center justify-center shadow-md border-2 ${showMainMenu ? 'border-amber-400' : 'border-slate-800'}`}
+        style={{ cursor: 'pointer' }}
+      >
+        {showMainMenu ? '✕' : '☰'}
+      </button>
+      {showMainMenu && (
+        <>
+          <div className="fixed inset-0 z-40 bg-slate-900/30" onClick={() => setShowMainMenu(false)} />
+          <div className="absolute left-0 top-12 z-50 w-72 bg-white rounded-2xl shadow-2xl p-2 border border-slate-200">
+            {mainMenuItems.map((item) => (
+              <div key={item.key}>
+                {item.separatorBefore && <div className="h-px bg-slate-200 mx-2 my-1.5" />}
+                <button
+                  type="button"
+                  onClick={() => { item.onClick(); setShowMainMenu(false); }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-lg font-black text-left transition ${item.isCurrent ? 'bg-blue-50 text-blue-700' : 'text-slate-800 hover:bg-slate-100'}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-xl shrink-0">{item.icon}</span>
+                  <span className="flex-1">{item.label}</span>
+                  {item.isCurrent && <span className="text-xs font-bold text-blue-600">表示中</span>}
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+
+  // 「今後の予約一覧」表示中だけ、過去の予約との切り替えボタンを出す
+  const futureListToggleBar = activeTab === 'future' ? (
+    <div className="flex justify-end mb-2">
+      <button
+        type="button"
+        onClick={() => setFutureListMode(m => m === 'past' ? 'upcoming' : 'past')}
+        className={`text-lg font-black px-3 py-1.5 rounded-lg transition-all ${futureListMode === 'past' ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+        style={{ cursor: 'pointer' }}
+      >
+        {futureListMode === 'past' ? '🚀 今後の予約に戻す' : '🕰️ 過去の予約'}
+      </button>
+    </div>
+  ) : null;
+
+  // 新規予約ボタン（テーブル＋のアイコンのみ）
+  const newReservationIconButton = (
+    <button
+      type="button"
+      aria-label="新規予約登録"
+      title="新規予約登録"
+      onClick={openNewOrderModal}
+      className="w-11 h-10 rounded-lg bg-blue-600 hover:bg-blue-500 border border-blue-700 shadow-md flex items-center justify-center shrink-0"
+      style={{ cursor: 'pointer' }}
+    >
+      <svg width="30" height="26" viewBox="0 0 36 32" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="9" width="22" height="5" rx="1.5" />
+        <path d="M6 14v12M22 14v12M3 20h22" />
+        <circle cx="29" cy="7" r="6" fill="#fff" stroke="none" />
+        <path d="M29 4v6M26 7h6" stroke="#2563eb" strokeWidth="2.4" />
+      </svg>
+    </button>
   );
 
   // 全画面表示中もここを使い回して日付切替スライダーを表示する（通常時は操作ヘッダーバーとして表示）
   const dateNavBar = (
     <div className="flex items-center space-x-1.5 p-1.5 rounded-xl border shadow-inner w-full mb-3 justify-between bg-slate-200/60 border-slate-300">
+      {mainMenuButton}
       <button
         onClick={() => changeDate(-1)}
         className="w-9 h-9 rounded-lg font-bold text-xl shrink-0 shadow-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300"
@@ -2587,6 +2616,7 @@ export default function AdminPage() {
           </>
         )}
       </div>
+      {newReservationIconButton}
     </div>
   );
 
@@ -2597,10 +2627,9 @@ export default function AdminPage() {
       <div className={desktopVisibilityClass}>
       {!isMapFullscreen && (
       <>
-      {topHeaderBar}
-
-      {/* 操作ヘッダーバー */}
+      {/* 操作ヘッダーバー（☰メニュー・日付スライダー・カレンダー・新規予約） */}
       {dateNavBar}
+      {futureListToggleBar}
       </>
       )}
 
@@ -2627,7 +2656,7 @@ export default function AdminPage() {
           >
             {isMapFullscreen ? '✕' : '⛶'}
           </button>
-          {isMapFullscreen && (<>{topHeaderBar}{dateNavBar}</>)}
+          {isMapFullscreen && dateNavBar}
           {onlineEditMode && (
             <div className="mb-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-300 text-[17px] text-emerald-800 font-bold flex items-center justify-between gap-2">
               <span>🔓🔒 {formatPureDate(selectedDate)} の常連様テーブルをタップしてオンライン/オフライン切替（上の日付ナビで日を変更できます）</span>
