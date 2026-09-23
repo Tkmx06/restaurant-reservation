@@ -3520,7 +3520,7 @@ export default function AdminPage() {
                             }
                           }
                         }} 
-                        className="flex-1 p-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-bold" 
+                        className="flex-1 min-w-0 w-full p-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-bold" 
                       />
                       <button 
                         type="button" 
@@ -3649,7 +3649,7 @@ export default function AdminPage() {
                   <div>
                     <label className="text-[16px] text-slate-400 font-bold block mb-1">👤 お客様お名前</label>
                     <div className="flex gap-1.5">
-                      <input type="text" placeholder="お名前を入力" value={newOrderName} onChange={(e) => setNewOrderName(e.target.value)} className="flex-1 p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-bold placeholder-slate-600" />
+                      <input type="text" placeholder="お名前を入力" value={newOrderName} onChange={(e) => setNewOrderName(e.target.value)} className="flex-1 min-w-0 w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-bold placeholder-slate-600" />
                       <button
                         type="button"
                         onClick={() => setNewOrderName('ウォークイン')}
