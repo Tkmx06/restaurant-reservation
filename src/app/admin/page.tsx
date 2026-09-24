@@ -2748,7 +2748,7 @@ export default function AdminPage() {
               </div>
 
               {/* 左側予約リストエリア（全画面表示中も表示） */}
-              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-[#12141C]/40 border-[#2A2E3D]/60' : 'bg-white/80 border-[#E7E5DD]/80'}`} style={{ top: '12.5%', left: '2%', width: '72.5%', height: '59%' }}>
+              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-[#12141C]/40 border-[#2A2E3D]/60' : 'bg-white/80 border-[#E7E5DD]/80'}`} style={{ top: '13.5%', left: '2%', width: '72.5%', height: '58%' }}>
                 <div className={`flex items-center text-[16px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-[#8A8FA3] border-[#2A2E3D]' : 'text-slate-600 border-[#E7E5DD]'}`}>
                   <span className="w-[9%] shrink-0">時間</span>
                   <span className="w-[10%] shrink-0 text-center">人数</span>
