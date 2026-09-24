@@ -1205,25 +1205,25 @@ export default function AdminPage() {
   const [hasMovedSignificantly, setHasMovedSignificantly] = useState(false);
 
   const initialTables: TableStatus[] = [
-    { id: '51', label: '51', isOccupied: false, type: 'square-2', top: '4%', left: '44%', width: '5%' },
-    { id: '52', label: '52', isOccupied: false, type: 'square-2', top: '4%', left: '50%', width: '5%' },
-    { id: '53', label: '53', isOccupied: false, type: 'square-2', top: '4%', left: '56%', width: '5%' },
-    { id: '54', label: '54', isOccupied: false, type: 'square-2', top: '4%', left: '62%', width: '5%' },
-    { id: '68', label: '68', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '69%',  width: '9%' },
-    { id: '67', label: '67', isOccupied: false, type: 'square-2', top: '4%',  left: '79%',  width: '5%' },
-    { id: '66', label: '66', isOccupied: false, type: 'square-2', top: '4%',  left: '85%',  width: '5%' },
-    { id: '65', label: '65', isOccupied: false, type: 'rect-h-4', top: '4%',  left: '91%',  width: '9%' },
-    { id: '1', label: '1', isOccupied: false, type: 'counter-1', top: '24%', left: '82.5%', width: '5%' },
-    { id: '2', label: '2', isOccupied: false, type: 'counter-1', top: '35%', left: '82.5%', width: '5%' },
-    { id: '23', label: '23', isOccupied: false, type: 'square-2', top: '24%', left: '88.5%', width: '5%' },
-    { id: '70', label: '70', isOccupied: false, type: 'square-2', top: '14.9%', left: '95%',  width: '5%' },
-    { id: '22', label: '22', isOccupied: false, type: 'square-2', top: '35%', left: '88.5%', width: '5%' },
-    { id: '21', label: '21', isOccupied: false, type: 'rect-h-4', top: '46%',   left: '84.5%',  width: '9%' },
-    { id: '11', label: '11', isOccupied: false, type: 'rect-h-4', top: '68%', left: '84.5%', width: '9%' },
-    { id: '15', label: '15', isOccupied: false, type: 'square-2', top: '35%', left: '95%',  width: '5%' },
-    { id: '14', label: '14', isOccupied: false, type: 'square-2', top: '46%', left: '95%',  width: '5%' },
-    { id: '13', label: '13', isOccupied: false, type: 'square-2', top: '57%', left: '95%',  width: '5%' },
-    { id: '12', label: '12', isOccupied: false, type: 'square-2', top: '68%', left: '95%',  width: '5%' },
+    { id: '51', label: '51', isOccupied: false, type: 'square-2', top: '1%', left: '44%', width: '5%' },
+    { id: '52', label: '52', isOccupied: false, type: 'square-2', top: '1%', left: '50%', width: '5%' },
+    { id: '53', label: '53', isOccupied: false, type: 'square-2', top: '1%', left: '56%', width: '5%' },
+    { id: '54', label: '54', isOccupied: false, type: 'square-2', top: '1%', left: '62%', width: '5%' },
+    { id: '68', label: '68', isOccupied: false, type: 'rect-h-4', top: '1%',  left: '69%',  width: '9%' },
+    { id: '67', label: '67', isOccupied: false, type: 'square-2', top: '1%',  left: '79%',  width: '5%' },
+    { id: '66', label: '66', isOccupied: false, type: 'square-2', top: '1%',  left: '85%',  width: '5%' },
+    { id: '65', label: '65', isOccupied: false, type: 'rect-h-4', top: '1%',  left: '91%',  width: '9%' },
+    { id: '1', label: '1', isOccupied: false, type: 'counter-1', top: '20.5%', left: '82.5%', width: '5%' },
+    { id: '2', label: '2', isOccupied: false, type: 'counter-1', top: '31%', left: '82.5%', width: '5%' },
+    { id: '23', label: '23', isOccupied: false, type: 'square-2', top: '20.5%', left: '88.5%', width: '5%' },
+    { id: '70', label: '70', isOccupied: false, type: 'square-2', top: '11.5%', left: '95%',  width: '5%' },
+    { id: '22', label: '22', isOccupied: false, type: 'square-2', top: '31%', left: '88.5%', width: '5%' },
+    { id: '21', label: '21', isOccupied: false, type: 'rect-h-4', top: '41.5%',   left: '84.5%',  width: '9%' },
+    { id: '11', label: '11', isOccupied: false, type: 'rect-h-4', top: '62.5%', left: '84.5%', width: '9%' },
+    { id: '15', label: '15', isOccupied: false, type: 'square-2', top: '31%', left: '95%',  width: '5%' },
+    { id: '14', label: '14', isOccupied: false, type: 'square-2', top: '41.5%', left: '95%',  width: '5%' },
+    { id: '13', label: '13', isOccupied: false, type: 'square-2', top: '52%', left: '95%',  width: '5%' },
+    { id: '12', label: '12', isOccupied: false, type: 'square-2', top: '62.5%', left: '95%',  width: '5%' },
   ];
 
   const lunchTimes = ['11:45', '12:00', '12:15', '12:30', '12:45', '13:00'];
@@ -2512,7 +2512,6 @@ export default function AdminPage() {
         {weeklyDates.map((dateStr) => {
           const isCurrentLoopSelected = dateStr === selectedDate;
           const isLoopClosed = checkIsClosed(dateStr);
-          const topLabel = getDateTopLabel(dateStr);
           const calendarInfo = getCalendarInfoForDate(dateStr);
           const weatherCode = weatherByDate[dateStr];
           const weatherIcon = weatherCode !== undefined ? getWeatherIcon(weatherCode) : '';
@@ -2531,8 +2530,7 @@ export default function AdminPage() {
               {calendarInfo && (
                 <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ring-1 ring-white ${calendarInfo.type === 'holiday' ? 'bg-rose-500' : 'bg-violet-500'}`} />
               )}
-              {topLabel ? <span className="text-[15px] tracking-tight font-black leading-none">{topLabel}</span> : <span className="text-[15px] h-3 block"></span>}
-              <span className="text-lg font-mono font-bold mt-0.5">{formatPureDate(dateStr)}</span>
+              <span className="text-lg font-mono font-bold">{formatPureDate(dateStr)}</span>
             </button>
           );
         })}
@@ -2685,7 +2683,7 @@ export default function AdminPage() {
             >
 
               {/* 昼夜ボタンとその下に総計 */}
-              <div className="absolute flex flex-col gap-1" style={{ top: '2.5%', left: '2%', width: '22%', height: '12%' }}>
+              <div className="absolute flex flex-col gap-1" style={{ top: '1%', left: '2%', width: '22%', height: '12%' }}>
                 <div className={`flex items-center gap-1 w-full rounded-lg p-0.5 shadow-inner ${isNightMapMode ? 'bg-[#1B1E29] border border-[#2A2E3D]' : 'bg-[#EDEBE3] border border-[#E7E5DD]'}`}>
                   <button
                     type="button"
@@ -2726,7 +2724,7 @@ export default function AdminPage() {
               </div>
 
               {/* 今日ボタンとオフラインボタン（51の左） */}
-              <div className="absolute flex gap-1" style={{ top: '2.5%', left: '26%', width: '17%', height: '9%' }}>
+              <div className="absolute flex gap-1" style={{ top: '1%', left: '26%', width: '17%', height: '9%' }}>
                 <button
                   type="button"
                   onClick={handleGoToToday}
@@ -2750,7 +2748,7 @@ export default function AdminPage() {
               </div>
 
               {/* 左側予約リストエリア（全画面表示中も表示） */}
-              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-[#12141C]/40 border-[#2A2E3D]/60' : 'bg-white/80 border-[#E7E5DD]/80'}`} style={{ top: '15%', left: '2%', width: '72.5%', height: '62%' }}>
+              <div className={`absolute border rounded-xl p-2 flex flex-col transition-colors duration-300 ${isNightMapMode ? 'bg-[#12141C]/40 border-[#2A2E3D]/60' : 'bg-white/80 border-[#E7E5DD]/80'}`} style={{ top: '12.5%', left: '2%', width: '72.5%', height: '59%' }}>
                 <div className={`flex items-center text-[16px] font-black border-b pb-1.5 mb-1 px-1 ${isNightMapMode ? 'text-[#8A8FA3] border-[#2A2E3D]' : 'text-slate-600 border-[#E7E5DD]'}`}>
                   <span className="w-[9%] shrink-0">時間</span>
                   <span className="w-[10%] shrink-0 text-center">人数</span>
